@@ -1,0 +1,5 @@
+build/
+cores/
+roms/
+libretro.h
+odin-mode.el
