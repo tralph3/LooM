@@ -1,4 +1,5 @@
 ;;; -*- lisp-data -*-
 ((:name "Compile and run"
-        :command "odin run main"
+        :command ("mkdir -p build"
+                  "odin run main -out:build/main")
         :type "compile"))
