@@ -7,6 +7,7 @@ import "core:log"
 main :: proc () {
     GLOBAL_CONTEXT.logger = log.create_console_logger()
     defer log.destroy_console_logger(GLOBAL_CONTEXT.logger)
+    context = GLOBAL_CONTEXT
 
     ok_init_renderer := init_raylib()
     if !ok_init_renderer {

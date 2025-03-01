@@ -38,7 +38,7 @@ GameInfo :: struct {
     meta: cstring,
 }
 
-RetroEnvironment :: enum {
+RetroEnvironment :: enum c.int {
     Experimental                                  = 0x10000,
     Private                                       = 0x20000,
     SetRotation                                   = 1,
@@ -121,7 +121,7 @@ RetroEnvironment :: enum {
     GetFileBrowserStartDirectory                  = 80,
 }
 
-RetroDevice :: enum {
+RetroDevice :: enum c.int {
     IdJoypadB      =  0,
     IdJoypadY      =  1,
     IdJoypadSelect =  2,
@@ -140,7 +140,7 @@ RetroDevice :: enum {
     IdJoypadR3     = 15,
 }
 
-RetroPixelFormat :: enum {
+RetroPixelFormat :: enum c.int {
    F0RGB1555 = 0,
    FXRGB8888 = 1,
    FRGB565   = 2,
@@ -183,7 +183,7 @@ RetroCoreOptionsV2Intl :: struct {
     local: ^RetroCoreOptionsV2,
 }
 
-RetroLanguage :: enum {
+RetroLanguage :: enum c.int {
    English            = 0,
    Japanese           = 1,
    French             = 2,
@@ -220,4 +220,15 @@ RetroLanguage :: enum {
    Galician           = 33,
    Norwegian          = 34,
    Last,
+}
+
+RetroLogLevel :: enum c.int {
+    DEBUG = 0,
+    INFO  = 1,
+    WARN  = 2,
+    ERROR = 3,
+}
+
+RetroLogCallback :: struct {
+    log: proc "c" (RetroLogLevel, string, ..any)
 }

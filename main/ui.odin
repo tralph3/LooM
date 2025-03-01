@@ -42,6 +42,12 @@ game_entries := [][]string {
         "cores/bsnes_libretro.so",
         "roms/Super Castlevania IV (USA).sfc"
     },
+    {
+        "Donkey Kong Country GBC",
+        "Return to monke",
+        "cores/gambatte_libretro.so",
+        "roms/Donkey Kong Country (UE).gbc"
+    },
 }
 
 

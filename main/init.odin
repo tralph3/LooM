@@ -47,7 +47,8 @@ init_clay :: proc () -> bool {
 
     cl.SetMeasureTextFunction(cl.measureText, nil)
 
-    load_font(0, rl.GetFontDefault())
+    // load_font(0, rl.GetFontDefault())
+    load_font(0, 24, "assets/Ubuntu.ttf")
 
     return true
 }

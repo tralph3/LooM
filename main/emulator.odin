@@ -9,6 +9,8 @@ import "core:dynlib"
 import "core:time"
 import rl "vendor:raylib"
 import cl "clay"
+import "core:log"
+import "core:mem"
 
 AUDIO_BUFFER_SIZE_BYTES :: 16384
 
@@ -19,10 +21,7 @@ EmulatorState :: struct {
     audio_buffer: AudioBuffer,
     av_info: libretro.SystemAvInfo,
     core: libretro.LibretroCore,
-    core_options: union {
-        libretro.RetroCoreOptionsV2,
-        libretro.RetroCoreOptionsV2Intl,
-    },
+    core_options: libretro.RetroCoreOptionsV2,
 }
 
 AudioBuffer :: struct {
@@ -183,5 +182,38 @@ emulator_quit :: proc () {
         rl.UnloadTexture(EMULATOR_STATE.frame_buffer.render_texture)
         rl.UnloadAudioStream(EMULATOR_STATE.audio_buffer.audio_stream)
         cb.circular_buffer_clear(&EMULATOR_STATE.audio_buffer.buffer)
+    }
+}
+
+
+emulator_clone_core_options_v2 :: proc (options_union: union { libretro.RetroCoreOptionsV2, libretro.RetroCoreOptionsV2Intl }) {
+    EMULATOR_STATE.core_options = {}
+
+    options: libretro.RetroCoreOptionsV2
+
+    switch o in options_union {
+    case libretro.RetroCoreOptionsV2:
+        options = o
+    case libretro.RetroCoreOptionsV2Intl:
+        if o.local != nil {
+            options = o.local^
+        } else  {
+            options = o.us^
+        }
+    }
+
+    def_count := 0
+    for true {
+        // category := options_to_use.categories[i] // TODO: support option categorization
+        definition := options.definitions[def_count]
+        if definition.key == nil { break }
+        def_count += 1
+    }
+
+    EMULATOR_STATE.core_options.definitions = make_multi_pointer([^]libretro.RetroCoreOptionV2Definition, def_count)
+
+    for i in 0..<def_count {
+        mem.copy(&EMULATOR_STATE.core_options.definitions[i].key, &options.definitions[i].key, len(options.definitions[i].key))
+
     }
 }
