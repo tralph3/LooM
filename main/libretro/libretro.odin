@@ -7,6 +7,8 @@ import "core:strings"
 import "core:log"
 
 LibretroCore :: struct {
+    loaded: bool,
+
     init: proc "c" (),
     load_game: proc "c" (^GameInfo) -> bool,
     set_environment: proc "c" (proc "c" (RetroEnvironment, rawptr) -> bool),
@@ -27,9 +29,11 @@ load_core :: proc (core_path: string) -> (LibretroCore, bool) {
     core := LibretroCore{}
     count, ok := dynlib.initialize_symbols(&core, core_path, "retro_")
     if !ok {
-        fmt.eprintln("Failed loading libretro core")
+        log.error("Failed loading libretro core")
         return core, false
     }
+
+    core.loaded = true
 
     return core, true
 }

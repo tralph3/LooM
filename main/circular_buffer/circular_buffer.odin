@@ -75,6 +75,12 @@ circular_buffer_pop :: proc "contextless" (b: ^$T/CircularBuffer($N), dest: rawp
     return length
 }
 
+circular_buffer_clear :: proc "contextless" (b: ^$T/CircularBuffer($N)) {
+    b.write = 0
+    b.read = 0
+    b.size = 0
+}
+
 //
 // Tests
 //

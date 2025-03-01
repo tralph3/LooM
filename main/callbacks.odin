@@ -17,7 +17,7 @@ environment_callback :: proc "c" (command: libretro.RetroEnvironment, data: rawp
         case libretro.RetroEnvironment.GetCanDupe:
         (^bool)(data)^ = true
         case libretro.RetroEnvironment.SetPixelFormat:
-        frame_buffer_set_pixel_format((^libretro.RetroPixelFormat)(data)^)
+        EMULATOR_STATE.frame_buffer.pixel_format = (^libretro.RetroPixelFormat)(data)^
         (^bool)(data)^ = true
         case libretro.RetroEnvironment.GetFastforwarding:
         (^bool)(data)^ = false // TODO: mark if we're actually in ff mode
@@ -54,7 +54,7 @@ input_poll_callback :: proc "c" () {
 }
 
 input_state_callback :: proc "c" (port: u32, device: u32, index: u32, id: u32) -> i16 {
-    return input_state_get_button(libretro.RetroDevice(id))
+    return EMULATOR_STATE.input_state[libretro.RetroDevice(id)]
 }
 
 audio_sample_batch_callback :: proc "c" (data: ^i16, frames: i32) -> i32 {

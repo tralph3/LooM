@@ -23,13 +23,43 @@ UI_STATE := UiState {
     selected_menu = .NONE,
 }
 
-set_selected_menu :: proc "c" (id: cl.ElementId, pointerData: cl.PointerData, userData: rawptr) {
+game_entries := [][]string {
+    {
+        "The Legend of Zelda",
+        "Rescue the princess lol",
+        "cores/fceumm_libretro.so",
+        "roms/Legend of Zelda, The (U) (PRG1) [!].nes",
+    },
+    {
+        "Super Mario Bros",
+        "Stomp on some goombas and eat mushrooms idk",
+        "cores/fceumm_libretro.so",
+        "roms/Super Mario Bros. (Europe) (Rev A).nes"
+    },
+    {
+        "Super Castlevania IV",
+        "Kill dracula. That's it, go",
+        "cores/bsnes_libretro.so",
+        "roms/Super Castlevania IV (USA).sfc"
+    },
+}
+
+
+set_selected_menu_callback :: proc "c" (id: cl.ElementId, pointerData: cl.PointerData, userData: rawptr) {
     if pointerData.state == .PressedThisFrame {
-        // the address is actually the enum value we want to use
         UI_STATE.selected_menu = MenuType(uintptr(userData))
-        if UI_STATE.selected_menu == .QUIT {
-            os.exit(0)
-        }
+    }
+    if UI_STATE.selected_menu == .QUIT {
+        os.exit(0)
+    }
+}
+
+run_game_callback :: proc "c" (id: cl.ElementId, pointerData: cl.PointerData, userData: rawptr) {
+    context = runtime.default_context()
+
+    if pointerData.state == .PressedThisFrame {
+        game_index := int(uintptr(userData))
+        emulator_run_game(game_entries[game_index][2], game_entries[game_index][3])
     }
 }
 
@@ -45,7 +75,7 @@ sidebar_entry :: proc (label: string, type: MenuType) {
         },
         backgroundColor = UI_STATE.selected_menu == type ? COLOR_SELECTED : COLOR_MAIN_BACKGROUND,
     }) {
-        cl.OnHover(set_selected_menu, rawptr(uintptr(type)))
+        cl.OnHover(set_selected_menu_callback, rawptr(uintptr(type)))
         cl.Text(
             label,
             cl.TextConfig({
@@ -57,13 +87,14 @@ sidebar_entry :: proc (label: string, type: MenuType) {
     }
 }
 
-menu_entry :: proc (title, description: string) {
+menu_entry :: proc (title, description: string, index: int) {
     if cl.UI()({
         layout = {
             sizing = { width = cl.SizingGrow({}), height = cl.SizingFixed(50), },
             layoutDirection = .TopToBottom,
         },
     }) {
+        cl.OnHover(run_game_callback, rawptr(uintptr(index)))
         cl.Text(title, cl.TextConfig({
             textColor = { 255, 255, 255, 255 },
             fontSize = 20,
@@ -75,62 +106,4 @@ menu_entry :: proc (title, description: string) {
             textAlignment = .Left,
         }))
     }
-}
-
-render_ui :: proc (rendererer: proc (^cl.ClayArray(cl.RenderCommand), runtime.Allocator)) {
-    cl.BeginLayout()
-
-    if cl.UI()({
-        id = cl.ID("Main Container"),
-        layout = {
-            sizing = { width = cl.SizingGrow({}), height = cl.SizingGrow({})},
-        }
-    }) {
-        if cl.UI()({
-            id = cl.ID("Side Container"),
-            layout = {
-                sizing = { width = cl.SizingFixed(230), height = cl.SizingGrow({}) },
-                padding = { 10, 10, 10, 10, },
-                childAlignment = {
-                    x = .Center,
-                    y = .Center,
-                },
-                layoutDirection = .TopToBottom,
-            },
-            backgroundColor = { 0x18, 0x18, 0x18, 255 },
-        }) {
-            sidebar_entry("Play", .PLAY)
-            sidebar_entry("Settings", .SETTINGS)
-            sidebar_entry("Quit", .QUIT)
-        }
-
-        if cl.UI()({
-            id = cl.ID("Main Content Container"),
-            layout = {
-                layoutDirection = .TopToBottom,
-                sizing = { width = cl.SizingGrow({}), height = cl.SizingGrow({})},
-                childGap = 16,
-                padding = { 20, 20, 20, 20, },
-            },
-        }) {
-            #partial switch UI_STATE.selected_menu {
-            case .PLAY:
-                menu_entry("Zelda", "This is a description, quite nice looking I'd say.")
-                menu_entry("Mario", "This is a description, quite nice looking I'd say.")
-                menu_entry("Donkey Kong", "This is a description, quite nice looking I'd say.")
-                menu_entry("Resident Evil", "This is a description, quite nice looking I'd say.")
-            case .SETTINGS:
-                menu_entry("Setting 1", "This is a description, quite nice looking I'd say.")
-                menu_entry("Setting 2", "This is a description, quite nice looking I'd say.")
-                menu_entry("Setting 3", "This is a description, quite nice looking I'd say.")
-                menu_entry("Setting 4", "This is a description, quite nice looking I'd say.")
-            }
-
-        }
-    }
-
-
-    render_commands := cl.EndLayout()
-
-    rendererer(&render_commands, context.temp_allocator)
 }
