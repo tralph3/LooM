@@ -55,7 +55,7 @@ set_selected_menu_callback :: proc "c" (id: cl.ElementId, pointerData: cl.Pointe
 }
 
 run_game_callback :: proc "c" (id: cl.ElementId, pointerData: cl.PointerData, userData: rawptr) {
-    context = runtime.default_context()
+    context = GLOBAL_CONTEXT
 
     if pointerData.state == .PressedThisFrame {
         game_index := int(uintptr(userData))

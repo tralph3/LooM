@@ -7,7 +7,7 @@ import "core:c"
 import "base:runtime"
 
 environment_callback :: proc "c" (command: libretro.RetroEnvironment, data: rawptr) -> bool {
-    context = runtime.default_context()
+    context = GLOBAL_CONTEXT
 
     #partial switch command {
         case libretro.RetroEnvironment.GetCoreOptionsVersion:

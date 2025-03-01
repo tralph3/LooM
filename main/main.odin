@@ -5,8 +5,8 @@ import rl "vendor:raylib"
 import "core:log"
 
 main :: proc () {
-    context.logger = log.create_console_logger()
-    defer log.destroy_console_logger(context.logger)
+    GLOBAL_CONTEXT.logger = log.create_console_logger()
+    defer log.destroy_console_logger(GLOBAL_CONTEXT.logger)
 
     ok_init_renderer := init_raylib()
     if !ok_init_renderer {

@@ -6,13 +6,14 @@ import "core:log"
 import "base:runtime"
 
 error_handler :: proc "c" (error: cl.ErrorData) {
-    context = runtime.default_context()
+    context = GLOBAL_CONTEXT
 
     log.error(error.errorText)
 }
 
 init_raylib :: proc () -> bool {
     rl.SetConfigFlags({.WINDOW_RESIZABLE})
+    rl.SetTraceLogLevel(rl.TraceLogLevel.NONE)
 
     log.debug("Initializing Raylib window")
 
