@@ -1,23 +1,32 @@
 package main
 
+import "base:runtime"
+import "libretro"
+import cb "circular_buffer"
 import "core:c"
 import "core:strings"
 import "core:dynlib"
 import "core:time"
 import rl "vendor:raylib"
+import "clay"
 
 AUDIO_BUFFER_SIZE_BYTES :: 16384
 
 EmulatorState :: struct {
+    running: bool,
     input_state: [16]i16,
     frame_buffer: FrameBuffer,
     audio_buffer: AudioBuffer,
-    av_info: SystemAvInfo,
-    core: LibretroCore,
+    av_info: libretro.SystemAvInfo,
+    core: libretro.LibretroCore,
+    core_options: union {
+        libretro.RetroCoreOptionsV2,
+        libretro.RetroCoreOptionsV2Intl,
+    },
 }
 
 AudioBuffer :: struct {
-    buffer: CircularBuffer(AUDIO_BUFFER_SIZE_BYTES),
+    buffer: cb.CircularBuffer(AUDIO_BUFFER_SIZE_BYTES),
     audio_stream: rl.AudioStream,
 }
 
@@ -26,12 +35,16 @@ FrameBuffer :: struct {
     width: u32,
     height: u32,
     pitch: u32,
-    pixel_format: RetroPixelFormat,
+    pixel_format: libretro.RetroPixelFormat,
     render_texture: rl.Texture2D,
 }
 
-@(private="file")
-EMULATOR_STATE := EmulatorState{}
+EMULATOR_STATE := EmulatorState{
+    running = false,
+    frame_buffer = FrameBuffer {
+        pixel_format = libretro.RetroPixelFormat.F0RGB1555
+    }
+}
 
 frame_buffer_init :: proc "c" () {
     render_texture := rl.LoadRenderTexture(
@@ -44,11 +57,11 @@ frame_buffer_init :: proc "c" () {
 
     raylib_format: rl.PixelFormat = ---
     switch EMULATOR_STATE.frame_buffer.pixel_format {
-    case RetroPixelFormat.F0RGB1555:
+    case libretro.RetroPixelFormat.F0RGB1555:
         raylib_format = rl.PixelFormat.UNKNOWN // TODO: what the fuck
-    case RetroPixelFormat.FXRGB8888:
+    case libretro.RetroPixelFormat.FXRGB8888:
         raylib_format = rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
-    case RetroPixelFormat.FRGB565:
+    case libretro.RetroPixelFormat.FRGB565:
         raylib_format = rl.PixelFormat.UNCOMPRESSED_R5G6B5
     }
 
@@ -57,7 +70,7 @@ frame_buffer_init :: proc "c" () {
     EMULATOR_STATE.frame_buffer.render_texture = rl.LoadTextureFromImage(image)
 }
 
-frame_buffer_set_pixel_format :: proc "c" (format: RetroPixelFormat) {
+frame_buffer_set_pixel_format :: proc "c" (format: libretro.RetroPixelFormat) {
     EMULATOR_STATE.frame_buffer.pixel_format = format
 }
 
@@ -71,7 +84,7 @@ frame_buffer_update :: proc "c" (data: rawptr, width: u32, height: u32, pitch: u
     EMULATOR_STATE.frame_buffer.height = height
     EMULATOR_STATE.frame_buffer.pitch = pitch
 
-    if EMULATOR_STATE.frame_buffer.pixel_format == RetroPixelFormat.FXRGB8888 {
+    if EMULATOR_STATE.frame_buffer.pixel_format == libretro.RetroPixelFormat.FXRGB8888 {
         xrgb_to_rgba(&EMULATOR_STATE.frame_buffer)
     }
 }
@@ -84,20 +97,22 @@ frame_buffer_get_height :: proc "c" () -> u32 {
     return EMULATOR_STATE.frame_buffer.height
 }
 
-input_state_set_button :: proc "c" (button_id: RetroDevice, value: i16) {
+input_state_set_button :: proc "c" (button_id: libretro.RetroDevice, value: i16) {
     EMULATOR_STATE.input_state[button_id] = value
 }
 
-input_state_get_button :: proc "c" (button_id: RetroDevice) -> i16 {
+input_state_get_button :: proc "c" (button_id: libretro.RetroDevice) -> i16 {
     return EMULATOR_STATE.input_state[button_id]
 }
 
-audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) {
-    circular_buffer_push(&EMULATOR_STATE.audio_buffer.buffer, src, u64(frames * 4))
+audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
+    bytes_pushed := cb.circular_buffer_push(&EMULATOR_STATE.audio_buffer.buffer, src, u64(frames * 4))
+
+    return i32(bytes_pushed / 4)
 }
 
 audio_buffer_pop_batch :: proc "c" (dest: rawptr, frames: c.uint) {
-    circular_buffer_pop(&EMULATOR_STATE.audio_buffer.buffer, dest, u64(frames * 4))
+    cb.circular_buffer_pop(&EMULATOR_STATE.audio_buffer.buffer, dest, u64(frames * 4))
 }
 
 audio_buffer_init :: proc "c" () {
@@ -110,28 +125,53 @@ audio_buffer_init :: proc "c" () {
         EMULATOR_STATE.audio_buffer.audio_stream, raylib_audio_sample_batch_callback)
 }
 
-emulator_state_get_av_info :: proc "c" () -> ^SystemAvInfo {
+emulator_state_get_av_info :: proc "c" () -> ^libretro.SystemAvInfo {
     return &EMULATOR_STATE.av_info
 }
 
+emulator_set_core_optionsv2 :: proc (options: libretro.RetroCoreOptionsV2) {
+    EMULATOR_STATE.core_options = options
+}
+
+emulator_set_core_optionsv2_intl :: proc (options: libretro.RetroCoreOptionsV2Intl) {
+    EMULATOR_STATE.core_options = options
+}
+
 emulator_init :: proc (core_path: string, rom_path: string) {
-    core, ok_load_core := load_core(core_path)
+    core, ok_load_core := libretro.load_core(core_path)
     if !ok_load_core { return }
 
-    initialize_core(&core)
+    callbacks := libretro.Callbacks {
+        environment = environment_callback,
+        video_refresh = video_refresh_callback,
+        input_poll = input_poll_callback,
+        input_state = input_state_callback,
+        audio_sample = audio_sample_callback,
+        audio_sample_batch = audio_sample_batch_callback,
+    }
 
-    ok_load_rom := load_rom(&core, rom_path)
+    libretro.initialize_core(&core, &callbacks)
+
+    ok_load_rom := libretro.load_rom(&core, rom_path)
     if !ok_load_rom { return }
 
     EMULATOR_STATE.core = core
 
-    av_info := SystemAvInfo{}
+    av_info := libretro.SystemAvInfo{}
     core.get_system_av_info(&av_info)
 
     EMULATOR_STATE.av_info = av_info
 
+
     rl.SetConfigFlags({.WINDOW_RESIZABLE})
-    rl.InitWindow(800, 600, "retrito");
+    rl.InitWindow(800, 600, "retrito")
+
+    clay.raylibFonts[0] = {
+        font = rl.GetFontDefault(),
+        // font = rl.LoadFont("./assets/Ubuntu.ttf"),
+        fontId = 0,
+    }
+    rl.SetTextureFilter(clay.raylibFonts[0].font.texture, .TRILINEAR)
 
     rl.InitAudioDevice()
 
@@ -140,6 +180,7 @@ emulator_init :: proc (core_path: string, rom_path: string) {
 }
 
 emulator_poll_input :: proc "c" () {
+    using libretro
     input_state_set_button(RetroDevice.IdJoypadLeft, i16(rl.IsKeyDown(rl.KeyboardKey.LEFT)))
     input_state_set_button(RetroDevice.IdJoypadRight, i16(rl.IsKeyDown(rl.KeyboardKey.RIGHT)))
     input_state_set_button(RetroDevice.IdJoypadUp, i16(rl.IsKeyDown(rl.KeyboardKey.UP)))
@@ -153,17 +194,24 @@ emulator_poll_input :: proc "c" () {
 }
 
 emulator_draw :: proc "c" () {
+    context = runtime.default_context()
+
     rl.BeginDrawing()
+    rl.ClearBackground(rl.BLACK)
 
-    rl.UpdateTexture(
-        EMULATOR_STATE.frame_buffer.render_texture,
-        EMULATOR_STATE.frame_buffer.data)
+    if EMULATOR_STATE.running {
+        rl.UpdateTexture(
+            EMULATOR_STATE.frame_buffer.render_texture,
+            EMULATOR_STATE.frame_buffer.data)
 
-    rl.DrawTexturePro(
-        EMULATOR_STATE.frame_buffer.render_texture,
-        rl.Rectangle{0, 0, f32(frame_buffer_get_width()),f32(frame_buffer_get_height())},
-        rl.Rectangle{0, 0, f32(rl.GetScreenWidth()),f32(rl.GetScreenHeight())},
-        rl.Vector2(0), 0, rl.WHITE)
+        rl.DrawTexturePro(
+            EMULATOR_STATE.frame_buffer.render_texture,
+            rl.Rectangle{0, 0, f32(frame_buffer_get_width()),f32(frame_buffer_get_height())},
+            rl.Rectangle{0, 0, f32(rl.GetScreenWidth()),f32(rl.GetScreenHeight())},
+            rl.Vector2(0), 0, rl.WHITE)
+    } else {
+        render_ui(clay.clayRaylibRender)
+    }
 
     rl.EndDrawing()
 }
@@ -180,15 +228,28 @@ emulator_main_loop :: proc "c" () {
         }
         last_time = time.now()
 
+        clay.SetLayoutDimensions({ width = f32(rl.GetScreenWidth()), height = f32(rl.GetScreenHeight()) })
+        clay.SetPointerState(
+            { rl.GetMousePosition().x, rl.GetMousePosition().y },
+            rl.IsMouseButtonDown(.LEFT),
+        )
+        clay.UpdateScrollContainers(
+            true,
+            { rl.GetMouseWheelMoveV().x, rl.GetMouseWheelMoveV().y } * 5,
+            rl.GetFrameTime(),
+        )
+
         emulator_poll_input()
 
-        EMULATOR_STATE.core.run()
+        if EMULATOR_STATE.running {
+            EMULATOR_STATE.core.run()
+        }
 
         emulator_draw()
     }
 }
 
 emulator_quit :: proc () {
-    dynlib.unload_library(EMULATOR_STATE.core.__handle)
+    libretro.unload_core(EMULATOR_STATE.core)
     rl.UnloadTexture(EMULATOR_STATE.frame_buffer.render_texture)
 }

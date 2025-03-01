@@ -1,9 +1,10 @@
-package main
+package libretro
 
 import "core:dynlib"
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:log"
 
 LibretroCore :: struct {
     init: proc "c" (),
@@ -15,6 +16,8 @@ LibretroCore :: struct {
     set_audio_sample: proc "c" (proc "c" (i16, i16)),
     set_audio_sample_batch: proc "c" (proc "c" (^i16, i32) -> i32),
     get_system_av_info: proc "c" (^SystemAvInfo),
+    unload_game: proc "c" (),
+    deinit: proc "c" (),
     run: proc "c" (),
 
     __handle: dynlib.Library,
@@ -31,22 +34,30 @@ load_core :: proc (core_path: string) -> (LibretroCore, bool) {
     return core, true
 }
 
-initialize_core :: proc (core: ^LibretroCore) {
-    core.set_environment(environment_callback)
+unload_core :: proc (core: LibretroCore) {
+    core.unload_game()
+    core.deinit()
+    dynlib.unload_library(core.__handle)
+}
+
+initialize_core :: proc (core: ^LibretroCore, callbacks: ^Callbacks) {
+    core.set_environment(callbacks.environment)
 
     core.init()
 
-    core.set_video_refresh(video_refresh_callback)
-    core.set_input_poll(input_poll_callback)
-    core.set_audio_sample(audio_sample_callback)
-    core.set_input_state(input_state_callback)
-    core.set_audio_sample_batch(audio_sample_batch_callback)
+    core.set_video_refresh(callbacks.video_refresh)
+    core.set_input_poll(callbacks.input_poll)
+    core.set_audio_sample(callbacks.audio_sample)
+    core.set_audio_sample_batch(callbacks.audio_sample_batch)
+    core.set_input_state(callbacks.input_state)
 }
 
 load_rom :: proc (core: ^LibretroCore, rom_path: string) -> bool {
+    log.infof("Loading rom '%s'", rom_path)
+
     rom_contents, ok_read_entire_file := os.read_entire_file(rom_path)
     if !ok_read_entire_file {
-        fmt.eprint("Failed reading rom")
+        log.errorf("Failed reading rom '%s'", rom_path)
         return false
     }
 
@@ -59,9 +70,11 @@ load_rom :: proc (core: ^LibretroCore, rom_path: string) -> bool {
 
     ok_load_game := core.load_game(&info)
     if !ok_load_game {
-        fmt.println("Failed loading rom!!")
+        log.errorf("Failed loading rom '%s'", rom_path)
         return false
     }
+
+    log.infof("Successfully loaded rom '%s'", rom_path)
 
     return true
 }

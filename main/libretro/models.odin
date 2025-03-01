@@ -1,6 +1,17 @@
-package main
+package libretro
 
 import "core:c"
+
+RETRO_NUM_CORE_OPTION_VALUES_MAX :: 128
+
+Callbacks :: struct {
+    environment: proc "c" (RetroEnvironment, rawptr) -> bool,
+    video_refresh: proc "c" (rawptr, u32, u32, u32),
+    input_poll: proc "c" (),
+    input_state: proc "c" (u32, u32, u32, u32) -> i16,
+    audio_sample: proc "c" (i16, i16),
+    audio_sample_batch: proc "c" (^i16, i32) -> i32,
+}
 
 GameGeometry :: struct {
     base_width: c.uint,
@@ -133,4 +144,80 @@ RetroPixelFormat :: enum {
    F0RGB1555 = 0,
    FXRGB8888 = 1,
    FRGB565   = 2,
+}
+
+RetroVariable :: struct {
+    key: cstring,
+    value: cstring,
+}
+
+RetroCoreOptionValue :: struct {
+    value: cstring,
+    label: cstring,
+}
+
+RetroCoreOptionV2Definition :: struct {
+    key: cstring,
+    display: cstring,
+    display_categorized: cstring,
+    info: cstring,
+    info_categorized: cstring,
+    category_key: cstring,
+    values: [RETRO_NUM_CORE_OPTION_VALUES_MAX]RetroCoreOptionValue,
+    default_value: cstring,
+}
+
+RetroCoreOptionV2Category :: struct {
+    key: cstring,
+    display: cstring,
+    info: cstring
+}
+
+RetroCoreOptionsV2 :: struct {
+    categories: [^]RetroCoreOptionV2Category,
+    definitions: [^]RetroCoreOptionV2Definition,
+}
+
+RetroCoreOptionsV2Intl :: struct {
+    us: ^RetroCoreOptionsV2,
+    local: ^RetroCoreOptionsV2,
+}
+
+RetroLanguage :: enum {
+   English            = 0,
+   Japanese           = 1,
+   French             = 2,
+   Spanish            = 3,
+   German             = 4,
+   Italian            = 5,
+   Dutch              = 6,
+   PortugueseBrazil   = 7,
+   PortuguesePortugal = 8,
+   Russian            = 9,
+   Korean             = 10,
+   ChineseTraditional = 11,
+   ChineseSimplified  = 12,
+   Esperanto          = 13,
+   Polish             = 14,
+   Vietnamese         = 15,
+   Arabic             = 16,
+   Greek              = 17,
+   Turkish            = 18,
+   Slovak             = 19,
+   Persian            = 20,
+   Hebrew             = 21,
+   Asturian           = 22,
+   Finnish            = 23,
+   Indonesian         = 24,
+   Swedish            = 25,
+   Ukrainian          = 26,
+   Czech              = 27,
+   CatalanValencia    = 28,
+   Catalan            = 29,
+   BritishEnglish     = 30,
+   Hungarian          = 31,
+   Belarusian         = 32,
+   Galician           = 33,
+   Norwegian          = 34,
+   Last,
 }
