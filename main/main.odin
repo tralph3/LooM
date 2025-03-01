@@ -2,10 +2,12 @@ package main
 
 import "clay"
 import rl "vendor:raylib"
-import "core:fmt"
 import "core:log"
 
 main :: proc () {
+    context.logger = log.create_console_logger()
+    defer log.destroy_console_logger(context.logger)
+
     ok_init_renderer := init_raylib()
     if !ok_init_renderer {
         log.panic("Failed initializing renderer")
