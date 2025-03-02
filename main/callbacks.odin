@@ -6,20 +6,26 @@ import "core:mem"
 import "core:c"
 import "base:runtime"
 import "core:log"
+import "core:strings"
 
-retro_log_callback :: proc "c" (level: libretro.RetroLogLevel, fmt: string, args: ..any) {
+retro_log_callback :: proc "c" (level: libretro.RetroLogLevel, fmt: cstring, args: rawptr) {
     context = GLOBAL_CONTEXT
+    if args == nil {
+        return
+    }
+
+    format := strings.clone_from_cstring(fmt)
 
     // TODO: figure out how to convert c variadic args to odin
     switch level {
     case .DEBUG:
-        log.debug(fmt)
+        log.debugf(format, args)
     case .INFO:
-        log.info(fmt)
+        log.infof(format, args)
     case .WARN:
-        log.warn(fmt)
+        log.warnf(format, args)
     case .ERROR:
-        log.error(fmt)
+        log.errorf(format, args)
     }
 }
 
