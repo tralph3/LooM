@@ -4,6 +4,7 @@ import "base:runtime"
 import "core:mem"
 import "core:fmt"
 import "core:testing"
+import "core:log"
 
 CircularBuffer :: struct($Num: u64) where Num > 0 {
     read: u64,
@@ -12,11 +13,12 @@ CircularBuffer :: struct($Num: u64) where Num > 0 {
     size: u64,
 }
 
-circular_buffer_push :: proc "contextless" (b: ^$T/CircularBuffer($N), src: rawptr, data_length: u64) -> u64 {
+circular_buffer_push :: proc (b: ^$T/CircularBuffer($N), src: rawptr, data_length: u64) -> u64 {
     capacity := u64(len(b.data))
     space_left := capacity - b.size
     length := data_length
     if length > space_left {
+        log.warnf("Tried to push more data than available (%d/%d)", length, space_left)
         length = space_left
     }
     if length == 0 {
@@ -41,9 +43,10 @@ circular_buffer_push :: proc "contextless" (b: ^$T/CircularBuffer($N), src: rawp
     return length
 }
 
-circular_buffer_pop :: proc "contextless" (b: ^$T/CircularBuffer($N), dest: rawptr, data_length: u64) -> u64 {
+circular_buffer_pop :: proc (b: ^$T/CircularBuffer($N), dest: rawptr, data_length: u64) -> u64 {
     length := data_length
     if length > b.size {
+        log.warnf("Tried to pop more data than available (%d/%d)", length, b.size)
         length = b.size
     }
     if length == 0 {

@@ -5,12 +5,14 @@ import rl "vendor:raylib"
 import "core:c"
 
 audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
+    context = GLOBAL_CONTEXT
     bytes_pushed := cb.circular_buffer_push(&EMULATOR_STATE.audio_buffer.buffer, src, u64(frames * 4))
 
     return i32(bytes_pushed / 4)
 }
 
 audio_buffer_pop_batch :: proc "c" (dest: rawptr, frames: c.uint) {
+    context = GLOBAL_CONTEXT
     cb.circular_buffer_pop(&EMULATOR_STATE.audio_buffer.buffer, dest, u64(frames * 4))
 }
 
