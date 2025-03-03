@@ -21,7 +21,8 @@ EmulatorState :: struct {
     audio_buffer: AudioBuffer,
     av_info: libretro.SystemAvInfo,
     core: libretro.LibretroCore,
-    core_options: libretro.RetroCoreOptionsV2,
+    core_options_definitions: libretro.RetroCoreOptionsV2,
+    core_options: map[cstring]cstring,
 }
 
 AudioBuffer :: struct {
@@ -185,9 +186,8 @@ emulator_quit :: proc () {
     }
 }
 
-
 emulator_clone_core_options_v2 :: proc (options_union: union { libretro.RetroCoreOptionsV2, libretro.RetroCoreOptionsV2Intl }) {
-    EMULATOR_STATE.core_options = {}
+    delete(EMULATOR_STATE.core_options)
 
     options: libretro.RetroCoreOptionsV2
 
@@ -195,25 +195,64 @@ emulator_clone_core_options_v2 :: proc (options_union: union { libretro.RetroCor
     case libretro.RetroCoreOptionsV2:
         options = o
     case libretro.RetroCoreOptionsV2Intl:
-        if o.local != nil {
-            options = o.local^
-        } else  {
+        // if o.local != nil {
+        //     options = o.local^
+        // } else  {
             options = o.us^
-        }
+        // }
     }
+
+    definitions: [^]libretro.RetroCoreOptionV2Definition = raw_data(options.definitions)
+    categories: [^]libretro.RetroCoreOptionV2Category = raw_data(options.categories)
 
     def_count := 0
     for true {
-        // category := options_to_use.categories[i] // TODO: support option categorization
-        definition := options.definitions[def_count]
+        definition := definitions[def_count]
         if definition.key == nil { break }
         def_count += 1
     }
 
-    EMULATOR_STATE.core_options.definitions = make_multi_pointer([^]libretro.RetroCoreOptionV2Definition, def_count)
+    EMULATOR_STATE.core_options_definitions.definitions = make_slice([]libretro.RetroCoreOptionV2Definition, def_count)
+    EMULATOR_STATE.core_options = make(map[cstring]cstring)
 
     for i in 0..<def_count {
-        mem.copy(&EMULATOR_STATE.core_options.definitions[i].key, &options.definitions[i].key, len(options.definitions[i].key))
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].key, definitions[i].key)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].display, definitions[i].display)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].display_categorized, definitions[i].display_categorized)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].info, definitions[i].info)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].info_categorized, definitions[i].info_categorized)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].category_key, definitions[i].category_key)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].default_value, definitions[i].default_value)
 
+        for j in 0..<libretro.RETRO_NUM_CORE_OPTION_VALUES_MAX {
+            clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].values[j].value, definitions[i].values[j].value)
+            clone_cstring(&EMULATOR_STATE.core_options_definitions.definitions[i].values[j].label, definitions[i].values[j].label)
+        }
+
+        if EMULATOR_STATE.core_options_definitions.definitions[i].default_value != nil {
+            EMULATOR_STATE.core_options[EMULATOR_STATE.core_options_definitions.definitions[i].key] = EMULATOR_STATE.core_options_definitions.definitions[i].default_value
+        } else {
+            EMULATOR_STATE.core_options[EMULATOR_STATE.core_options_definitions.definitions[i].key] = EMULATOR_STATE.core_options_definitions.definitions[i].values[0].value
+        }
     }
+
+    cat_count := 0
+    for true {
+        category := categories[cat_count]
+        if category.key == nil { break }
+        cat_count += 1
+    }
+
+    EMULATOR_STATE.core_options_definitions.categories = make_slice([]libretro.RetroCoreOptionV2Category, cat_count)
+
+    for i in 0..<cat_count {
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.categories[i].key, categories[i].key)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.categories[i].display, categories[i].display)
+        clone_cstring(&EMULATOR_STATE.core_options_definitions.categories[i].info, categories[i].info)
+    }
+}
+
+clone_cstring :: proc (dest: ^cstring, src: cstring) {
+    str := strings.clone_from_cstring(src)
+    dest^ = strings.unsafe_string_to_cstring(str)
 }
