@@ -20,8 +20,7 @@ UiState :: struct {
 UI_STATE := UiState {
     pressed = false,
     selected = {
-        .NONE,
-        0
+        type = .NONE,
     },
 }
 
@@ -52,4 +51,22 @@ ui_select_prev_element :: proc () {
 
 ui_press_element :: proc () {
     UI_STATE.pressed = true
+}
+
+ui_decide_layout_and_action_state :: proc (id: UiElementId, normal_style, selected_style: cl.ElementDeclaration) -> (cl.ElementDeclaration, bool) {
+    style: cl.ElementDeclaration
+    should_press := false
+
+    if UI_STATE.selected == id {
+        style = selected_style
+
+        if UI_STATE.pressed {
+            should_press = true
+            UI_STATE.pressed = false
+        }
+    } else {
+        style = normal_style
+    }
+
+    return style, should_press
 }

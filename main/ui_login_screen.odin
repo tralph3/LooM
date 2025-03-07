@@ -10,20 +10,14 @@ USERS: []string = {
 }
 
 ui_layout_login_user_tile :: proc (username: string, index: int) {
-    id := UiElementId { .USER_TILE, index }
-    styling: cl.ElementDeclaration
-    if UI_STATE.selected == id {
-        styling = UI_USER_TILE_STYLING_SELECTED
+    style, should_press := ui_decide_layout_and_action_state(
+        { .USER_TILE, index }, UI_USER_TILE_STYLING, UI_USER_TILE_STYLING_SELECTED)
 
-        if UI_STATE.pressed {
-            login_with_user(username)
-            UI_STATE.pressed = false
-        }
-    } else {
-        styling = UI_USER_TILE_STYLING
+    if should_press {
+        login_with_user(username)
     }
 
-    if cl.UI()(styling) {
+    if cl.UI()(style) {
         cl.Text(username, cl.TextConfig({
             textColor = UI_MAIN_TEXT_COLOR,
             fontSize = UI_FONTSIZE_24,
