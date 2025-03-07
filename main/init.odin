@@ -6,7 +6,7 @@ import "core:log"
 import "base:runtime"
 import "core:strings"
 
-error_handler :: proc "c" (error: cl.ErrorData) {
+clay_log_error :: proc "c" (error: cl.ErrorData) {
     context = GLOBAL_CONTEXT
 
     str := strings.clone_from_ptr(error.errorText.chars, int(error.errorText.length), context.temp_allocator)
@@ -45,7 +45,7 @@ init_clay :: proc () -> bool {
 
     log.debug("Initializing Clay")
 
-    cl.Initialize(arena, { width = 800, height = 600 }, { handler = error_handler })
+    cl.Initialize(arena, { width = 800, height = 600 }, { handler = clay_log_error })
 
     cl.SetMeasureTextFunction(cl.measureText, nil)
 
