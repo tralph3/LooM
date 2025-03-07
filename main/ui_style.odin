@@ -3,3 +3,6 @@ package main
 import cl "clay"
 
 UI_BACKGROUND_COLOR :: cl.Color { 0x00, 0x38, 0x44, 0xFF }
+UI_SECONDARY_BACKGROUND_COLOR :: cl.Color { 0x00, 0x6C, 0x67, 0xFF }
+
+UI_MAIN_TEXT_COLOR :: cl.Color { 0xFF, 0xEB, 0xC6, 0xFF }
