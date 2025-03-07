@@ -39,7 +39,7 @@ game_entries := [][]string {
     {
         "Super Castlevania IV",
         "Kill dracula. That's it, go",
-        "cores/bsnes_libretro.so",
+        "cores/bsnes_libretro_debug.so",
         "roms/Super Castlevania IV (USA).sfc"
     },
     {
@@ -65,7 +65,7 @@ run_game_callback :: proc "c" (id: cl.ElementId, pointerData: cl.PointerData, us
 
     if pointerData.state == .PressedThisFrame {
         game_index := int(uintptr(userData))
-        emulator_run_game(game_entries[game_index][2], game_entries[game_index][3])
+        run_game(game_entries[game_index][2], game_entries[game_index][3])
     }
 }
 
@@ -93,10 +93,38 @@ sidebar_entry :: proc (label: string, type: MenuType) {
     }
 }
 
+// setting :: proc (index: int) {
+//     if cl.UI()({
+//         layout = {
+//             sizing = {
+//                 width = cl.SizingGrow({}),
+//                 height = cl.SizingFit({ 50, 0 }),
+//             },
+//             layoutDirection = .TopToBottom,
+//         },
+//     }) {
+//         option := STATE.core_options_definitions.definitions[index]
+//         // cl.OnHover(run_game_callback, rawptr(uintptr(index)))
+//         cl.Text(string(option.display), cl.TextConfig({
+//             textColor = { 255, 255, 255, 255 },
+//             fontSize = 20,
+//             textAlignment = .Left,
+//         }))
+//         cl.Text(string(option.info), cl.TextConfig({
+//             textColor = { 255, 255, 255, 255 },
+//             fontSize = 14,
+//             textAlignment = .Left,
+//         }))
+//     }
+// }
+
 menu_entry :: proc (title, description: string, index: int) {
     if cl.UI()({
         layout = {
-            sizing = { width = cl.SizingGrow({}), height = cl.SizingFixed(50), },
+            sizing = {
+                width = cl.SizingGrow({}),
+                height = cl.SizingFit({ 50, 0 }),
+            },
             layoutDirection = .TopToBottom,
         },
     }) {

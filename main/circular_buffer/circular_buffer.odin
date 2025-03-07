@@ -18,7 +18,7 @@ circular_buffer_push :: proc (b: ^$T/CircularBuffer($N), src: rawptr, data_lengt
     space_left := capacity - b.size
     length := data_length
     if length > space_left {
-        log.warnf("Tried to push more data than available (%d/%d)", length, space_left)
+        // log.warnf("Tried to push more data than available (%d/%d)", length, space_left)
         length = space_left
     }
     if length == 0 {
@@ -46,7 +46,7 @@ circular_buffer_push :: proc (b: ^$T/CircularBuffer($N), src: rawptr, data_lengt
 circular_buffer_pop :: proc (b: ^$T/CircularBuffer($N), dest: rawptr, data_length: u64) -> u64 {
     length := data_length
     if length > b.size {
-        log.warnf("Tried to pop more data than available (%d/%d)", length, b.size)
+        // log.warnf("Tried to pop more data than available (%d/%d)", length, b.size)
         length = b.size
     }
     if length == 0 {

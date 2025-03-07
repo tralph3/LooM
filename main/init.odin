@@ -47,13 +47,16 @@ init_clay :: proc () -> bool {
 
     cl.SetMeasureTextFunction(cl.measureText, nil)
 
-    // load_font(0, rl.GetFontDefault())
+    // cl.SetDebugModeEnabled(true)
+
     load_font(0, 24, "assets/Ubuntu.ttf")
+
+    STATE.clay_arena = arena
 
     return true
 }
 
-load_font_path :: proc(fontId: u16, fontSize: u16, path: cstring) {
+load_font_path :: proc (fontId: u16, fontSize: u16, path: cstring) {
     cl.raylibFonts[fontId] = {
         font   = rl.LoadFontEx(path, cast(i32)fontSize * 2, nil, 0),
         fontId = u16(fontId),
@@ -61,7 +64,7 @@ load_font_path :: proc(fontId: u16, fontSize: u16, path: cstring) {
     rl.SetTextureFilter(cl.raylibFonts[fontId].font.texture, rl.TextureFilter.TRILINEAR)
 }
 
-load_font_struct :: proc(fontId: u16, font: rl.Font) {
+load_font_struct :: proc (fontId: u16, font: rl.Font) {
     cl.raylibFonts[fontId] = {
         font   = font,
         fontId = u16(fontId),

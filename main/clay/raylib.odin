@@ -3,6 +3,7 @@ package clay
 import "core:math"
 import "core:strings"
 import "vendor:raylib"
+import "base:runtime"
 
 RaylibFont :: struct {
     fontId: u16,
@@ -16,35 +17,19 @@ clayColorToRaylibColor :: proc(color: Color) -> raylib.Color {
 raylibFonts := [10]RaylibFont{}
 
 measureText :: proc "c" (text: StringSlice, config: ^TextElementConfig, userData: rawptr) -> Dimensions {
-    // Measure string size for Font
-    textSize: Dimensions = {0, 0}
+    context = runtime.default_context()
 
-    maxTextWidth: f32 = 0
-    lineTextWidth: f32 = 0
+    cloned := strings.clone_to_cstring(string(text.chars[:text.length]), context.temp_allocator)
+    result := raylib.MeasureTextEx(
+        raylibFonts[config.fontId].font,
+        cloned,
+        f32(config.fontSize),
+        f32(config.letterSpacing))
 
-    textHeight := f32(config.fontSize)
-    fontToUse := raylibFonts[config.fontId].font
-
-    for i in 0 ..< int(text.length) {
-        if (text.chars[i] == '\n') {
-            maxTextWidth = max(maxTextWidth, lineTextWidth)
-            lineTextWidth = 0
-            continue
-        }
-        index := cast(i32)text.chars[i] - 32
-        if (fontToUse.glyphs[index].advanceX != 0) {
-            lineTextWidth += f32(fontToUse.glyphs[index].advanceX)
-        } else {
-            lineTextWidth += (fontToUse.recs[index].width + f32(fontToUse.glyphs[index].offsetX))
-        }
+    return {
+        width = result.x,
+        height = result.y
     }
-
-    maxTextWidth = max(maxTextWidth, lineTextWidth)
-
-    textSize.width = maxTextWidth / 2
-    textSize.height = textHeight
-
-    return textSize
 }
 
 clayRaylibRender :: proc(renderCommands: ^ClayArray(RenderCommand), allocator := context.temp_allocator) {

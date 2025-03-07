@@ -141,9 +141,9 @@ RetroDevice :: enum c.int {
 }
 
 RetroPixelFormat :: enum c.int {
-   F0RGB1555 = 0,
-   FXRGB8888 = 1,
-   FRGB565   = 2,
+   ZRGB1555 = 0,
+   XRGB8888 = 1,
+   RGB565   = 2,
 }
 
 RetroVariable :: struct {

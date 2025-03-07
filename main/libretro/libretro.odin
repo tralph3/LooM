@@ -8,7 +8,10 @@ import "core:log"
 
 LibretroCore :: struct {
     loaded: bool,
+    api: LibretroCoreAPI,
+}
 
+LibretroCoreAPI :: struct {
     init: proc "c" (),
     load_game: proc "c" (^GameInfo) -> bool,
     set_environment: proc "c" (proc "c" (RetroEnvironment, rawptr) -> bool),
@@ -26,8 +29,8 @@ LibretroCore :: struct {
 }
 
 load_core :: proc (core_path: string) -> (LibretroCore, bool) {
-    core := LibretroCore{}
-    count, ok := dynlib.initialize_symbols(&core, core_path, "retro_")
+    core := LibretroCore {}
+    count, ok := dynlib.initialize_symbols(&core.api, core_path, "retro_")
     if !ok {
         log.error("Failed loading libretro core")
         return core, false
@@ -39,21 +42,21 @@ load_core :: proc (core_path: string) -> (LibretroCore, bool) {
 }
 
 unload_core :: proc (core: LibretroCore) {
-    core.unload_game()
-    core.deinit()
-    dynlib.unload_library(core.__handle)
+    core.api.unload_game()
+    core.api.deinit()
+    dynlib.unload_library(core.api.__handle)
 }
 
 initialize_core :: proc (core: ^LibretroCore, callbacks: ^Callbacks) {
-    core.set_environment(callbacks.environment)
+    core.api.set_environment(callbacks.environment)
 
-    core.init()
+    core.api.init()
 
-    core.set_video_refresh(callbacks.video_refresh)
-    core.set_input_poll(callbacks.input_poll)
-    core.set_audio_sample(callbacks.audio_sample)
-    core.set_audio_sample_batch(callbacks.audio_sample_batch)
-    core.set_input_state(callbacks.input_state)
+    core.api.set_video_refresh(callbacks.video_refresh)
+    core.api.set_input_poll(callbacks.input_poll)
+    core.api.set_audio_sample(callbacks.audio_sample)
+    core.api.set_audio_sample_batch(callbacks.audio_sample_batch)
+    core.api.set_input_state(callbacks.input_state)
 }
 
 load_rom :: proc (core: ^LibretroCore, rom_path: string) -> bool {
@@ -65,6 +68,7 @@ load_rom :: proc (core: ^LibretroCore, rom_path: string) -> bool {
         return false
     }
 
+    // data and path are freed by the core
     info := GameInfo {
         path = strings.clone_to_cstring(rom_path),
         data = &rom_contents,
@@ -72,7 +76,7 @@ load_rom :: proc (core: ^LibretroCore, rom_path: string) -> bool {
         meta = "",
     }
 
-    ok_load_game := core.load_game(&info)
+    ok_load_game := core.api.load_game(&info)
     if !ok_load_game {
         log.errorf("Failed loading rom '%s'", rom_path)
         return false

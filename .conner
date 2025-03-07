@@ -1,5 +1,8 @@
 ;;; -*- lisp-data -*-
-((:name "Test"
+((:name "Build debug"
+        :command "odin build main -debug -out:build/debug"
+        :type "compile")
+ (:name "Test"
         :command "odin test main -all-packages"
         :type "compile")
  (:name "Debug"
