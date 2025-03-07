@@ -43,6 +43,7 @@ ui_layout_login_screen :: proc () {
             },
             childGap = UI_USER_TILE_GAP,
         },
+        scroll = { horizontal = true }
     }) {
         ui_layout_login_user_tile("tralph3")
         ui_layout_login_user_tile("urmom")
