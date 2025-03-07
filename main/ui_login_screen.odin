@@ -3,7 +3,7 @@ package main
 import cl "clay"
 
 UI_USER_TILE_SIZE :: 120
-UI_USER_TILE_GAP :: 16
+UI_USER_TILE_GAP :: UI_SPACING_16
 
 ui_layout_login_user_tile :: proc (name: string) {
     if cl.UI()({
@@ -18,12 +18,10 @@ ui_layout_login_user_tile :: proc (name: string) {
                 y = .Bottom,
             },
         },
-        cornerRadius = {20, 20, 20, 20},
     }) {
-
         cl.Text(name, cl.TextConfig({
             textColor = UI_MAIN_TEXT_COLOR,
-            fontSize = 24,
+            fontSize = UI_FONTSIZE_24,
         }))
     }
 }
