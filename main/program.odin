@@ -13,8 +13,6 @@ VALID_STATE_CHANGES: map[PossibleStates][]PossibleStates = {
 
 quit :: proc () {
     unload_core()
-
-    rl.CloseWindow()
 }
 
 is_valid_state_change :: proc (from, to: PossibleStates) -> bool {
