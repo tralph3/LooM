@@ -5,10 +5,6 @@ import cl "clay"
 import rl "vendor:raylib"
 
 render :: proc () {
-    rl.BeginDrawing()
-
-    rl.ClearBackground(rl.BLACK)
-
     cl.BeginLayout()
 
     switch STATE.state {
@@ -23,7 +19,12 @@ render :: proc () {
     }
 
     layout := cl.EndLayout()
+
+    rl.BeginDrawing()
+
+    rl.ClearBackground(rl.BLACK)
     cl.clayRaylibRender(&layout)
+    rl.DrawFPS(0, 0)
 
     rl.EndDrawing()
 }
