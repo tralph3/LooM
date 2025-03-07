@@ -13,6 +13,7 @@ PossibleStates :: enum {
 ProgramState :: struct {
     state: PossibleStates,
     input: [16]i16,
+    current_user: string,
     video: FrameBuffer,
     audio: AudioBuffer,
     av_info: lr.SystemAvInfo,

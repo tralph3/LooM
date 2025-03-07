@@ -16,7 +16,22 @@ process_input :: proc () {
     STATE.input[RetroDevice.IdJoypadX]      = i16(rl.IsKeyDown(.W))
     STATE.input[RetroDevice.IdJoypadY]      = i16(rl.IsKeyDown(.A))
 
-    if rl.IsKeyPressed(rl.KeyboardKey.ESCAPE) {
-        change_state(.PAUSED)
+    if rl.IsKeyPressed(.ESCAPE) {
+        #partial switch STATE.state {
+        case .RUNNING:
+            change_state(.PAUSED)
+        case .MENU:
+            logout()
+        }
+    }
+
+    if rl.IsKeyPressed(.RIGHT) {
+        ui_select_next_element()
+    } else if rl.IsKeyPressed(.LEFT) {
+        ui_select_prev_element()
+    }
+
+    if rl.IsKeyPressed(.ENTER) {
+        ui_press_element()
     }
 }

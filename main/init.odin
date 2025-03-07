@@ -5,6 +5,7 @@ import cl "clay"
 import "core:log"
 import "base:runtime"
 import "core:strings"
+import "core:c"
 
 clay_log_error :: proc "c" (error: cl.ErrorData) {
     context = GLOBAL_CONTEXT
@@ -41,7 +42,7 @@ init_clay :: proc () -> bool {
 
     log.debug("Initializing Clay arena")
 
-    arena := cl.CreateArenaWithCapacityAndMemory(memory_size, memory)
+    arena := cl.CreateArenaWithCapacityAndMemory(c.size_t(memory_size), memory)
 
     log.debug("Initializing Clay")
 

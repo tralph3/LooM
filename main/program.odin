@@ -33,3 +33,19 @@ change_state :: proc (new_state: PossibleStates, location := #caller_location) {
 
     STATE.state = new_state
 }
+
+login_with_user :: proc (username: string) {
+    log.infof("User '%s' logging in...", username)
+
+    STATE.current_user = username
+
+    change_state(.MENU)
+}
+
+logout :: proc () {
+    log.infof("User '%s' logging out...", STATE.current_user)
+
+    STATE.current_user = ""
+
+    change_state(.LOGIN)
+}
