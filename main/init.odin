@@ -4,11 +4,13 @@ import rl "vendor:raylib"
 import cl "clay"
 import "core:log"
 import "base:runtime"
+import "core:strings"
 
 error_handler :: proc "c" (error: cl.ErrorData) {
     context = GLOBAL_CONTEXT
 
-    log.error(error.errorText)
+    str := strings.clone_from_ptr(error.errorText.chars, int(error.errorText.length), context.temp_allocator)
+    log.errorf("%s: %s", error.errorType, str)
 }
 
 init_raylib :: proc () -> bool {
