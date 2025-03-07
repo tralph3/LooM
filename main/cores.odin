@@ -33,7 +33,7 @@ run_game :: proc (core_path: string, rom_path: string) {
     render_texture_init()
     audio_buffer_init()
 
-    STATE.state = .RUNNING
+    change_state(.RUNNING)
 }
 
 unload_core :: proc () {

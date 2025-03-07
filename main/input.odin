@@ -3,7 +3,7 @@ package main
 import rl "vendor:raylib"
 import lr "libretro"
 
-process_input :: proc "c" () {
+process_input :: proc () {
     using lr
     STATE.input[RetroDevice.IdJoypadLeft]   = i16(rl.IsKeyDown(.LEFT))
     STATE.input[RetroDevice.IdJoypadRight]  = i16(rl.IsKeyDown(.RIGHT))
@@ -17,6 +17,6 @@ process_input :: proc "c" () {
     STATE.input[RetroDevice.IdJoypadY]      = i16(rl.IsKeyDown(.A))
 
     if rl.IsKeyPressed(rl.KeyboardKey.ESCAPE) {
-        STATE.state = .PAUSED
+        change_state(.PAUSED)
     }
 }
