@@ -4,14 +4,14 @@ import "core:time"
 import rl "vendor:raylib"
 import cl "clay"
 
-should_process_frame :: proc (fps: f64, last_time: time.Time) -> bool {
+should_process_frame :: #force_inline proc (fps: f64, last_time: time.Time) -> bool {
     frame_time := 1 / fps
 
     elapsed_time := time.since(last_time)
     return time.duration_seconds(elapsed_time) > frame_time
 }
 
-update_clay_state :: proc () {
+update_clay_state :: #force_inline proc () {
     cl.SetLayoutDimensions({
         width = f32(rl.GetScreenWidth()),
         height = f32(rl.GetScreenHeight()),
