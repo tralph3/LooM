@@ -9,7 +9,6 @@ render :: proc () {
     cl.BeginLayout()
 
     switch STATE.state {
-
     case .RUNNING:
         ui_layout_running_screen()
     case .MENU:

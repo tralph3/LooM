@@ -33,6 +33,11 @@ change_state :: proc (new_state: States, location := #caller_location) {
     }
 
     STATE.state = new_state
+    UI_STATE.selected_list.index = 0
+    UI_STATE.selected_list.elem_type = .NONE
+    UI_STATE.selected_list.next_list = nil
+    UI_STATE.selected_list.prev_list = nil
+
     switch new_state {
     case .LOGIN:
         ui_login_init()

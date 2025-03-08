@@ -10,6 +10,7 @@ UiElementId :: struct {
 UiElementType :: enum {
     NONE,
     USER_TILE,
+    MAIN_MENU_ENTRY,
 }
 
 UiListOrientation :: enum {
@@ -35,7 +36,6 @@ UI_STATE := UiState {
     pressed = false,
     selected_list = {
         elem_type = .NONE,
-        next_list = &UserListDefinition,
     },
 }
 

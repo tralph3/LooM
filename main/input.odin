@@ -16,12 +16,9 @@ process_input :: proc () {
     STATE.input[RetroDevice.IdJoypadX]      = i16(rl.IsKeyDown(.W)         || rl.IsGamepadButtonDown(0, .RIGHT_FACE_UP))
     STATE.input[RetroDevice.IdJoypadY]      = i16(rl.IsKeyDown(.A)         || rl.IsGamepadButtonDown(0, .RIGHT_FACE_LEFT))
 
-    if rl.IsKeyPressed(.ESCAPE) || rl.IsGamepadButtonPressed(0, .RIGHT_FACE_RIGHT) {
-        #partial switch STATE.state {
-        case .RUNNING:
+    if rl.IsKeyPressed(.ESCAPE) || rl.IsGamepadButtonPressed(0, .MIDDLE_RIGHT) {
+        if STATE.state == .RUNNING {
             change_state(.PAUSED)
-        case .MENU:
-            logout()
         }
     }
 

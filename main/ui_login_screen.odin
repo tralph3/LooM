@@ -10,6 +10,7 @@ UserListDefinition: UiListDefinition = {
 
 ui_login_init :: proc () {
     UserListDefinition.elem_count = len(STATE.config.users)
+    UI_STATE.selected_list.next_list = &UserListDefinition
 }
 
 ui_layout_login_user_tile :: proc (username: string, index: int) {
@@ -31,7 +32,7 @@ ui_layout_login_user_tile :: proc (username: string, index: int) {
 ui_layout_login_screen :: proc () {
     if cl.UI()({
         id = cl.ID("Main Container"),
-        backgroundColor = UI_BACKGROUND_COLOR,
+        backgroundColor = UI_COLOR_BACKGROUND,
         layout = {
             sizing = {
                 width = cl.SizingGrow({}),
