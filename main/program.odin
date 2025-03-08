@@ -4,7 +4,7 @@ package main
 import rl "vendor:raylib"
 import "core:log"
 
-VALID_STATE_CHANGES: map[PossibleStates][]PossibleStates = {
+VALID_STATE_CHANGES: map[States][]States = {
     .LOGIN = { .MENU },
     .MENU = { .RUNNING, .LOGIN },
     .RUNNING = { .PAUSED, .MENU },
@@ -15,7 +15,7 @@ quit :: proc () {
     unload_core()
 }
 
-is_valid_state_change :: proc (from, to: PossibleStates) -> bool {
+is_valid_state_change :: proc (from, to: States) -> bool {
     for i in VALID_STATE_CHANGES[from] {
         if i == to { return true }
     }
@@ -23,7 +23,7 @@ is_valid_state_change :: proc (from, to: PossibleStates) -> bool {
     return false
 }
 
-change_state :: proc (new_state: PossibleStates, location := #caller_location) {
+change_state :: proc (new_state: States, location := #caller_location) {
     if !is_valid_state_change(STATE.state, new_state) {
         log.errorf(
             "Attempting invalid state change in %s. From %s to %s",

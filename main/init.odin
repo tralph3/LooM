@@ -16,6 +16,7 @@ clay_log_error :: proc "c" (error: cl.ErrorData) {
 
 init_raylib :: proc () -> bool {
     rl.SetConfigFlags({.WINDOW_RESIZABLE})
+
     rl.SetTraceLogLevel(rl.TraceLogLevel.NONE)
 
     log.debug("Initializing Raylib window")

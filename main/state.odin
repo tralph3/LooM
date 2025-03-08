@@ -3,7 +3,7 @@ package main
 import lr "libretro"
 import cl "clay"
 
-PossibleStates :: enum {
+States :: enum {
     LOGIN,
     MENU,
     RUNNING,
@@ -11,7 +11,7 @@ PossibleStates :: enum {
 }
 
 ProgramState :: struct {
-    state: PossibleStates,
+    state: States,
     input: [16]i16,
     current_user: string,
     video: FrameBuffer,
