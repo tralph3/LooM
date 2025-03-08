@@ -92,7 +92,9 @@ ui_select_down :: proc () {
 }
 
 ui_press_element :: proc () {
-    UI_STATE.pressed = true
+    if (UI_STATE.selected_list.elem_type != .NONE) {
+        UI_STATE.pressed = true
+    }
 }
 
 ui_decide_layout_and_action_state :: proc (id: UiElementId, normal_style, selected_style: cl.ElementDeclaration) -> (cl.ElementDeclaration, bool) {
