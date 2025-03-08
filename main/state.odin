@@ -12,6 +12,7 @@ States :: enum {
 
 ProgramState :: struct {
     state: States,
+    config: Config,
     input: [16]i16,
     current_user: string,
     video: FrameBuffer,
@@ -33,5 +34,6 @@ STATE := ProgramState {
         timing = {
             fps = 60,
         }
-    }
+    },
+    config = config_load_default(),
 }
