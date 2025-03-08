@@ -3,11 +3,13 @@ package main
 import "base:runtime"
 import cl "clay"
 import rl "vendor:raylib"
+import "core:log"
 
 render :: proc () {
     cl.BeginLayout()
 
     switch STATE.state {
+
     case .RUNNING:
         ui_layout_running_screen()
     case .MENU:
@@ -16,6 +18,8 @@ render :: proc () {
         ui_layout_pause_screen()
     case .LOGIN:
         ui_layout_login_screen()
+    case .INIT:
+        log.fatal("Attempted rendering INIT state")
     }
 
     layout := cl.EndLayout()

@@ -4,6 +4,7 @@ import lr "libretro"
 import cl "clay"
 
 States :: enum {
+    INIT,
     LOGIN,
     MENU,
     RUNNING,
@@ -23,7 +24,7 @@ ProgramState :: struct {
 }
 
 STATE := ProgramState {
-    state = .LOGIN,
+    state = .INIT,
     video = FrameBuffer {
         pixel_format = lr.RetroPixelFormat.ZRGB1555
     },

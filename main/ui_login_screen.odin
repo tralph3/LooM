@@ -1,12 +1,15 @@
 package main
 
 import cl "clay"
+import "core:log"
 
-USERS: []string = {
-    "tralph3",
-    "urmom",
-    "xXx__slayer__xXx",
-    "takenUser420"
+UserListDefinition: UiListDefinition = {
+    orientation = .Horizontal,
+    elem_type = .USER_TILE,
+}
+
+ui_login_init :: proc () {
+    UserListDefinition.elem_count = len(STATE.config.users)
 }
 
 ui_layout_login_user_tile :: proc (username: string, index: int) {
@@ -42,7 +45,7 @@ ui_layout_login_screen :: proc () {
         },
         scroll = { horizontal = true }
     }) {
-        for username, index in USERS {
+        for username, index in STATE.config.users {
             ui_layout_login_user_tile(username, index)
         }
     }

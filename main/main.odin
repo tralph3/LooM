@@ -45,6 +45,8 @@ init :: proc () {
         log.debug("Successfully initialized UI")
     }
 
+    change_state(.LOGIN)
+
     main_loop()
 
     quit()

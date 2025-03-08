@@ -2,50 +2,92 @@ package main
 
 import cl "clay"
 
-UiElementType :: enum {
-    NONE,
-    USER_TILE,
-}
-
 UiElementId :: struct {
     type: UiElementType,
     index: int,
 }
 
+UiElementType :: enum {
+    NONE,
+    USER_TILE,
+}
+
+UiListOrientation :: enum {
+    Horizontal,
+    Vertical,
+}
+
+UiListDefinition :: struct {
+    orientation: UiListOrientation,
+    index: int,
+    elem_type: UiElementType,
+    elem_count: int,
+    next_list: ^UiListDefinition,
+    prev_list: ^UiListDefinition,
+}
+
 UiState :: struct {
-    selected: UiElementId,
+    selected_list: UiListDefinition,
     pressed: bool,
 }
 
 UI_STATE := UiState {
     pressed = false,
-    selected = {
-        type = .NONE,
+    selected_list = {
+        elem_type = .NONE,
+        next_list = &UserListDefinition,
     },
 }
 
-ui_select_next_element :: proc () {
-    new_index := min(UI_STATE.selected.index + 1, 3)
+ui_select_right :: proc () {
+    if UI_STATE.selected_list.elem_type == .NONE {
+        UI_STATE.selected_list = UI_STATE.selected_list.next_list^
+        return
+    }
 
-    #partial switch STATE.state {
-    case .LOGIN:
-        if UI_STATE.selected.type != .USER_TILE {
-            UI_STATE.selected = { .USER_TILE, 0 }
-        } else {
-            UI_STATE.selected = { .USER_TILE, new_index }
-        }
+    if UI_STATE.selected_list.orientation == .Horizontal {
+        UI_STATE.selected_list.index = min(UI_STATE.selected_list.index + 1, UI_STATE.selected_list.elem_count - 1)
+    } else if UI_STATE.selected_list.next_list != nil {
+        UI_STATE.selected_list = UI_STATE.selected_list.next_list^
     }
 }
 
-ui_select_prev_element :: proc () {
-    new_index := max(0, UI_STATE.selected.index - 1)
-    #partial switch STATE.state {
-    case .LOGIN:
-        if UI_STATE.selected.type != .USER_TILE {
-            UI_STATE.selected = { .USER_TILE, 0 }
-        } else {
-            UI_STATE.selected = { .USER_TILE, new_index }
-        }
+ui_select_left :: proc () {
+    if UI_STATE.selected_list.elem_type == .NONE {
+        UI_STATE.selected_list = UI_STATE.selected_list.next_list^
+        return
+    }
+
+    if UI_STATE.selected_list.orientation == .Horizontal {
+        UI_STATE.selected_list.index = max(UI_STATE.selected_list.index - 1, 0)
+    } else if UI_STATE.selected_list.prev_list != nil {
+        UI_STATE.selected_list = UI_STATE.selected_list.prev_list^
+    }
+}
+
+ui_select_up :: proc () {
+    if UI_STATE.selected_list.elem_type == .NONE {
+        UI_STATE.selected_list = UI_STATE.selected_list.next_list^
+        return
+    }
+
+    if UI_STATE.selected_list.orientation == .Vertical {
+        UI_STATE.selected_list.index = max(UI_STATE.selected_list.index - 1, 0)
+    } else if UI_STATE.selected_list.prev_list != nil {
+        UI_STATE.selected_list = UI_STATE.selected_list.prev_list^
+    }
+}
+
+ui_select_down :: proc () {
+    if UI_STATE.selected_list.elem_type == .NONE {
+        UI_STATE.selected_list = UI_STATE.selected_list.next_list^
+        return
+    }
+
+    if UI_STATE.selected_list.orientation == .Vertical {
+        UI_STATE.selected_list.index = min(UI_STATE.selected_list.index + 1, UI_STATE.selected_list.elem_count - 1)
+    } else if UI_STATE.selected_list.next_list != nil {
+        UI_STATE.selected_list = UI_STATE.selected_list.next_list^
     }
 }
 
@@ -57,7 +99,7 @@ ui_decide_layout_and_action_state :: proc (id: UiElementId, normal_style, select
     style: cl.ElementDeclaration
     should_press := false
 
-    if UI_STATE.selected == id {
+    if UI_STATE.selected_list.elem_type == id.type && UI_STATE.selected_list.index == id.index {
         style = selected_style
 
         if UI_STATE.pressed {

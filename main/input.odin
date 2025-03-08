@@ -26,9 +26,13 @@ process_input :: proc () {
     }
 
     if rl.IsKeyPressed(.RIGHT) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_RIGHT){
-        ui_select_next_element()
-    } else if rl.IsKeyPressed(.LEFT) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_LEFT){
-        ui_select_prev_element()
+        ui_select_right()
+    } else if rl.IsKeyPressed(.LEFT) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_LEFT) {
+        ui_select_left()
+    } else if rl.IsKeyPressed(.UP) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_UP) {
+        ui_select_up()
+    } else if rl.IsKeyPressed(.DOWN) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_DOWN) {
+        ui_select_down()
     }
 
     if rl.IsKeyPressed(.ENTER) || rl.IsGamepadButtonPressed(0, .RIGHT_FACE_DOWN) {

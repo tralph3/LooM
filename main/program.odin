@@ -5,6 +5,7 @@ import rl "vendor:raylib"
 import "core:log"
 
 VALID_STATE_CHANGES: map[States][]States = {
+    .INIT = { .LOGIN },
     .LOGIN = { .MENU },
     .MENU = { .RUNNING, .LOGIN },
     .RUNNING = { .PAUSED, .MENU },
@@ -32,6 +33,19 @@ change_state :: proc (new_state: States, location := #caller_location) {
     }
 
     STATE.state = new_state
+    switch new_state {
+    case .LOGIN:
+        ui_login_init()
+    case .RUNNING:
+        ui_running_init()
+    case .MENU:
+        ui_menu_init()
+    case .PAUSED:
+        ui_paused_init()
+    case .INIT:
+        log.fatal("Switched to INIT state")
+    }
+
 }
 
 login_with_user :: proc (username: string) {
