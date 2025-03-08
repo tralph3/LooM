@@ -30,9 +30,7 @@ process_input :: proc () {
         ui_select_up()
     } else if rl.IsKeyPressed(.DOWN) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_DOWN) {
         ui_select_down()
-    }
-
-    if rl.IsKeyPressed(.ENTER) || rl.IsGamepadButtonPressed(0, .RIGHT_FACE_DOWN) {
+    } else if rl.IsKeyPressed(.ENTER) || rl.IsGamepadButtonPressed(0, .RIGHT_FACE_DOWN) {
         ui_press_element()
     }
 }
