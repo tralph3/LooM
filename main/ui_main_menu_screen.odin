@@ -22,7 +22,7 @@ ui_handle_menu_item_press :: proc (entry: UiMenuEntries) {
         case .Logout:
         logout()
         case .Quit:
-        log.warn("Exiting not yet implemented")
+        STATE.should_exit = true
     }
 }
 

@@ -33,7 +33,7 @@ update_clay_state :: #force_inline proc () {
 main_loop :: proc () {
     last_time := time.Time { _nsec = 0 }     // 2k38 compliant lulz
 
-    for !rl.WindowShouldClose() {
+    for !STATE.should_exit && !rl.WindowShouldClose() {
         if (!should_process_frame(STATE.av_info.timing.fps, last_time)) {
             continue
         }

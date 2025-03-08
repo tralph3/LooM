@@ -21,6 +21,7 @@ ProgramState :: struct {
     av_info: lr.SystemAvInfo,
     core: lr.LibretroCore,
     clay_arena: cl.Arena,
+    should_exit: bool,
 }
 
 STATE := ProgramState {
@@ -37,4 +38,5 @@ STATE := ProgramState {
         }
     },
     config = config_load_default(),
+    should_exit = false,
 }
