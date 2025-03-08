@@ -41,7 +41,7 @@ ui_layout_menu_entry :: proc (entry: UiMenuEntries) {
 
     if cl.UI()(style) {
         cl.Text(fmt.aprint(entry), cl.TextConfig({
-            textColor = UI_MAIN_TEXT_COLOR,
+            textColor = UI_COLOR_MAIN_TEXT,
             fontSize = UI_FONTSIZE_24,
         }))
     }
@@ -61,12 +61,39 @@ ui_layout_main_menu_screen :: proc () {
                     height = cl.SizingGrow({}),
                 },
                 layoutDirection = .TopToBottom,
-                childAlignment = {
-                    y = .Bottom,
-                },
             },
             backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
         }) {
+            if cl.UI()({
+                layout = {
+                    sizing = {
+                        width = cl.SizingGrow({}),
+                        height = cl.SizingFit({})
+                    },
+                    childAlignment = {
+                        x = .Center,
+                        y = .Center,
+                    },
+                    padding = cl.PaddingAll(UI_SPACING_32),
+                }
+            }) {
+                cl.Text(STATE.current_user, cl.TextConfig({
+                    textAlignment = .Center,
+                    textColor = UI_COLOR_MAIN_TEXT,
+                    fontSize = UI_FONTSIZE_48
+                }))
+            }
+
+
+            if cl.UI()({
+                layout = {
+                    sizing = {
+                        width = cl.SizingGrow({}),
+                        height = cl.SizingGrow({}),
+                    },
+                },
+            }) {}
+
             for entry in UiMenuEntries {
                 ui_layout_menu_entry(entry)
             }

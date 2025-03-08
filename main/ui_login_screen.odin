@@ -23,7 +23,7 @@ ui_layout_login_user_tile :: proc (username: string, index: int) {
 
     if cl.UI()(style) {
         cl.Text(username, cl.TextConfig({
-            textColor = UI_MAIN_TEXT_COLOR,
+            textColor = UI_COLOR_MAIN_TEXT,
             fontSize = UI_FONTSIZE_24,
         }))
     }
