@@ -13,8 +13,8 @@ void c_log_callback(int log_level, const char *fmt, ...) {
     int n = vsnprintf(buf, BUFFER_SIZE, fmt, ap);
     va_end(ap);
 
-    if (n >= BUFFER_SIZE) {
-        n = BUFFER_SIZE - 1;
+    if (n > BUFFER_SIZE) {
+        n = BUFFER_SIZE;
     }
 
     odin_log_callback(log_level, buf, n);
