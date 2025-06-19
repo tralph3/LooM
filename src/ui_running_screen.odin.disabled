@@ -1,0 +1,21 @@
+package main
+
+import cl "clay"
+import rl "vendor:raylib"
+
+ui_running_init :: proc () {
+
+}
+
+ui_layout_running_screen :: proc () {
+    STATE.core.api.run()
+
+    if cl.UI()({
+        layout = {
+            sizing = { cl.SizingGrow({}), cl.SizingGrow({}) }
+        },
+        custom = {
+            customData = rawptr(&STATE.video.render_texture),
+        },
+    }) {}
+}
