@@ -242,5 +242,5 @@ RetroLogLevel :: enum c.int {
 }
 
 RetroLogCallback :: struct {
-    log: proc "c" (RetroLogLevel, cstring, c.va_list)
+    log: proc "c" (RetroLogLevel, cstring, #c_vararg ..any)
 }

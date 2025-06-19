@@ -587,30 +587,7 @@ env_callback_get_camera_interface :: proc (data: rawptr) { // TODO
  * @note Cores can fall back to \c stderr if this interface is not available.
  */
 env_callback_get_log_interface :: proc(data: rawptr) { // TODO
-    ((^lr.RetroLogCallback)(data)^).log = proc "c" (log_level: lr.RetroLogLevel, fmt: cstring, args: c.va_list) {
-        context = GLOBAL_STATE.ctx
-
-        // args := args
-        // buf: [1024]byte
-
-        // count := min(len(buf) - 1, libc.vsnprintf(raw_data(buf[:]), len(buf), fmt, args))
-        // msg := strings.string_from_ptr(raw_data(buf[:]), int(count))
-
-        //full_msg := strings.concatenate({"CORE: ", msg})
-        full_msg := strings.concatenate({"CORE: ", string(fmt)})
-        defer delete(full_msg)
-
-        switch log_level {
-        case .DEBUG:
-            log.debug(full_msg)
-        case .INFO:
-            log.info(full_msg)
-        case .WARN:
-            log.warn(full_msg)
-        case .ERROR:
-            log.error(full_msg)
-        }
-    }
+    ((^lr.RetroLogCallback)(data)^).log = c_log_callback
 }
 
 /**
