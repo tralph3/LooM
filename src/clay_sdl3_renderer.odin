@@ -6,6 +6,7 @@ import "vendor:sdl3/ttf"
 import "core:math"
 import "core:log"
 import "core:c"
+import gl "vendor:OpenGL"
 
 /* Global for convenience. Even in 4K this is enough for smooth curves (low radius or rect size coupled with
  * no AA or low resolution might make it appear as jagged curves) */
@@ -284,9 +285,26 @@ SDL_Clay_RenderClayCommands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand))
             sdl.SetRenderClipRect(GLOBAL_STATE.video_state.renderer, nil)
         }
         case .Image: {
-            texture := (^sdl.Texture)(rcmd.renderData.image.imageData)
+            bind_framebuffer := (proc "c" (i32, u32))(sdl.GL_GetProcAddress("glBindFramebuffer"))
+            read_pixels := (proc "c" (x, y, width, height: i32, format, type: u32, pixels: rawptr))(sdl.GL_GetProcAddress("glReadPixels"))
+            blit_framebuffer := (proc "c" (srcX0: i32, srcY0: i32, srcX1: i32, srcY1: i32, dstX0: i32, dstY0: i32, dstX1: i32, dstY1: i32, mask: u32, filter: u32))(sdl.GL_GetProcAddress("glBlitFramebuffer"))
+            get_error := (proc "c" () -> u32)(sdl.GL_GetProcAddress("glGetError"))
+            read_buffer := (proc "c" (u32))(sdl.GL_GetProcAddress("glReadBuffer"))
+            get_tex_image := (proc "c" (target: u32,  level: i32, format, type: u32, pixels: rawptr))(sdl.GL_GetProcAddress("glGetTexImage"))
+            check_framebuffer_status := (proc "c" (u32) -> u32)(sdl.GL_GetProcAddress("glCheckFramebufferStatus"))
+
             dest: sdl.FRect = { rect.x, rect.y, rect.w, rect.h }
-            sdl.RenderTexture(GLOBAL_STATE.video_state.renderer, texture, nil, &dest)
+
+            bind_framebuffer(gl.READ_FRAMEBUFFER, fbo_id)
+            bind_framebuffer(gl.DRAW_FRAMEBUFFER, 0)
+            blit_framebuffer(
+                0, i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height), i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width), 0,
+                i32(rect.x), i32(rect.y), i32(rect.w), i32(rect.h),
+                gl.COLOR_BUFFER_BIT, gl.NEAREST
+            )
+            // texture := (^sdl.Texture)(rcmd.renderData.image.imageData)
+
+            // sdl.RenderTexture(GLOBAL_STATE.video_state.renderer, texture, nil, &dest)
         }
         case .Custom: {
             log.warn("CLAY: Custom render command is not used")

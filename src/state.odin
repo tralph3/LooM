@@ -5,8 +5,6 @@ import cl "clay"
 import "base:runtime"
 
 GLOBAL_STATE := struct {
-    // state: States,
-    // config: Config,
     current_user: string,
     gui_state: GuiState,
     video_state: VideoState,

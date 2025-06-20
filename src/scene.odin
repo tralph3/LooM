@@ -37,6 +37,7 @@ SCENES := [SceneID]Scene{
     },
     .RUNNING = {
         update = proc () {
+            sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
             GLOBAL_STATE.emulator_state.core.api.run()
         },
         render = proc () {

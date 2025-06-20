@@ -1,6 +1,7 @@
 package libretro
 
 import "core:c"
+import sdl "vendor:sdl3"
 
 RETRO_NUM_CORE_OPTION_VALUES_MAX :: 128
 
@@ -243,4 +244,35 @@ RetroLogLevel :: enum c.int {
 
 RetroLogCallback :: struct {
     log: proc "c" (RetroLogLevel, cstring, #c_vararg ..any)
+}
+
+RetroHwContextType :: enum c.int {
+    NONE             = 0,
+    OPENGL           = 1,
+    OPENGLES2        = 2,
+    OPENGL_CORE      = 3,
+    OPENGLES3        = 4,
+    OPENGLES_VERSION = 5,
+    VULKAN           = 6,
+    D3D11            = 7,
+    D3D10            = 8,
+    D3D12            = 9,
+    D3D9             = 10,
+}
+
+RetroHwContextReset :: proc "c" ()
+
+RetroHwRenderCallback :: struct {
+    context_type: RetroHwContextType,
+    context_reset: RetroHwContextReset,
+    get_current_framebuffer: proc "c" () -> c.uintptr_t,
+    get_proc_address: proc "c" (cstring) -> sdl.FunctionPointer,
+    depth: bool,
+    stencil: bool,
+    bottom_left_origin: bool,
+    version_major: c.uint,
+    version_minor: c.uint,
+    cache_context: bool,
+    context_destroy: RetroHwContextReset,
+    debug_context: bool,
 }
