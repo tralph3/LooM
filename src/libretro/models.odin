@@ -187,8 +187,8 @@ RetroCoreOptionV2Category :: struct {
 }
 
 RetroCoreOptionsV2 :: struct {
-    categories: []RetroCoreOptionV2Category,
-    definitions: []RetroCoreOptionV2Definition,
+    categories: [^]RetroCoreOptionV2Category,
+    definitions: [^]RetroCoreOptionV2Definition,
 }
 
 RetroCoreOptionsV2Intl :: struct {

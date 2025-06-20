@@ -12,16 +12,21 @@ import "core:strings"
 process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) -> bool {
     context = GLOBAL_STATE.ctx
 
-    //log.debugf("Processing env callback: '{}'", command)
+    log.debugf("Processing env callback: '{}'", command)
 
     #partial switch command {
         case .GetCoreOptionsVersion: env_callback_get_core_options_version(data)
-        case .GetVariableUpdate: env_callback_get_variable_update(data)
         case .GetCanDupe: env_callback_get_can_dupe(data)
         case .SetPixelFormat: env_callback_set_pixel_format(data)
         case .GetLogInterface: env_callback_get_log_interface(data)
         case .SetPerformanceLevel: env_callback_set_performance_level(data)
+        case .SetCoreOptionsV2: env_callback_set_core_options_v2(data)
         case .SetCoreOptionsV2Intl: env_callback_set_core_options_v2_intl(data)
+        case .GetVariable: env_callback_get_variable(data)
+        case .GetVariableUpdate: env_callback_get_variable_update(data)
+        case .SetHwSharedContext: env_callback_set_hw_shared_context(data)
+        case .GetPreferredHwRender: env_callback_get_preferred_hw_render(data)
+        case .SetHwRender: return env_callback_set_hw_render(data)
 
         // case RetroEnvironment.SetVariables:
         // emulator_clone_variables(([^]RetroVariable)(data))
@@ -40,7 +45,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         // return false
 
         case:
-        //log.warnf("Callback not supported: '%s'", command)
+        log.warnf("Callback not supported: '%s'", command)
         return false
     }
 
@@ -275,7 +280,21 @@ env_callback_set_disk_control_interface :: proc (data: rawptr) { // TODO
  * @note If HW rendering is used, pass only \c RETRO_HW_FRAME_BUFFER_VALID or
  * \c NULL to <tt>retro_video_refresh_t</tt>.
  */
-env_callback_set_hw_render :: proc (data: rawptr) { // TODO
+env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO
+    if data == nil {
+        return false
+    }
+
+    render_cb := (^lr.RetroHwRenderCallback)(data)
+
+    #partial switch render_cb.context_type {
+    case .OPENGL_CORE:
+        renderer_init_opengl_context(render_cb)
+        render_cb.context_reset()
+        return true
+    }
+
+    return false
 }
 
 /**
@@ -297,7 +316,11 @@ env_callback_set_hw_render :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
  */
-env_callback_get_variable :: proc (data: rawptr) { // TODO
+env_callback_get_variable :: proc (data: rawptr) { // DONE
+    var := (^lr.RetroVariable)(data)
+    var.value = GLOBAL_STATE.emulator_state.options[var.key].current_value
+
+    GLOBAL_STATE.emulator_state.options_updated = false
 }
 
 /**
@@ -367,8 +390,8 @@ env_callback_set_variables :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
-env_callback_get_variable_update :: proc (data: rawptr) { // TODO
-    (^bool)(data)^ = false
+env_callback_get_variable_update :: proc (data: rawptr) { // DONE
+    (^bool)(data)^ = GLOBAL_STATE.emulator_state.options_updated
 }
 
 /**
@@ -586,7 +609,11 @@ env_callback_get_camera_interface :: proc (data: rawptr) { // TODO
  * @see retro_log_callback
  * @note Cores can fall back to \c stderr if this interface is not available.
  */
-env_callback_get_log_interface :: proc(data: rawptr) { // TODO
+env_callback_get_log_interface :: proc(data: rawptr) { // DONE
+    if data == nil {
+        return
+    }
+
     ((^lr.RetroLogCallback)(data)^).log = c_log_callback
 }
 
@@ -1073,7 +1100,8 @@ env_callback_set_serialization_quirks :: proc (data: rawptr) { // TODO
  * @returns \c true if the environment call is available
  * and the frontend supports shared hardware contexts.
  */
-env_callback_set_hw_shared_context :: proc (data: rawptr) { // TODO
+env_callback_set_hw_shared_context :: proc (data: rawptr) { // TODO: do as needed to support shared contexts
+    GLOBAL_STATE.video_state.shared_context = true
 }
 
 /**
@@ -1373,7 +1401,8 @@ env_callback_set_core_options_display :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
  * @see RETRO_ENVIRONMENT_SET_HW_RENDER
  */
-env_callback_get_preferred_hw_render :: proc (data: rawptr) { // TODO
+env_callback_get_preferred_hw_render :: proc (data: rawptr) { // TODO: set preference according to user config
+    (^lr.RetroHwContextType)(data)^ = .OPENGL_CORE
 }
 
 /**
@@ -1726,7 +1755,12 @@ env_callback_get_game_info_ext :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
  */
-env_callback_set_core_options_v2 :: proc (data: rawptr) { // TODO
+env_callback_set_core_options_v2 :: proc (data: rawptr) { // DONE
+    if data == nil {
+        return
+    }
+
+    core_options_set_v2((^lr.RetroCoreOptionsV2)(data))
 }
 
 /**
@@ -1744,7 +1778,12 @@ env_callback_set_core_options_v2 :: proc (data: rawptr) { // TODO
  * @see retro_core_options_v2_intl
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
-env_callback_set_core_options_v2_intl :: proc (data: rawptr) { // TODO
+env_callback_set_core_options_v2_intl :: proc (data: rawptr) { // TODO: use local language when appropriate
+    if data == nil {
+        return
+    }
+
+    core_options_set_v2_intl((^lr.RetroCoreOptionsV2Intl)(data))
 }
 
 /**
