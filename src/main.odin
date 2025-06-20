@@ -1,8 +1,10 @@
 package main
 
 import cl "clay"
+import "core:math"
 import "base:runtime"
 import sdl "vendor:sdl3"
+import gl "vendor:OpenGL"
 import "vendor:sdl3/ttf"
 import "core:log"
 import "core:mem"
@@ -62,7 +64,7 @@ main :: proc () {
     }
     defer renderer_deinit()
 
-    renderer_load_font("./assets/Ubuntu.ttf", 16)
+    //renderer_load_font("./assets/Ubuntu.ttf", 16)
 
     if !gui_init() {
         log.error("Failed initializing GUI")
@@ -79,10 +81,11 @@ main :: proc () {
     //load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
     //load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
     //load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
-    load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    //load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
     //load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
     defer unload_game()
 
+    t: f32
     for !GLOBAL_STATE.should_exit {
         last_time := sdl.GetTicksNS()
 
@@ -91,12 +94,30 @@ main :: proc () {
 
         gui_update()
 
+        r := (math.sin(t) + 1.0) * 0.5
+        g := (math.sin(t + 2.0) + 1.0) * 0.5
+        b := (math.sin(t + 4.0) + 1.0) * 0.5
+
         scene := scene_get(GLOBAL_STATE.current_scene_id)
+
         scene.update()
-        scene.render()
 
-        sdl.RenderPresent(GLOBAL_STATE.video_state.renderer)
+        window_x: i32
+        window_y: i32
+        sdl.GetWindowSize(GLOBAL_STATE.video_state.window, &window_x, &window_y)
 
+        gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo_id)
+        gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+        gl.BlitFramebuffer(
+            0, i32(GLOBAL_STATE.emulator_state.av_info.geometry.base_height), i32(GLOBAL_STATE.emulator_state.av_info.geometry.base_width), 0,
+            0, 0, window_x, window_y,
+            gl.COLOR_BUFFER_BIT, gl.NEAREST
+        )
+        gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+
+        //scene.render()
+
+        sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
         wait_until_next_frame(last_time)
     }
 }

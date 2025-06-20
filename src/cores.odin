@@ -31,9 +31,6 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
 
     core := lr.load_core(core_path) or_return
 
-    // messy
-    core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
-
     callbacks := lr.Callbacks {
         environment = process_env_callback,
         video_refresh = video_refresh_callback,
@@ -43,6 +40,7 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
         audio_sample_batch = audio_sample_batch_callback,
     }
 
+
     lr.initialize_core(&core, &callbacks)
 
     lr.load_rom(&core, rom_path) or_return
@@ -51,7 +49,7 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
 
     core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
 
-    //renderer_update_texture_dimensions_and_format()
+    renderer_init_framebuffer()
     audio_update_sample_rate()
 
     return true

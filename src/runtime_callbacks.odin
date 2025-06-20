@@ -11,55 +11,31 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
         return
     }
 
-    if width != u32(GLOBAL_STATE.video_state.render_texture.w) ||
-        height != u32(GLOBAL_STATE.video_state.render_texture.h) {
-            GLOBAL_STATE.emulator_state.av_info.geometry.max_width = width
-            GLOBAL_STATE.emulator_state.av_info.geometry.max_height = height
-            renderer_update_texture_dimensions_and_format()
+    if int((uintptr)(data)) ==  lr.RETRO_HW_FRAME_BUFFER_VALID {
+        // hardware rendering, clear up opengl state
+        gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+    } else {
+        // software rendering
+        gl.BindTexture(gl.TEXTURE_2D, tex_id)
+
+        format: u32
+        type: u32
+
+        switch GLOBAL_STATE.video_state.pixel_format {
+        case .RGB565:
+            format = gl.RGB
+            type = gl.UNSIGNED_SHORT_5_6_5
+        case .XRGB1555:
+            format = gl.BGRA
+            type = gl.UNSIGNED_SHORT_1_5_5_5_REV
+        case .XRGB8888:
+            format = gl.BGRA
+            type = gl.UNSIGNED_INT_8_8_8_8_REV
+
         }
 
-    if int((uintptr)(data)) ==  lr.RETRO_HW_FRAME_BUFFER_VALID {
-        // hardware rendering, framebuffer has already been rendered to
-
-        bind_framebuffer := (proc "c" (i32, u32))(sdl.GL_GetProcAddress("glBindFramebuffer"))
-        // read_pixels := (proc "c" (x, y, width, height: i32, format, type: u32, pixels: rawptr))(sdl.GL_GetProcAddress("glReadPixels"))
-        // blit_framebuffer := (proc "c" (srcX0: i32, srcY0: i32, srcX1: i32, srcY1: i32, dstX0: i32, dstY0: i32, dstX1: i32, dstY1: i32, mask: u32, filter: u32))(sdl.GL_GetProcAddress("glBlitFramebuffer"))
-        // get_error := (proc "c" () -> u32)(sdl.GL_GetProcAddress("glGetError"))
-        // read_buffer := (proc "c" (u32))(sdl.GL_GetProcAddress("glReadBuffer"))
-        // get_tex_image := (proc "c" (target: u32,  level: i32, format, type: u32, pixels: rawptr))(sdl.GL_GetProcAddress("glGetTexImage"))
-        // check_framebuffer_status := (proc "c" (u32) -> u32)(sdl.GL_GetProcAddress("glCheckFramebufferStatus"))
-
-        // window_x: i32
-        // window_y: i32
-        // sdl.GetWindowSize(GLOBAL_STATE.video_state.window, &window_x, &window_y)
-
-        // bind_framebuffer(gl.FRAMEBUFFER, 0)
-        // read_buffer(gl.COLOR_ATTACHMENT0)
-        // blit_framebuffer(
-        //     0, 0, i32(width), i32(height),
-        //     0, 0, window_x, window_y,
-        //     gl.COLOR_BUFFER_BIT, gl.NEAREST
-        // )
-
-        // buf := make([]byte, width * height * 4)
-        // defer delete(buf)
-
-        // err: u32
-        // err = get_error(); log.errorf("BEFORE: {}", err)
-        // //get_tex_image(gl.TEXTURE_2D, 0, gl.RGBA, gl.UNSIGNED_BYTE, raw_data(buf))
-        // read_pixels(0, 0, i32(width), i32(height), gl.COLOR_ATTACHMENT0, gl.UNSIGNED_BYTE, raw_data(buf))
-        // err = get_error(); log.errorf("AFTER: {}", err)
-        // for b in buf {
-        //     if b != 0 {
-        //         log.info(b)
-        //     }
-        // }
-        // sdl.UpdateTexture(GLOBAL_STATE.video_state.render_texture, nil, raw_data(buf), i32(pitch))
-
-        bind_framebuffer(gl.FRAMEBUFFER, 0)
-    } else {
-        // software rendering, we must update the framebuffer with the given pixels
-        sdl.UpdateTexture(GLOBAL_STATE.video_state.render_texture, nil, data, i32(pitch))
+        gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, i32(width), i32(height), format, type, data)
+        gl.BindTexture(gl.TEXTURE_2D, 0)
     }
 }
 
