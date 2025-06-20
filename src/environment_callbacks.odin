@@ -12,7 +12,7 @@ import "core:strings"
 process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) -> bool {
     context = GLOBAL_STATE.ctx
 
-    log.debugf("Processing env callback: '{}'", command)
+    //log.debugf("Processing env callback: '{}'", command)
 
     #partial switch command {
         case .GetCoreOptionsVersion: env_callback_get_core_options_version(data)

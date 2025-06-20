@@ -15,11 +15,16 @@ gl_context: sdl.GLContext
 
 VideoState :: struct {
     window: ^sdl.Window,
-    renderer: ^sdl.Renderer,
-    render_texture: ^sdl.Texture,
     text_engine: ^ttf.TextEngine,
     pixel_format: lr.RetroPixelFormat,
     fonts: [dynamic]^ttf.Font,
+
+    // dont use
+    renderer: ^sdl.Renderer,
+    render_texture: ^sdl.Texture,
+
+    actual_width: u32,
+    actual_height: u32,
 
     shared_context: bool,
 }
