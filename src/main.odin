@@ -85,21 +85,17 @@ main :: proc () {
     //load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
     defer unload_game()
 
-    t: f32
     for !GLOBAL_STATE.should_exit {
         last_time := sdl.GetTicksNS()
 
         GLOBAL_STATE.input_state.mouse_wheel_y = 0
         sdl_events_handle()
 
+        input_process()
+
         gui_update()
 
-        r := (math.sin(t) + 1.0) * 0.5
-        g := (math.sin(t + 2.0) + 1.0) * 0.5
-        b := (math.sin(t + 4.0) + 1.0) * 0.5
-
         scene := scene_get(GLOBAL_STATE.current_scene_id)
-
         scene.update()
 
         window_x: i32

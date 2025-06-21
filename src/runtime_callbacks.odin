@@ -16,7 +16,7 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
 
     if int((uintptr)(data)) ==  lr.RETRO_HW_FRAME_BUFFER_VALID {
         // hardware rendering, clear up opengl state
-        // gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+        gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
     } else {
         // software rendering
         gl.BindTexture(gl.TEXTURE_2D, tex_id)
@@ -50,7 +50,7 @@ input_poll_callback :: proc "c" () {
 
 input_state_callback :: proc "c" (port: u32, device: u32, index: u32, id: u32) -> i16 {
     // TODO: support multiple devices
-    return GLOBAL_STATE.input_state.libretro_input[lr.RetroDevice(id)]
+    return GLOBAL_STATE.input_state.i[lr.RetroDevice(id)]
 }
 
 audio_sample_batch_callback :: proc "c" (data: ^i16, frames: i32) -> i32 {

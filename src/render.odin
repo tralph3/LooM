@@ -30,7 +30,7 @@ VideoState :: struct {
 }
 
 renderer_init :: proc () -> (ok: bool) {
-    if !sdl.Init({ .VIDEO, .AUDIO, .EVENTS }) {
+    if !sdl.Init({ .VIDEO, .AUDIO, .EVENTS, .GAMEPAD }) {
         log.errorf("Failed initializing SDL: {}", sdl.GetError())
         return false
     }

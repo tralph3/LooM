@@ -2,40 +2,26 @@ package main
 
 import sdl "vendor:sdl3"
 import lr "libretro"
+import "core:log"
 
 InputState :: struct {
-    libretro_input: [16]i16,
+    i: [lr.RetroDevice]i16,
     mouse_wheel_y: f32,
 }
 
-process_input :: proc () {
-    using lr
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadLeft]   = i16(rl.IsKeyDown(.LEFT)      || rl.IsGamepadButtonDown(0, .LEFT_FACE_LEFT))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadRight]  = i16(rl.IsKeyDown(.RIGHT)     || rl.IsGamepadButtonDown(0, .LEFT_FACE_RIGHT))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadUp]     = i16(rl.IsKeyDown(.UP)        || rl.IsGamepadButtonDown(0, .LEFT_FACE_UP))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadDown]   = i16(rl.IsKeyDown(.DOWN)      || rl.IsGamepadButtonDown(0, .LEFT_FACE_DOWN))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadSelect] = i16(rl.IsKeyDown(.BACKSPACE) || rl.IsGamepadButtonDown(0, .MIDDLE_LEFT))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadStart]  = i16(rl.IsKeyDown(.ENTER)     || rl.IsGamepadButtonDown(0, .MIDDLE_RIGHT))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadA]      = i16(rl.IsKeyDown(.D)         || rl.IsGamepadButtonDown(0, .RIGHT_FACE_RIGHT))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadB]      = i16(rl.IsKeyDown(.X)         || rl.IsGamepadButtonDown(0, .RIGHT_FACE_DOWN))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadX]      = i16(rl.IsKeyDown(.W)         || rl.IsGamepadButtonDown(0, .RIGHT_FACE_UP))
-    // GLOBAL_STATE.input[RetroDevice.IdJoypadY]      = i16(rl.IsKeyDown(.A)         || rl.IsGamepadButtonDown(0, .RIGHT_FACE_LEFT))
+input_process :: proc () {
+    state := sdl.GetKeyboardState(nil)
+    gamepad_id := sdl.GetGamepads(nil)[0]
+    gamepad := sdl.OpenGamepad(gamepad_id)
 
-    // if rl.IsKeyPressed(.ESCAPE) || rl.IsGamepadButtonPressed(0, .MIDDLE_RIGHT) {
-    //     if STATE.state == .RUNNING {
-    //         change_state(.PAUSED)
-    //     }
-    // }
-
-    // if rl.IsKeyPressed(.RIGHT) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_RIGHT){
-    //     ui_select_right()
-    // } else if rl.IsKeyPressed(.LEFT) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_LEFT) {
-    //     ui_select_left()
-    // } else if rl.IsKeyPressed(.UP) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_UP) {
-    //     ui_select_up()
-    // } else if rl.IsKeyPressed(.DOWN) || rl.IsGamepadButtonPressed(0, .LEFT_FACE_DOWN) {
-    //     ui_select_down()
-    // } else if rl.IsKeyPressed(.ENTER) || rl.IsGamepadButtonPressed(0, .RIGHT_FACE_DOWN) {
-    //     ui_press_element()
-    // }
+    GLOBAL_STATE.input_state.i[.IdJoypadLeft]   = i16(state[sdl.Scancode.LEFT]      || sdl.GetGamepadButton(gamepad, .DPAD_LEFT))
+    GLOBAL_STATE.input_state.i[.IdJoypadRight]  = i16(state[sdl.Scancode.RIGHT]     || sdl.GetGamepadButton(gamepad, .DPAD_RIGHT))
+    GLOBAL_STATE.input_state.i[.IdJoypadUp]     = i16(state[sdl.Scancode.UP]        || sdl.GetGamepadButton(gamepad, .DPAD_UP))
+    GLOBAL_STATE.input_state.i[.IdJoypadDown]   = i16(state[sdl.Scancode.DOWN]      || sdl.GetGamepadButton(gamepad, .DPAD_DOWN))
+    GLOBAL_STATE.input_state.i[.IdJoypadSelect] = i16(state[sdl.Scancode.BACKSPACE] || sdl.GetGamepadButton(gamepad, .BACK))
+    GLOBAL_STATE.input_state.i[.IdJoypadStart]  = i16(state[sdl.Scancode.RETURN]    || sdl.GetGamepadButton(gamepad, .START))
+    GLOBAL_STATE.input_state.i[.IdJoypadA]      = i16(state[sdl.Scancode.D]         || sdl.GetGamepadButton(gamepad, .EAST))
+    GLOBAL_STATE.input_state.i[.IdJoypadB]      = i16(state[sdl.Scancode.X]         || sdl.GetGamepadButton(gamepad, .SOUTH))
+    GLOBAL_STATE.input_state.i[.IdJoypadX]      = i16(state[sdl.Scancode.W]         || sdl.GetGamepadButton(gamepad, .NORTH))
+    GLOBAL_STATE.input_state.i[.IdJoypadY]      = i16(state[sdl.Scancode.A]         || sdl.GetGamepadButton(gamepad, .WEST))
 }
