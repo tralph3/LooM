@@ -24,4 +24,11 @@ input_process :: proc () {
     GLOBAL_STATE.input_state.i[.IdJoypadB]      = i16(state[sdl.Scancode.X]         || sdl.GetGamepadButton(gamepad, .SOUTH))
     GLOBAL_STATE.input_state.i[.IdJoypadX]      = i16(state[sdl.Scancode.W]         || sdl.GetGamepadButton(gamepad, .NORTH))
     GLOBAL_STATE.input_state.i[.IdJoypadY]      = i16(state[sdl.Scancode.A]         || sdl.GetGamepadButton(gamepad, .WEST))
+
+    GLOBAL_STATE.input_state.i[.IdJoypadL]      = i16(sdl.GetGamepadButton(gamepad, .LEFT_SHOULDER))
+    GLOBAL_STATE.input_state.i[.IdJoypadR]      = i16(sdl.GetGamepadButton(gamepad, .RIGHT_SHOULDER))
+    GLOBAL_STATE.input_state.i[.IdJoypadL2]     = i16(sdl.GetGamepadAxis(gamepad, .LEFT_TRIGGER) > 0)
+    GLOBAL_STATE.input_state.i[.IdJoypadR2]     = i16(sdl.GetGamepadAxis(gamepad, .RIGHT_TRIGGER) > 0)
+    GLOBAL_STATE.input_state.i[.IdJoypadL3]     = i16(sdl.GetGamepadButton(gamepad, .LEFT_STICK))
+    GLOBAL_STATE.input_state.i[.IdJoypadR3]     = i16(sdl.GetGamepadButton(gamepad, .RIGHT_STICK))
 }
