@@ -29,8 +29,7 @@ gui_layout_login_user_tile :: proc (username: string, index: int) {
             color = UI_COLOR_ACCENT,
             width = cl.BorderAll(5),
         } : {}),
-        cornerRadius = cl.CornerRadiusAll(5),
-
+        cornerRadius = cl.CornerRadiusAll(10),
     }) {
         cl.TextDynamic(username, cl.TextConfig({
             textColor = UI_COLOR_MAIN_TEXT,

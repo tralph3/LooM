@@ -28,7 +28,7 @@ SCENES := [SceneID]Scene{
         },
         render = proc () {
             layout := gui_layout_login_screen()
-            SDL_Clay_RenderClayCommands(&layout)
+            gui_renderer_render_commands(&layout)
         },
     },
     .MENU = {
@@ -41,7 +41,7 @@ SCENES := [SceneID]Scene{
         },
         render = proc () {
             layout := gui_layout_render_screen()
-            SDL_Clay_RenderClayCommands(&layout)
+            gui_renderer_render_commands(&layout)
         }
     },
 }

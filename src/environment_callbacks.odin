@@ -290,7 +290,6 @@ env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO
     #partial switch render_cb.context_type {
     case .OPENGL_CORE:
         renderer_init_opengl_context(render_cb)
-        render_cb.context_reset()
         return true
     }
 

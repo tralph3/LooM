@@ -30,15 +30,17 @@ VideoState :: struct {
 }
 
 renderer_init :: proc () -> (ok: bool) {
-    if !sdl.Init({ .VIDEO, .AUDIO, .EVENTS, .GAMEPAD }) {
+    if !sdl.Init({ .VIDEO, .AUDIO, .EVENTS, .GAMEPAD, .JOYSTICK }) {
         log.errorf("Failed initializing SDL: {}", sdl.GetError())
         return false
     }
 
-    // if !ttf.Init() {
-    //     log.errorf("Failed initializing text: {}", sdl.GetError())
-    //     return false
-    // }
+    if !ttf.Init() {
+        log.errorf("Failed initializing text: {}", sdl.GetError())
+        return false
+    }
+
+    renderer_load_font("./assets/Ubuntu.ttf", 38)
 
     GLOBAL_STATE.video_state.window = sdl.CreateWindow("Libretro Frontend", 800, 600, { .RESIZABLE, .OPENGL })
     if GLOBAL_STATE.video_state.window == nil {
@@ -62,12 +64,6 @@ renderer_init :: proc () -> (ok: bool) {
         log.errorf("Failed making OpenGL context current: {}", sdl.GetError())
         return false
     }
-
-    // GLOBAL_STATE.video_state.text_engine = ttf.CreateTextEngine
-    // if GLOBAL_STATE.video_state.text_engine == nil {
-    //     log.errorf("Faield creating text engine: {}", sdl.GetError())
-    //     return false
-    // }
 
     return true
 }
@@ -103,12 +99,19 @@ renderer_destroy_framebuffer :: proc () {
 }
 
 renderer_init_framebuffer :: proc () {
+    width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
+    height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
+
+    if width == 0 || height == 0 {
+        width = 1920
+        height = 1080
+    }
+
     gl.GenTextures(1, &tex_id)
     gl.BindTexture(gl.TEXTURE_2D, tex_id)
     gl.TexImage2D(
         gl.TEXTURE_2D, 0, gl.RGBA8,
-        i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width),
-        i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height),
+        width, height,
         0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
@@ -117,8 +120,9 @@ renderer_init_framebuffer :: proc () {
     gl.BindFramebuffer(gl.FRAMEBUFFER, fbo_id)
     gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex_id, 0)
 
-    if gl.CheckFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE {
-        log.errorf("Incomplete framebuffer: {}", gl.GetError())
+    framebuffer_status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
+    if framebuffer_status != gl.FRAMEBUFFER_COMPLETE {
+        log.errorf("Incomplete framebuffer: {}", framebuffer_status)
     }
 }
 
@@ -143,6 +147,8 @@ renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     render_cb.get_current_framebuffer = proc "c" () -> c.uintptr_t {
         return c.uintptr_t(fbo_id)
     }
+
+    //render_cb.context_reset()
 }
 
 // build_ui_layout :: proc () -> cl.ClayArray(cl.RenderCommand){

@@ -79,10 +79,13 @@ main :: proc () {
     defer audio_deinit()
 
     load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
+    //load_game("./cores/mesen_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
     //load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
     //load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
     //load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
     //load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    //load_game("./cores/mupen64plus_next_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
+    //load_game("./cores/parallel_n64_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
     defer unload_game()
 
     for !GLOBAL_STATE.should_exit {
@@ -97,29 +100,7 @@ main :: proc () {
 
         scene := scene_get(GLOBAL_STATE.current_scene_id)
         scene.update()
-
-        window_x: i32
-        window_y: i32
-        sdl.GetWindowSize(GLOBAL_STATE.video_state.window, &window_x, &window_y)
-
-        aspect_ratio := f32(f32(GLOBAL_STATE.video_state.actual_width) / f32(GLOBAL_STATE.video_state.actual_height))
-
-        x := i32(f32(window_y) * aspect_ratio)
-        y := window_y
-        dst_x := (window_x - x) >> 1
-
-        gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo_id)
-        gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-        gl.ClearColor(0, 0, 0, 1)
-        gl.Clear(gl.COLOR_BUFFER_BIT)
-        gl.BlitFramebuffer(
-            0, i32(GLOBAL_STATE.video_state.actual_height), i32(GLOBAL_STATE.video_state.actual_width), 0,
-            dst_x, 0, x + dst_x, y,
-            gl.COLOR_BUFFER_BIT, gl.NEAREST
-        )
-        gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-
-        //scene.render()
+        scene.render()
 
         sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
         wait_until_next_frame(last_time)

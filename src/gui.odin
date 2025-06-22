@@ -22,11 +22,13 @@ gui_init :: proc () -> (ok: bool) {
 
     cl.Initialize(GLOBAL_STATE.gui_state.arena, {}, { handler = gui_error_handler })
 
-    cl.SetMeasureTextFunction(SDL_MeasureText, nil)
+    cl.SetMeasureTextFunction(gui_renderer_measure_text, nil)
 
     when ODIN_DEBUG {
         cl.SetDebugModeEnabled(true)
     }
+
+    gui_renderer_init()
 
     return true
 }

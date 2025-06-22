@@ -17,7 +17,7 @@ gui_layout_render_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                 y = .Center,
             },
         },
-        // backgroundColor = { 0, 0, 0, 255 },
+        backgroundColor = { 0, 0, 0, 255 },
     }) {
         if cl.UI()({
             id = cl.ID("Game"),
@@ -27,8 +27,8 @@ gui_layout_render_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     height = cl.SizingGrow({}),
                 },
             },
-            aspectRatio = { GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio },
-            image = { GLOBAL_STATE.video_state.render_texture },
+            aspectRatio = { f32(GLOBAL_STATE.video_state.actual_width) / f32(GLOBAL_STATE.video_state.actual_height) },
+            image = { rawptr(uintptr(fbo_id)) },
         }) { }
     }
 

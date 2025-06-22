@@ -16,7 +16,7 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
 
     if int((uintptr)(data)) ==  lr.RETRO_HW_FRAME_BUFFER_VALID {
         // hardware rendering, clear up opengl state
-        gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+//        gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
     } else {
         // software rendering
         gl.BindTexture(gl.TEXTURE_2D, tex_id)
