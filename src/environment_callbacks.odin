@@ -28,6 +28,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetHwSharedContext: env_callback_set_hw_shared_context(data)
         case .GetPreferredHwRender: env_callback_get_preferred_hw_render(data)
         case .SetHwRender: return env_callback_set_hw_render(data)
+        case .GetSystemDirectory: env_callback_get_system_directory(data)
 
         // case RetroEnvironment.SetVariables:
         // emulator_clone_variables(([^]RetroVariable)(data))
@@ -181,6 +182,7 @@ env_callback_set_performance_level :: proc (data: rawptr) { // TODO: Get perform
  * @see RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
  */
 env_callback_get_system_directory :: proc (data: rawptr) { // TODO
+    (^cstring)(data)^ = "./system"
 }
 
 /**
