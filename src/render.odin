@@ -12,6 +12,7 @@ import gl "vendor:OpenGL"
 fbo_id: u32
 tex_id: u32
 gl_context: sdl.GLContext
+emu_context: sdl.GLContext
 
 VideoState :: struct {
     window: ^sdl.Window,
@@ -51,6 +52,7 @@ renderer_init :: proc () -> (ok: bool) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_CORE))
+    sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 0)
 
     gl_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
     if gl_context == nil {
@@ -87,7 +89,7 @@ renderer_deinit :: proc () {
 renderer_load_font :: proc (path: cstring, size: f32) {
     font := ttf.OpenFont(path, size)
     if font == nil {
-        log.errorf("Failed loading font: {}", sdl.GetError())
+        log.errorf("Failed loading font '{}': {}", path, sdl.GetError())
         return
     }
 
@@ -124,10 +126,13 @@ renderer_init_framebuffer :: proc () {
     if framebuffer_status != gl.FRAMEBUFFER_COMPLETE {
         log.errorf("Incomplete framebuffer: {}", framebuffer_status)
     }
+
+    gl.BindTexture(gl.TEXTURE_2D, 0)
+    gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 }
 
 renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
-    sdl.GL_DestroyContext(gl_context)
+    sdl.GL_DestroyContext(emu_context)
 
     major_ver := render_cb.version_major
     minor_ver := render_cb.version_minor
@@ -135,11 +140,12 @@ renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, i32(major_ver))
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, i32(minor_ver))
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_CORE))
+    sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 1)
 
-    gl_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
-
-    gl.load_up_to(int(major_ver), int(minor_ver), sdl.gl_set_proc_address)
+    emu_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
+    if emu_context == nil {
+        log.errorf("Failed creating OpenGL context: {}", sdl.GetError())
+    }
 
     renderer_init_framebuffer()
 
@@ -148,7 +154,9 @@ renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
         return c.uintptr_t(fbo_id)
     }
 
-    //render_cb.context_reset()
+    render_cb.context_reset()
+
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
 }
 
 // build_ui_layout :: proc () -> cl.ClayArray(cl.RenderCommand){

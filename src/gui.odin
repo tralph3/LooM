@@ -28,7 +28,7 @@ gui_init :: proc () -> (ok: bool) {
         cl.SetDebugModeEnabled(true)
     }
 
-    gui_renderer_init()
+    gui_renderer_init() or_return
 
     return true
 }

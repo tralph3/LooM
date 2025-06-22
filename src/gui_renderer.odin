@@ -23,7 +23,7 @@ fragment_rectangle_shader_src: cstring = #load("./shaders/rectangle.frag")
 vertex_text_shader_src: cstring = #load("./shaders/text.vert")
 fragment_text_shader_src: cstring = #load("./shaders/text.frag")
 
-load_shader :: proc (vert, frag: cstring) -> u32 {
+load_shader :: proc (vert, frag: cstring) -> (progam_id: u32, ok: bool) {
     vert := vert
     frag := frag
 
@@ -35,7 +35,7 @@ load_shader :: proc (vert, frag: cstring) -> u32 {
     gl.GetShaderiv(vertex_shader, gl.COMPILE_STATUS, &success);
     if !bool(success) {
         log.errorf("Vertex compilation failed")
-        return 0
+        return 0, false
     }
 
     fragment_shader := gl.CreateShader(gl.FRAGMENT_SHADER)
@@ -45,7 +45,7 @@ load_shader :: proc (vert, frag: cstring) -> u32 {
     gl.GetShaderiv(fragment_shader, gl.COMPILE_STATUS, &success);
     if !bool(success) {
         log.errorf("Fragment compilation failed")
-        return 0
+        return 0, false
     }
 
     shader_program := gl.CreateProgram()
@@ -56,24 +56,26 @@ load_shader :: proc (vert, frag: cstring) -> u32 {
     gl.GetProgramiv(shader_program, gl.LINK_STATUS, &success);
     if !bool(success) {
         log.errorf("Program linking failed")
-        return 0
+        return 0, false
     }
 
     gl.DeleteShader(vertex_shader)
     gl.DeleteShader(fragment_shader)
 
-    return shader_program
+    return shader_program, true
 }
 
-gui_renderer_init :: proc () {
+gui_renderer_init :: proc () -> (ok: bool) {
     gl.Enable(gl.BLEND)
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
     gl.GenBuffers(1, &vbo)
     gl.GenVertexArrays(1, &vao)
 
-    rectangle_shader = load_shader(vertex_rectangle_shader_src, fragment_rectangle_shader_src)
-    text_shader = load_shader(vertex_text_shader_src, fragment_text_shader_src)
+    rectangle_shader = load_shader(vertex_rectangle_shader_src, fragment_rectangle_shader_src) or_return
+    text_shader = load_shader(vertex_text_shader_src, fragment_text_shader_src) or_return
+
+    return true
 }
 
 gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextElementConfig, user_data: rawptr) -> cl.Dimensions {

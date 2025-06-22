@@ -14,9 +14,10 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
     GLOBAL_STATE.video_state.actual_width = width
     GLOBAL_STATE.video_state.actual_height = height
 
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
+
     if int((uintptr)(data)) ==  lr.RETRO_HW_FRAME_BUFFER_VALID {
-        // hardware rendering, clear up opengl state
-//        gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+        // hardware rendering, nothing to do
     } else {
         // software rendering
         gl.BindTexture(gl.TEXTURE_2D, tex_id)
@@ -34,7 +35,6 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
         case .XRGB8888:
             format = gl.BGRA
             type = gl.UNSIGNED_INT_8_8_8_8_REV
-
         }
 
         gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, i32(width), i32(height), format, type, data)

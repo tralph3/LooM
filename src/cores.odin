@@ -40,7 +40,6 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
         audio_sample_batch = audio_sample_batch_callback,
     }
 
-
     lr.initialize_core(&core, &callbacks)
 
     lr.load_rom(&core, rom_path) or_return

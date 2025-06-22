@@ -64,8 +64,6 @@ main :: proc () {
     }
     defer renderer_deinit()
 
-    //renderer_load_font("./assets/Ubuntu.ttf", 16)
-
     if !gui_init() {
         log.error("Failed initializing GUI")
         return
@@ -78,11 +76,11 @@ main :: proc () {
     }
     defer audio_deinit()
 
-    load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
+    //load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
     //load_game("./cores/mesen_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
     //load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
     //load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
-    //load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
     //load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
     //load_game("./cores/mupen64plus_next_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
     //load_game("./cores/parallel_n64_libretro.so", "./roms/Super Mario 64 (U) [!].z64")

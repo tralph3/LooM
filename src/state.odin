@@ -18,5 +18,5 @@ GLOBAL_STATE := struct {
 
     ctx: runtime.Context,
 } {
-    current_scene_id = .RUNNING,
+    current_scene_id = .LOGIN,
 }
