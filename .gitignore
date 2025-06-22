@@ -2,4 +2,5 @@ assets/
 build/
 cores/
 roms/
+system/
 libretro.h
