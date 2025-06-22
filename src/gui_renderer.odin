@@ -268,19 +268,4 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         }
         }
     }
-
-    gl.UseProgram(0)
-    gl.BindVertexArray(0)
-    gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-    gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
-    gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-    gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
-    gl.BindTexture(gl.TEXTURE_2D, 0)
-    gl.BindTexture(gl.TEXTURE_CUBE_MAP, 0)
-    gl.ActiveTexture(gl.TEXTURE0)
-    gl.Disable(gl.SCISSOR_TEST)
-    gl.Disable(gl.DEPTH_TEST)
-    gl.Disable(gl.STENCIL_TEST)
-    gl.Disable(gl.CULL_FACE)
-    gl.Viewport(0, 0, window_x, window_y) // If needed
 }
