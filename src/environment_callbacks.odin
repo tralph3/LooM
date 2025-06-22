@@ -283,7 +283,7 @@ env_callback_set_disk_control_interface :: proc (data: rawptr) { // TODO
  * @note If HW rendering is used, pass only \c RETRO_HW_FRAME_BUFFER_VALID or
  * \c NULL to <tt>retro_video_refresh_t</tt>.
  */
-env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO
+env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO: add other apis
     if data == nil {
         return false
     }
@@ -1103,7 +1103,7 @@ env_callback_set_serialization_quirks :: proc (data: rawptr) { // TODO
  * @returns \c true if the environment call is available
  * and the frontend supports shared hardware contexts.
  */
-env_callback_set_hw_shared_context :: proc (data: rawptr) { // TODO: do as needed to support shared contexts
+env_callback_set_hw_shared_context :: proc (data: rawptr) { // TODO: ~do as needed to support shared contexts~ on second thought... just ignore it, give it its own context
     GLOBAL_STATE.video_state.shared_context = true
 }
 
