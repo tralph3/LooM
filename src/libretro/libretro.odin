@@ -62,7 +62,7 @@ initialize_core :: proc (core: ^LibretroCore, callbacks: ^Callbacks) {
     core.api.set_input_state(callbacks.input_state)
 }
 
-load_rom :: proc (core: ^LibretroCore, rom_path: string) -> bool {
+load_rom :: proc (core: ^LibretroCore, rom_path: string) -> (ok: bool) {
     log.infof("Loading rom '%s'", rom_path)
 
     rom_contents, ok_read_entire_file := os.read_entire_file(rom_path)
@@ -72,12 +72,9 @@ load_rom :: proc (core: ^LibretroCore, rom_path: string) -> bool {
     }
     defer delete(rom_contents)
 
-    // data and path are freed by the core. UPDATE freeing them
-    // doesn't crash on fceumm and prevents leaks, apparently these
-    // are copied. should revise this
     info := GameInfo {
         path = strings.clone_to_cstring(rom_path),
-        data = &rom_contents,
+        data = raw_data(rom_contents),
         size = len(rom_contents),
         meta = "",
     }
