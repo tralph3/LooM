@@ -104,6 +104,9 @@ renderer_init_framebuffer :: proc () {
     width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
     height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
 
+    gl.DeleteTextures(1, &tex_id)
+    gl.DeleteFramebuffers(1, &fbo_id)
+
     if width == 0 || height == 0 {
         width = 1920
         height = 1080
