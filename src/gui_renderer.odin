@@ -86,12 +86,16 @@ gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextEle
     fonts := GLOBAL_STATE.video_state.fonts
     font := fonts[config.fontId]
 
-    _ = ttf.SetFontSize(font, f32(config.fontSize))
+    if !ttf.SetFontSize(font, f32(config.fontSize)) {
+        log.errorf("Measure text error: Failed setting font size: {}", sdl.GetError())
+        return { 0, 0 }
+    }
 
     width: i32
     height: i32
     if (!ttf.GetStringSize(font, cstring(text.chars), uint(text.length), &width, &height)) {
-        log.errorf("Failed to measure text: {}", sdl.GetError())
+        log.errorf("Measure text error: Failed measuring text: {}", sdl.GetError())
+        return { 0, 0 }
     }
 
     return { f32(width), f32(height) }
@@ -181,8 +185,13 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         }
         case .Text: {
             config: ^cl.TextRenderData = &rcmd.renderData.text
+
             font: ^ttf.Font = GLOBAL_STATE.video_state.fonts[config.fontId]
-            _ = ttf.SetFontSize(font, f32(config.fontSize))
+            if !ttf.SetFontSize(font, f32(config.fontSize)) {
+                log.errorf("Failed setting font size: {}", sdl.GetError())
+                continue
+            }
+
             color := sdl.Color { u8(config.textColor.r), u8(config.textColor.g), u8(config.textColor.b), u8(config.textColor.a) }
             surface := ttf.RenderText_Blended(font, cstring(config.stringContents.chars), uint(config.stringContents.length), color)
 
