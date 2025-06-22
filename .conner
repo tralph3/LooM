@@ -1,5 +1,9 @@
 ;;; -*- lisp-data -*-
-((:name "Build debug"
+((:name "Run Wayland"
+        :command "odin run src -debug"
+        :type "compile"
+        :environment ("DISPLAY="))
+ (:name "Build debug"
         :command "odin build main -debug -out:build/debug"
         :type "compile")
  (:name "Test"

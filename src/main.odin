@@ -10,6 +10,7 @@ import "core:log"
 import "core:mem"
 import lr "libretro"
 import "core:time"
+import "core:c"
 
 wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
     fps := GLOBAL_STATE.emulator_state.av_info.timing.fps > 0 \
@@ -35,6 +36,88 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
     }
 }
 
+app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.AppResult {
+    context = GLOBAL_STATE.ctx
+
+    if !renderer_init() {
+        log.error("Failed initializing renderer")
+        return .FAILURE
+    }
+
+    if !gui_init() {
+        log.error("Failed initializing GUI")
+        return .FAILURE
+    }
+
+    if !audio_init() {
+        log.error("Failed initializing audio")
+        return .FAILURE
+    }
+
+
+    //load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
+    //load_game("./cores/mesen_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
+    //load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
+    //load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
+    load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    //load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    //load_game("./cores/mupen64plus_next_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
+    //load_game("./cores/mupen64plus_next_libretro_debug.so", "./roms/Super Mario 64 (U) [!].z64")
+    //load_game("./cores/parallel_n64_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
+
+    return .CONTINUE
+}
+
+last_time: u64
+app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
+    context = GLOBAL_STATE.ctx
+
+    if GLOBAL_STATE.should_exit {
+        return .SUCCESS
+    }
+
+    wait_until_next_frame(last_time)
+    last_time = sdl.GetTicksNS()
+
+    GLOBAL_STATE.input_state.mouse_wheel_y = 0
+    sdl_events_handle()
+
+    input_process()
+
+    gui_update()
+
+    scene := scene_get(GLOBAL_STATE.current_scene_id)
+    scene.update()
+    scene.render()
+
+    sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
+
+    return .CONTINUE
+}
+
+app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
+    context = GLOBAL_STATE.ctx
+
+    #partial switch event.type {
+    case .QUIT:
+        GLOBAL_STATE.should_exit = true
+    case .MOUSE_WHEEL:
+        GLOBAL_STATE.input_state.mouse_wheel_y = event.wheel.y
+    }
+
+    return .CONTINUE
+}
+
+
+app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
+    context = GLOBAL_STATE.ctx
+
+    unload_game()
+    audio_deinit()
+    gui_deinit()
+    renderer_deinit()
+}
+
 main :: proc () {
     when ODIN_DEBUG {
         context.logger = log.create_console_logger(opt={ .Level, .Terminal_Color })
@@ -58,49 +141,7 @@ main :: proc () {
 
     GLOBAL_STATE.ctx = context
 
-    if !renderer_init() {
-        log.error("Failed initializing renderer")
-        return
-    }
-    defer renderer_deinit()
-
-    if !gui_init() {
-        log.error("Failed initializing GUI")
-        return
-    }
-    defer gui_deinit()
-
-    if !audio_init() {
-        log.error("Failed initializing audio")
-        return
-    }
-    defer audio_deinit()
-
-    //load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
-    //load_game("./cores/mesen_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
-    //load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
-    //load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
-    load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
-    //load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
-    //load_game("./cores/mupen64plus_next_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
-    //load_game("./cores/parallel_n64_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
-    defer unload_game()
-
-    for !GLOBAL_STATE.should_exit {
-        last_time := sdl.GetTicksNS()
-
-        GLOBAL_STATE.input_state.mouse_wheel_y = 0
-        sdl_events_handle()
-
-        input_process()
-
-        gui_update()
-
-        scene := scene_get(GLOBAL_STATE.current_scene_id)
-        scene.update()
-        scene.render()
-
-        sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
-        wait_until_next_frame(last_time)
-    }
+    argc := i32(len(runtime.args__))
+    argv := raw_data(runtime.args__)
+    sdl.EnterAppMainCallbacks(argc, argv, app_init, app_iterate, app_event, app_quit);
 }
