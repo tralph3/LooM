@@ -46,9 +46,57 @@ core_options_set_v2 :: proc (options: ^lr.RetroCoreOptionsV2) {
         key := clone_cstring(definition.key)
         GLOBAL_STATE.emulator_state.options[key] = option
     }
+}
 
-    // TODO: delete this...
-    core_option_set("desmume_opengl_mode", "enabled")
+core_options_set_variables :: proc (options: [^]lr.RetroVariable) {
+    option_loop: for i in 0..<lr.RETRO_NUM_CORE_OPTION_VALUES_MAX {
+        option := options[i]
+
+        if option == {} {
+            break
+        }
+
+        core_option: CoreOption
+
+        key := clone_cstring(option.key)
+        info: cstring
+
+        // value format: "Display; default|val2|val3"
+        char_idx: int
+        for {
+            defer char_idx += 1
+            char := ([^]byte)(option.value)[char_idx]
+            if char == '\x00' {
+                continue option_loop
+            }
+            if char == ';' {
+                tmp := strings.string_from_ptr((^byte)(option.value), char_idx)
+                core_option.display = strings.clone_to_cstring(tmp)
+                break
+            }
+        }
+
+        // skip space
+        char_idx += 1
+
+        // cast the cstring to a byte array, index it with char_idx,
+        // take its reference, cast to cstring, and finally to string
+        // from there
+        values_str := string(cstring(&([^]byte)(option.value)[char_idx]))
+        values := strings.split(values_str, "|")
+        defer delete(values)
+
+        core_option.default_value = strings.clone_to_cstring(values[0])
+        core_option.current_value = strings.clone_to_cstring(values[0])
+
+        for value in values {
+            append(&core_option.values, CoreOptionValue{
+                value = strings.clone_to_cstring(value)
+            })
+        }
+
+        GLOBAL_STATE.emulator_state.options[key] = core_option
+    }
 }
 
 core_options_free :: proc () {

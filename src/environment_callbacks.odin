@@ -20,6 +20,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetPixelFormat: env_callback_set_pixel_format(data)
         case .GetLogInterface: env_callback_get_log_interface(data)
         case .SetPerformanceLevel: env_callback_set_performance_level(data)
+        case .SetVariables: env_callback_set_variables(data)
         case .SetCoreOptionsV2: env_callback_set_core_options_v2(data)
         case .SetCoreOptionsV2Intl: env_callback_set_core_options_v2_intl(data)
         case .GetVariable: env_callback_get_variable(data)
@@ -371,6 +372,7 @@ env_callback_get_variable :: proc (data: rawptr) { // DONE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
 env_callback_set_variables :: proc (data: rawptr) { // TODO
+    core_options_set_variables(auto_cast data)
 }
 
 /**
