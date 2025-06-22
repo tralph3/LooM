@@ -3,13 +3,15 @@ package main
 import lr "libretro"
 import "core:strings"
 import "core:log"
+import "core:mem"
 
-clone_cstring :: proc (cstr: cstring) -> cstring {
-    tmp := strings.clone_from_cstring(cstr)
-    defer delete(tmp)
+clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring {
+    tmp := string(cstr)
 
-    str, _ := strings.clone_to_cstring(tmp)
-    return str
+    clone := make([^]byte, len(tmp), allocator=allocator)
+    mem.copy_non_overlapping(clone, rawptr(cstr), len(tmp))
+
+    return cstring(clone)
 }
 
 core_options_set_v2_intl :: proc (options: ^lr.RetroCoreOptionsV2Intl) {
