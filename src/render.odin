@@ -134,7 +134,7 @@ renderer_init_framebuffer :: proc () {
     gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 }
 
-renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
+renderer_init_opengl_core_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     sdl.GL_DestroyContext(emu_context)
 
     major_ver := render_cb.version_major
