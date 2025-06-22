@@ -27,8 +27,6 @@ EmulatorState :: struct {
 }
 
 load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
-    unload_game()
-
     core := lr.load_core(core_path) or_return
 
     callbacks := lr.Callbacks {
