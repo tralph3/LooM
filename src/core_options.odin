@@ -15,7 +15,7 @@ clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring
 }
 
 core_options_set_v2_intl :: proc (options: ^lr.RetroCoreOptionsV2Intl) {
-    core_options_set_v2(options.us)
+    core_options_set_v2(options.us) // TODO: support internatinal options
 }
 
 core_options_set_v2 :: proc (options: ^lr.RetroCoreOptionsV2) {
@@ -60,9 +60,6 @@ core_options_set_variables :: proc (options: [^]lr.RetroVariable) {
 
         core_option: CoreOption
 
-        key := clone_cstring(option.key)
-        info: cstring
-
         // value format: "Display; default|val2|val3"
         char_idx: int
         for {
@@ -97,6 +94,7 @@ core_options_set_variables :: proc (options: [^]lr.RetroVariable) {
             })
         }
 
+        key := clone_cstring(option.key)
         GLOBAL_STATE.emulator_state.options[key] = core_option
     }
 }
