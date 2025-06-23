@@ -24,20 +24,24 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
 
         format: u32
         type: u32
+        bbp: u32
 
         switch GLOBAL_STATE.video_state.pixel_format {
         case .RGB565:
             format = gl.RGB
             type = gl.UNSIGNED_SHORT_5_6_5
+            bbp = 2
         case .XRGB1555:
             format = gl.BGRA
-            type = gl.UNSIGNED_SHORT_1_5_5_5_REV
+            type = gl.UNSIGNED_SHORT_5_5_5_1
+            bbp = 2
         case .XRGB8888:
             format = gl.BGRA
             type = gl.UNSIGNED_INT_8_8_8_8_REV
+            bbp = 4
         }
 
-        gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, i32(width), i32(height), format, type, data)
+        gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, i32(pitch / bbp), i32(height), 0, format, type, data)
         gl.BindTexture(gl.TEXTURE_2D, 0)
     }
 }
