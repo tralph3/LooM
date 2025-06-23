@@ -1,5 +1,6 @@
 package main
 
+import "core:os/os2"
 import "base:runtime"
 import cl "clay"
 import sdl "vendor:sdl3"
@@ -31,6 +32,18 @@ VideoState :: struct {
 }
 
 renderer_init :: proc () -> (ok: bool) {
+    when ODIN_OS == .Linux {
+        wayland_display := os2.get_env("WAYLAND_DISPLAY", allocator=context.allocator)
+        defer delete(wayland_display)
+
+        has_wayland := wayland_display != ""
+        if has_wayland {
+            // prioritize Wayland. if both DISPLAY and WAYLAND_DISPLAY
+            // are set, SDL uses x11 by default
+            sdl.SetHint(sdl.HINT_VIDEO_DRIVER, "wayland,x11")
+        }
+    }
+
     if !sdl.Init({ .VIDEO, .AUDIO, .EVENTS, .GAMEPAD, .JOYSTICK }) {
         log.errorf("Failed initializing SDL: {}", sdl.GetError())
         return false
