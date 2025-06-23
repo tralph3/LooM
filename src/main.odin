@@ -77,11 +77,13 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
         return .SUCCESS
     }
 
-    wait_until_next_frame(last_time)
+    if !GLOBAL_STATE.emulator_state.fast_forward {
+        wait_until_next_frame(last_time)
+    }
+
     last_time = sdl.GetTicksNS()
 
     GLOBAL_STATE.input_state.mouse_wheel_y = 0
-    sdl_events_handle()
 
     input_process()
 
@@ -93,9 +95,11 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     should_run_frame := buffered_bytes < AUDIO_BUFFER_OVERFLOW_LIMIT
 
     scene := scene_get(GLOBAL_STATE.current_scene_id)
-    if GLOBAL_STATE.current_scene_id != .RUNNING || should_run_frame {
+
+    if GLOBAL_STATE.current_scene_id != .RUNNING || should_run_frame || GLOBAL_STATE.emulator_state.fast_forward {
         scene.update()
     }
+
     scene.render()
 
     sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
@@ -118,6 +122,10 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
     case .KEY_DOWN, .MOUSE_MOTION:
         if !sdl.ShowCursor() {
             log.warn("Failed showing cursor: {}", sdl.GetError())
+        }
+
+        if event.type == .KEY_DOWN && event.key.scancode == .SPACE && !event.key.repeat {
+            GLOBAL_STATE.emulator_state.fast_forward = !GLOBAL_STATE.emulator_state.fast_forward
         }
     }
 

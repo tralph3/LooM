@@ -30,6 +30,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetHwRender: return env_callback_set_hw_render(data)
         case .GetSystemDirectory: env_callback_get_system_directory(data)
         case .GetSaveDirectory: env_callback_get_save_directory(data)
+        case .GetFastforwarding: env_callback_get_fastforwarding(data)
 
         // case RetroEnvironment.SetVariables:
         // emulator_clone_variables(([^]RetroVariable)(data))
@@ -1193,6 +1194,7 @@ env_callback_get_midi_interface :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
  */
 env_callback_get_fastforwarding :: proc (data: rawptr) { // TODO
+    (^bool)(data)^ = GLOBAL_STATE.emulator_state.fast_forward
 }
 
 /**

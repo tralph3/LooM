@@ -25,6 +25,7 @@ EmulatorState :: struct {
     options: map[cstring]CoreOption,
     options_updated: bool,
     hardware_render_callback: ^lr.RetroHwRenderCallback,
+    fast_forward: bool,
 }
 
 load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
