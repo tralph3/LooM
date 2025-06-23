@@ -43,17 +43,21 @@ TEXT_SHADER_LOCS: struct {
     tex: i32,
 }
 
-
-TextureCacheKey :: struct {
+TextTextureCacheKey :: struct {
     fontId: u16,
     fontSize: u16,
     str: string,
     color: cl.Color,
 }
 
+CachedTextTexture :: struct {
+    id: u32,
+    last_access: u64,
+}
+
 // TODO: invalidate cache some time... otherwise it'll grow
 // indefinitely
-text_texture_cache: map[TextureCacheKey]u32
+text_texture_cache: map[TextTextureCacheKey]CachedTextTexture
 
 gui_renderer_init :: proc () -> (ok: bool) {
     gl.Enable(gl.BLEND)
@@ -182,8 +186,10 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             config: ^cl.TextRenderData = &rcmd.renderData.text
             str := strings.string_from_ptr(config.stringContents.chars, int(config.stringContents.length))
 
-            font_texture, cached := text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
+            font_texture, cached := &text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
             if !cached {
+                cached_texture: CachedTextTexture
+
                 font: ^ttf.Font = GLOBAL_STATE.video_state.fonts[config.fontId]
                 if !ttf.SetFontSize(font, f32(config.fontSize)) {
                     log.errorf("Failed setting font size: {}", sdl.GetError())
@@ -202,8 +208,8 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                     continue
                 }
 
-                gl.GenTextures(1, &font_texture)
-                gl.BindTexture(gl.TEXTURE_2D, font_texture)
+                gl.GenTextures(1, &cached_texture.id)
+                gl.BindTexture(gl.TEXTURE_2D, cached_texture.id)
                 gl.TexImage2D(
                     gl.TEXTURE_2D, 0, gl.RGBA8,
                     surface.w, surface.h,
@@ -213,8 +219,12 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
 
                 sdl.DestroySurface(surface)
 
-                text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }] = font_texture
+                text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }] = cached_texture
+                font_texture = &text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
             }
+
+            font_texture.last_access = sdl.GetTicksNS()
+
             vertices: [12]c.float = {
                 rect.x / window_w, (rect.y + rect.h) / window_h, 0,
                 rect.x / window_w, rect.y / window_h, 0,
@@ -228,14 +238,12 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
             gl.EnableVertexAttribArray(0)
             gl.ActiveTexture(gl.TEXTURE0)
-            gl.BindTexture(gl.TEXTURE_2D, font_texture)
+            gl.BindTexture(gl.TEXTURE_2D, font_texture.id)
 
             gl.UseProgram(text_shader)
             gl.Uniform1i(TEXT_SHADER_LOCS.tex, 0)
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
-
-            //gl.DeleteTextures(1, &font_texture)
 
             gl.BindBuffer(gl.ARRAY_BUFFER, 0)
             gl.BindVertexArray(0)
@@ -274,5 +282,22 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             log.warn("CLAY: Attempted to render None render command")
         }
         }
+    }
+
+    keys_to_remove: [dynamic]TextTextureCacheKey
+    defer delete(keys_to_remove)
+
+    current_time_ns := sdl.GetTicksNS()
+    for k, texture in text_texture_cache {
+        elapsed_time_ns := current_time_ns - texture.last_access
+        if elapsed_time_ns > 5_000_000_000 { // 5 seconds
+            append(&keys_to_remove, k)
+        }
+    }
+
+    for key in keys_to_remove {
+        id := text_texture_cache[key].id
+        gl.DeleteTextures(1, &id)
+        delete_key(&text_texture_cache, key)
     }
 }
