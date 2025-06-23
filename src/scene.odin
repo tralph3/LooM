@@ -42,7 +42,7 @@ SCENES := [SceneID]Scene{
             sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
         },
         render = proc () {
-            layout := gui_layout_render_screen()
+            layout := gui_layout_running_screen()
             gui_renderer_render_commands(&layout)
         }
     },

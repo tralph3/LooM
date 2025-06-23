@@ -2,7 +2,7 @@ package main
 
 import cl "clay"
 
-gui_layout_render_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
+gui_layout_running_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
     cl.BeginLayout()
 
     if cl.UI()({
