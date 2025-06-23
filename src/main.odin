@@ -27,8 +27,8 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
 
     remaining_ns := frame_duration_ns - elapsed_ns
 
-    if remaining_ns > 500_000 {
-        sdl.DelayNS(remaining_ns - 500_000)
+    if remaining_ns > 1_000_000 {
+        sdl.DelayNS(remaining_ns - 1_000_000)
     }
 
     target_ns := last_time_ns + frame_duration_ns
