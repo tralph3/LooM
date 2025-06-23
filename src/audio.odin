@@ -6,8 +6,11 @@ import "core:c"
 import "core:log"
 import "core:mem"
 
-AUDIO_BUFFER_SIZE_BYTES :: 16384
 BYTES_PER_FRAME :: 4
+
+AUDIO_BUFFER_SIZE_BYTES :: 1024 * 16
+AUDIO_BUFFER_UNDERRUN_LIMIT :: 1024 * 4
+AUDIO_BUFFER_OVERFLOW_LIMIT :: 1024 * 12
 
 COPY_BUFFER: [AUDIO_BUFFER_SIZE_BYTES]byte
 
@@ -25,6 +28,11 @@ audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
 
 audio_buffer_pop_batch :: proc "c" (userdata: rawptr, stream: ^sdl.AudioStream, additional_amount, total_amount: c.int) {
     context = GLOBAL_STATE.ctx
+
+    buffered_bytes := int(GLOBAL_STATE.audio_state.buffer.size)
+    if buffered_bytes < AUDIO_BUFFER_UNDERRUN_LIMIT {
+        return
+    }
 
     count := cb.pop(&GLOBAL_STATE.audio_state.buffer, raw_data(COPY_BUFFER[:]), u64(additional_amount))
     sdl.PutAudioStreamData(stream, raw_data(COPY_BUFFER[:]), i32(count))

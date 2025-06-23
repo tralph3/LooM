@@ -11,6 +11,7 @@ import "core:mem"
 import lr "libretro"
 import "core:time"
 import "core:c"
+import cb "circular_buffer"
 
 wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
     fps := GLOBAL_STATE.emulator_state.av_info.timing.fps > 0 \
@@ -86,8 +87,15 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
 
     gui_update()
 
+    buffered_bytes := int(GLOBAL_STATE.audio_state.buffer.size)
+    buffer_capacity := len(GLOBAL_STATE.audio_state.buffer.data)
+
+    should_run_frame := buffered_bytes < AUDIO_BUFFER_OVERFLOW_LIMIT
+
     scene := scene_get(GLOBAL_STATE.current_scene_id)
-    scene.update()
+    if GLOBAL_STATE.current_scene_id != .RUNNING || should_run_frame {
+        scene.update()
+    }
     scene.render()
 
     sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
