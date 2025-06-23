@@ -37,6 +37,7 @@ gui_init :: proc () -> (ok: bool) {
 }
 
 gui_deinit :: proc () {
+    gui_renderer_deinit()
     delete(
         slice.from_ptr(
             GLOBAL_STATE.gui_state.arena.memory, int(GLOBAL_STATE.gui_state.arena.capacity)

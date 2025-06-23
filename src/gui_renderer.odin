@@ -42,6 +42,10 @@ TEXT_SHADER_LOCS: struct {
     tex: i32,
 }
 
+// TODO: invalidate cache some time... otherwise it'll grow
+// indefinitely
+text_texture_cache: map[struct {u16, cstring, cl.Color}]u32
+
 gui_renderer_init :: proc () -> (ok: bool) {
     gl.Enable(gl.BLEND)
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -53,6 +57,10 @@ gui_renderer_init :: proc () -> (ok: bool) {
     text_shader = load_shader(vertex_text_shader_src, fragment_text_shader_src, &TEXT_SHADER_LOCS) or_return
 
     return true
+}
+
+gui_renderer_deinit :: proc () {
+    delete(text_texture_cache)
 }
 
 gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextElementConfig, user_data: rawptr) -> cl.Dimensions {
@@ -164,40 +172,46 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         case .Text: {
             config: ^cl.TextRenderData = &rcmd.renderData.text
 
-            font: ^ttf.Font = GLOBAL_STATE.video_state.fonts[config.fontId]
-            if !ttf.SetFontSize(font, f32(config.fontSize)) {
-                log.errorf("Failed setting font size: {}", sdl.GetError())
-                continue
+            font_texture, cached := text_texture_cache[{ config.fontSize, cstring(config.stringContents.chars), config.textColor }]
+            if !cached {
+                log.info("Generating text texture")
+                font: ^ttf.Font = GLOBAL_STATE.video_state.fonts[config.fontId]
+                if !ttf.SetFontSize(font, f32(config.fontSize)) {
+                    log.errorf("Failed setting font size: {}", sdl.GetError())
+                    continue
+                }
+
+                color := sdl.Color { u8(config.textColor.r), u8(config.textColor.g), u8(config.textColor.b), u8(config.textColor.a) }
+                surface := ttf.RenderText_Blended(font, cstring(config.stringContents.chars), uint(config.stringContents.length), color)
+
+                converted_surface := sdl.ConvertSurface(surface, sdl.PixelFormat.ARGB8888)
+                sdl.DestroySurface(surface)
+                surface = converted_surface
+
+                if surface == nil {
+                    log.errorf("Failed rendering text: {}", sdl.GetError())
+                    continue
+                }
+
+                gl.GenTextures(1, &font_texture)
+                gl.BindTexture(gl.TEXTURE_2D, font_texture)
+                gl.TexImage2D(
+                    gl.TEXTURE_2D, 0, gl.RGBA8,
+                    surface.w, surface.h,
+                    0, gl.BGRA, gl.UNSIGNED_INT_8_8_8_8_REV, surface.pixels)
+                gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+                gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+
+                sdl.DestroySurface(surface)
+
+                text_texture_cache[{ config.fontSize, cstring(config.stringContents.chars), config.textColor }] = font_texture
             }
-
-            color := sdl.Color { u8(config.textColor.r), u8(config.textColor.g), u8(config.textColor.b), u8(config.textColor.a) }
-            surface := ttf.RenderText_Blended(font, cstring(config.stringContents.chars), uint(config.stringContents.length), color)
-
-            converted_surface := sdl.ConvertSurface(surface, sdl.PixelFormat.ARGB8888)
-            sdl.DestroySurface(surface)
-            surface = converted_surface
-
-            if surface == nil {
-                log.errorf("Failed rendering text: {}", sdl.GetError())
-                continue
-            }
-
             vertices: [12]c.float = {
                 rect.x / window_w, (rect.y + rect.h) / window_h, 0,
                 rect.x / window_w, rect.y / window_h, 0,
                 (rect.x + rect.w) / window_w, rect.y / window_h, 0,
                 (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
             }
-
-            font_texture: u32
-            gl.GenTextures(1, &font_texture)
-            gl.BindTexture(gl.TEXTURE_2D, font_texture)
-            gl.TexImage2D(
-                gl.TEXTURE_2D, 0, gl.RGBA8,
-                surface.w, surface.h,
-                0, gl.BGRA, gl.UNSIGNED_INT_8_8_8_8_REV, surface.pixels)
-            gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-            gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
             gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
             gl.BindVertexArray(vao)
@@ -212,8 +226,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
 
-            gl.DeleteTextures(1, &font_texture)
-            sdl.DestroySurface(surface)
+            //gl.DeleteTextures(1, &font_texture)
 
             gl.BindBuffer(gl.ARRAY_BUFFER, 0)
             gl.BindVertexArray(0)
