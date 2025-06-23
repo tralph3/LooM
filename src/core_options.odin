@@ -4,6 +4,7 @@ import lr "libretro"
 import "core:strings"
 import "core:log"
 import "core:mem"
+import "core:fmt"
 
 clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring {
     tmp := string(cstr)
@@ -137,4 +138,15 @@ core_option_set :: proc (key: cstring, val: cstring) -> (ok: bool) {
     GLOBAL_STATE.emulator_state.options_updated = true
 
     return true
+}
+
+core_options_print_all :: proc () {
+    for key, option in GLOBAL_STATE.emulator_state.options {
+        fmt.println(key, " '", option.display, "'", " = ", option.current_value, sep="")
+        for value in option.values {
+            fmt.print(value.value, "|", sep="")
+        }
+
+        fmt.println("\n--------------")
+    }
 }
