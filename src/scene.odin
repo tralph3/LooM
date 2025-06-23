@@ -23,29 +23,35 @@ SceneID :: enum {
 }
 
 SCENES := [SceneID]Scene{
-    .LOGIN = {
-        update = proc () {
+        .LOGIN = {
+            update = proc () {
+            },
+            render = proc () {
+                layout := gui_layout_login_screen()
+                gui_renderer_render_commands(&layout)
+            },
         },
-        render = proc () {
-            layout := gui_layout_login_screen()
-            gui_renderer_render_commands(&layout)
+        .MENU = {
         },
-    },
-    .MENU = {
-    },
-    .PAUSE = {
-    },
-    .RUNNING = {
-        update = proc () {
-            sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
-            GLOBAL_STATE.emulator_state.core.api.run()
-            sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
+        .PAUSE = {
+            update = proc () {
+            },
+            render = proc () {
+                layout := gui_layout_pause_screen()
+                gui_renderer_render_commands(&layout)
+            },
         },
-        render = proc () {
-            layout := gui_layout_running_screen()
-            gui_renderer_render_commands(&layout)
-        }
-    },
+        .RUNNING = {
+            update = proc () {
+                sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
+                GLOBAL_STATE.emulator_state.core.api.run()
+                sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
+            },
+            render = proc () {
+                layout := gui_layout_running_screen()
+                gui_renderer_render_commands(&layout)
+            }
+        },
 }
 
 scene_change :: proc (new_scene_id: SceneID) {

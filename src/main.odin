@@ -126,6 +126,12 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
 
         if event.type == .KEY_DOWN && event.key.scancode == .SPACE && !event.key.repeat {
             GLOBAL_STATE.emulator_state.fast_forward = !GLOBAL_STATE.emulator_state.fast_forward
+        } else if event.type == .KEY_DOWN && event.key.scancode == .ESCAPE && !event.key.repeat {
+            if GLOBAL_STATE.current_scene_id == .PAUSE {
+                scene_change(.RUNNING)
+            } else {
+                scene_change(.PAUSE)
+            }
         }
     }
 
