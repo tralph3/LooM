@@ -111,6 +111,14 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
         GLOBAL_STATE.should_exit = true
     case .MOUSE_WHEEL:
         GLOBAL_STATE.input_state.mouse_wheel_y = event.wheel.y
+    case .GAMEPAD_BUTTON_DOWN, .GAMEPAD_AXIS_MOTION:
+        if !sdl.HideCursor() {
+            log.warn("Failed hiding cursor: {}", sdl.GetError())
+        }
+    case .KEY_DOWN, .MOUSE_MOTION:
+        if !sdl.ShowCursor() {
+            log.warn("Failed showing cursor: {}", sdl.GetError())
+        }
     }
 
     return .CONTINUE
