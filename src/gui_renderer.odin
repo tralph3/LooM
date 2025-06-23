@@ -8,10 +8,6 @@ import "core:math"
 import "core:log"
 import "core:c"
 
-/* Global for convenience. Even in 4K this is enough for smooth curves (low radius or rect size coupled with
- * no AA or low resolution might make it appear as jagged curves) */
-NUM_CIRCLE_SEGMENTS: int : 16
-
 vbo: u32
 vao: u32
 rectangle_shader: u32
@@ -23,46 +19,27 @@ fragment_rectangle_shader_src: cstring = #load("./shaders/rectangle.frag")
 vertex_text_shader_src: cstring = #load("./shaders/text.vert")
 fragment_text_shader_src: cstring = #load("./shaders/text.frag")
 
-load_shader :: proc (vert, frag: cstring) -> (progam_id: u32, ok: bool) {
-    vert := vert
-    frag := frag
+@(private="file")
+RECTANGLE_SHADER_LOCS: struct {
+    rect: i32,
+    screenSize: i32,
+    color: i32,
 
-    vertex_shader := gl.CreateShader(gl.VERTEX_SHADER)
-    gl.ShaderSource(vertex_shader, 1, &vert, nil)
-    gl.CompileShader(vertex_shader)
+    radiusTL: i32,
+    radiusTR: i32,
+    radiusBR: i32,
+    radiusBL: i32,
 
-    success: i32
-    gl.GetShaderiv(vertex_shader, gl.COMPILE_STATUS, &success);
-    if !bool(success) {
-        log.errorf("Vertex compilation failed")
-        return 0, false
-    }
+    border: i32,
+    borderL: i32,
+    borderR: i32,
+    borderT: i32,
+    borderB: i32,
+}
 
-    fragment_shader := gl.CreateShader(gl.FRAGMENT_SHADER)
-    gl.ShaderSource(fragment_shader, 1, &frag, nil)
-    gl.CompileShader(fragment_shader)
-
-    gl.GetShaderiv(fragment_shader, gl.COMPILE_STATUS, &success);
-    if !bool(success) {
-        log.errorf("Fragment compilation failed")
-        return 0, false
-    }
-
-    shader_program := gl.CreateProgram()
-    gl.AttachShader(shader_program, vertex_shader)
-    gl.AttachShader(shader_program, fragment_shader)
-    gl.LinkProgram(shader_program)
-
-    gl.GetProgramiv(shader_program, gl.LINK_STATUS, &success);
-    if !bool(success) {
-        log.errorf("Program linking failed")
-        return 0, false
-    }
-
-    gl.DeleteShader(vertex_shader)
-    gl.DeleteShader(fragment_shader)
-
-    return shader_program, true
+@(private="file")
+TEXT_SHADER_LOCS: struct {
+    tex: i32,
 }
 
 gui_renderer_init :: proc () -> (ok: bool) {
@@ -72,8 +49,8 @@ gui_renderer_init :: proc () -> (ok: bool) {
     gl.GenBuffers(1, &vbo)
     gl.GenVertexArrays(1, &vao)
 
-    rectangle_shader = load_shader(vertex_rectangle_shader_src, fragment_rectangle_shader_src) or_return
-    text_shader = load_shader(vertex_text_shader_src, fragment_text_shader_src) or_return
+    rectangle_shader = load_shader(vertex_rectangle_shader_src, fragment_rectangle_shader_src, &RECTANGLE_SHADER_LOCS) or_return
+    text_shader = load_shader(vertex_text_shader_src, fragment_text_shader_src, &TEXT_SHADER_LOCS) or_return
 
     return true
 }
@@ -138,20 +115,20 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.EnableVertexAttribArray(0)
             gl.UseProgram(rectangle_shader)
 
-            gl.Uniform4f(gl.GetUniformLocation(rectangle_shader, "rect"), rect.x, rect.y, rect.w, rect.h)
-            gl.Uniform2f(gl.GetUniformLocation(rectangle_shader, "screenSize"), window_w, window_h)
+            gl.Uniform4f(RECTANGLE_SHADER_LOCS.rect, rect.x, rect.y, rect.w, rect.h)
+            gl.Uniform2f(RECTANGLE_SHADER_LOCS.screenSize, window_w, window_h)
 
             if rcmd.commandType == .Rectangle {
                 config: ^cl.RectangleRenderData = &rcmd.renderData.rectangle
 
-                gl.Uniform1i(gl.GetUniformLocation(rectangle_shader, "border"), 0)
+                gl.Uniform1i(RECTANGLE_SHADER_LOCS.border, 0)
 
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusTL"), config.cornerRadius.topLeft)
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusTR"), config.cornerRadius.topRight)
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusBR"), config.cornerRadius.bottomRight)
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusBL"), config.cornerRadius.bottomLeft)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusTL, config.cornerRadius.topLeft)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusTR, config.cornerRadius.topRight)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusBR, config.cornerRadius.bottomRight)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusBL, config.cornerRadius.bottomLeft)
 
-                gl.Uniform4f(gl.GetUniformLocation(rectangle_shader, "color"),
+                gl.Uniform4f(RECTANGLE_SHADER_LOCS.color,
                              f32(config.backgroundColor[0])/255.0,
                              f32(config.backgroundColor[1])/255.0,
                              f32(config.backgroundColor[2])/255.0,
@@ -160,19 +137,19 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             } else if rcmd.commandType == .Border {
                 config: ^cl.BorderRenderData = &rcmd.renderData.border
 
-                gl.Uniform1i(gl.GetUniformLocation(rectangle_shader, "border"), 1)
+                gl.Uniform1i(RECTANGLE_SHADER_LOCS.border, 1)
 
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusTL"), config.cornerRadius.topLeft)
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusTR"), config.cornerRadius.topRight)
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusBR"), config.cornerRadius.bottomRight)
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "radiusBL"), config.cornerRadius.bottomLeft)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusTL, config.cornerRadius.topLeft)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusTR, config.cornerRadius.topRight)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusBR, config.cornerRadius.bottomRight)
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.radiusBL, config.cornerRadius.bottomLeft)
 
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "borderL"), f32(config.width.left))
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "borderR"), f32(config.width.right))
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "borderT"), f32(config.width.top))
-                gl.Uniform1f(gl.GetUniformLocation(rectangle_shader, "borderB"), f32(config.width.bottom))
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.borderL, f32(config.width.left))
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.borderR, f32(config.width.right))
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.borderT, f32(config.width.top))
+                gl.Uniform1f(RECTANGLE_SHADER_LOCS.borderB, f32(config.width.bottom))
 
-                gl.Uniform4f(gl.GetUniformLocation(rectangle_shader, "color"),
+                gl.Uniform4f(RECTANGLE_SHADER_LOCS.color,
                              f32(config.color[0])/255.0,
                              f32(config.color[1])/255.0,
                              f32(config.color[2])/255.0,
@@ -233,7 +210,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.BindTexture(gl.TEXTURE_2D, font_texture)
 
             gl.UseProgram(text_shader)
-            gl.Uniform1i(gl.GetUniformLocation(text_shader, "tex"), 0)
+            gl.Uniform1i(TEXT_SHADER_LOCS.tex, 0)
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
 
