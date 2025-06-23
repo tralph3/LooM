@@ -264,7 +264,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             log.warn("CLAY: Custom render command is not used")
         }
         case .None: {
-            log.warn("CLAY: Attemted to render None render command")
+            log.warn("CLAY: Attempted to render None render command")
         }
         }
     }

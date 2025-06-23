@@ -20,7 +20,10 @@ gui_init :: proc () -> (ok: bool) {
     GLOBAL_STATE.gui_state.arena = cl.CreateArenaWithCapacityAndMemory(
         uint(min_arena_size), raw_data(memory))
 
-    cl.Initialize(GLOBAL_STATE.gui_state.arena, {}, { handler = gui_error_handler })
+    if cl.Initialize(GLOBAL_STATE.gui_state.arena, {}, { handler = gui_error_handler }) == nil {
+        log.error("Failed initializing Clay")
+        return false
+    }
 
     cl.SetMeasureTextFunction(gui_renderer_measure_text, nil)
 
