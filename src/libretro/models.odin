@@ -32,6 +32,14 @@ SystemAvInfo :: struct {
     timing: SystemTiming,
 }
 
+SystemInfo :: struct {
+    library_name: cstring,
+    library_version: cstring,
+    valid_extensions: cstring,
+    need_fullpath: bool,
+    block_extract: bool,
+}
+
 GameInfo :: struct {
     path: cstring,
     data: rawptr,
