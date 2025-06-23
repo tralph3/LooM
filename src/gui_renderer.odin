@@ -7,6 +7,7 @@ import "vendor:sdl3/ttf"
 import "core:math"
 import "core:log"
 import "core:c"
+import "core:strings"
 
 vbo: u32
 vao: u32
@@ -44,7 +45,7 @@ TEXT_SHADER_LOCS: struct {
 
 // TODO: invalidate cache some time... otherwise it'll grow
 // indefinitely
-text_texture_cache: map[struct {u16, cstring, cl.Color}]u32
+text_texture_cache: map[struct {u16, string, cl.Color}]u32
 
 gui_renderer_init :: proc () -> (ok: bool) {
     gl.Enable(gl.BLEND)
@@ -171,8 +172,9 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         }
         case .Text: {
             config: ^cl.TextRenderData = &rcmd.renderData.text
+            str := strings.string_from_ptr(config.stringContents.chars, int(config.stringContents.length))
 
-            font_texture, cached := text_texture_cache[{ config.fontSize, cstring(config.stringContents.chars), config.textColor }]
+            font_texture, cached := text_texture_cache[{ config.fontSize, str, config.textColor }]
             if !cached {
                 log.info("Generating text texture")
                 font: ^ttf.Font = GLOBAL_STATE.video_state.fonts[config.fontId]
@@ -204,7 +206,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
 
                 sdl.DestroySurface(surface)
 
-                text_texture_cache[{ config.fontSize, cstring(config.stringContents.chars), config.textColor }] = font_texture
+                text_texture_cache[{ config.fontSize, str, config.textColor }] = font_texture
             }
             vertices: [12]c.float = {
                 rect.x / window_w, (rect.y + rect.h) / window_h, 0,
@@ -241,11 +243,21 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         case .Image: {
             gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo_id)
             gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-            gl.BlitFramebuffer(
-                0, i32(GLOBAL_STATE.video_state.actual_height), i32(GLOBAL_STATE.video_state.actual_width), 0,
-                i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
-                gl.COLOR_BUFFER_BIT, gl.NEAREST
-            )
+
+            if GLOBAL_STATE.emulator_state.hardware_render_callback != nil && GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin {
+                gl.BlitFramebuffer(
+                    0, 0, i32(GLOBAL_STATE.video_state.actual_width), i32(GLOBAL_STATE.video_state.actual_height),
+                    i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
+                    gl.COLOR_BUFFER_BIT, gl.NEAREST
+                )
+            } else {
+                gl.BlitFramebuffer(
+                    0, i32(GLOBAL_STATE.video_state.actual_height), i32(GLOBAL_STATE.video_state.actual_width), 0,
+                    i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
+                    gl.COLOR_BUFFER_BIT, gl.NEAREST
+                )
+            }
+
             gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
         }
         case .Custom: {
