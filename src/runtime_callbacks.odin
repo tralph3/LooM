@@ -49,9 +49,19 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
 input_poll_callback :: proc "c" () {
 }
 
-input_state_callback :: proc "c" (port: u32, device: u32, index: u32, id: u32) -> i16 {
+input_state_callback :: proc "c" (port: u32, device: lr.RetroDevice, index: u32, id: lr.RetroDeviceId) -> i16 {
     // TODO: support multiple devices
-    return GLOBAL_STATE.input_state.i[lr.RetroDevice(id)]
+    #partial switch device {
+    case .None:
+        return 0
+    case .Joypad:
+        return GLOBAL_STATE.input_state.i[id]
+    case .Analog:
+        offset: u32 = 2
+        return GLOBAL_STATE.input_state.analog[offset * index + u32(id)]
+    }
+
+    return 0
 }
 
 audio_sample_callback :: proc "c" (left: i16, right: i16) {

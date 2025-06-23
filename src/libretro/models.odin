@@ -9,7 +9,7 @@ Callbacks :: struct {
     environment: proc "c" (RetroEnvironment, rawptr) -> bool,
     video_refresh: proc "c" (rawptr, u32, u32, u32),
     input_poll: proc "c" (),
-    input_state: proc "c" (u32, u32, u32, u32) -> i16,
+    input_state: proc "c" (u32, RetroDevice, u32, RetroDeviceId) -> i16,
     audio_sample: proc "c" (i16, i16),
     audio_sample_batch: proc "c" (^i16, i32) -> i32,
 }
@@ -130,23 +130,33 @@ RetroEnvironment :: enum c.int {
     GetFileBrowserStartDirectory                  = 80,
 }
 
+RetroDeviceId :: enum c.int {
+    JoypadB      =  0,
+    JoypadY      =  1,
+    JoypadSelect =  2,
+    JoypadStart  =  3,
+    JoypadUp     =  4,
+    JoypadDown   =  5,
+    JoypadLeft   =  6,
+    JoypadRight  =  7,
+    JoypadA      =  8,
+    JoypadX      =  9,
+    JoypadL      = 10,
+    JoypadR      = 11,
+    JoypadL2     = 12,
+    JoypadR2     = 13,
+    JoypadL3     = 14,
+    JoypadR3     = 15,
+}
+
 RetroDevice :: enum c.int {
-    IdJoypadB      =  0,
-    IdJoypadY      =  1,
-    IdJoypadSelect =  2,
-    IdJoypadStart  =  3,
-    IdJoypadUp     =  4,
-    IdJoypadDown   =  5,
-    IdJoypadLeft   =  6,
-    IdJoypadRight  =  7,
-    IdJoypadA      =  8,
-    IdJoypadX      =  9,
-    IdJoypadL      = 10,
-    IdJoypadR      = 11,
-    IdJoypadL2     = 12,
-    IdJoypadR2     = 13,
-    IdJoypadL3     = 14,
-    IdJoypadR3     = 15,
+    None     = 0,
+    Joypad   = 1,
+    Mouse    = 2,
+    Keyboard = 3,
+    Lightgun = 4,
+    Analog   = 5,
+    Pointer  = 6,
 }
 
 RetroPixelFormat :: enum c.int {

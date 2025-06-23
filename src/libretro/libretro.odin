@@ -23,7 +23,7 @@ LibretroCoreAPI :: struct {
     set_video_refresh: proc "c" (proc "c" (rawptr, u32, u32, u32)),
     set_controller_port_device: proc "c" (port, device: c.uint),
     set_input_poll: proc "c" (proc "c" ()),
-    set_input_state: proc "c" (proc "c" (u32, u32, u32, u32) -> i16),
+    set_input_state: proc "c" (proc "c" (u32, RetroDevice, u32, RetroDeviceId) -> i16),
     set_audio_sample: proc "c" (proc "c" (i16, i16)),
     set_audio_sample_batch: proc "c" (proc "c" (^i16, i32) -> i32),
     run: proc "c" (),
@@ -38,6 +38,7 @@ LibretroCoreAPI :: struct {
 
     __handle: dynlib.Library,
 }
+
 
 load_core :: proc (core_path: string) -> (LibretroCore, bool) {
     core := LibretroCore {}
