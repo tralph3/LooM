@@ -3,4 +3,5 @@ build/
 cores/
 roms/
 system/
+saves/
 libretro.h
