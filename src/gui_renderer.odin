@@ -106,7 +106,6 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 (rect.x + rect.w) / window_w, rect.y / window_h, 0,
                 (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
             }
-            vertices = vertices * 2 - 1
 
             gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
             gl.BindVertexArray(vao)
@@ -189,7 +188,6 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 (rect.x + rect.w) / window_w, rect.y / window_h, 0,
                 (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
             }
-            vertices = vertices * 2 - 1
 
             font_texture: u32
             gl.GenTextures(1, &font_texture)

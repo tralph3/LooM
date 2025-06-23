@@ -10,5 +10,6 @@ void main() {
         (gl_VertexID == 1 || gl_VertexID == 2) ? 1.0 : 0.0
         );
 
-    gl_Position = vec4(aPos, 1.0);
+    vec3 aPosN = aPos * 2.0 - 1.0;
+    gl_Position = vec4(aPosN, 1.0);
 }
