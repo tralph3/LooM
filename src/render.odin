@@ -157,7 +157,7 @@ renderer_init_opengl_core_context :: proc (render_cb: ^lr.RetroHwRenderCallback)
         return c.uintptr_t(fbo_id)
     }
 
-    render_cb.context_reset()
+    GLOBAL_STATE.emulator_state.hardware_render_callback = render_cb
 
     sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
 }

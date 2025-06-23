@@ -24,6 +24,7 @@ EmulatorState :: struct {
     performance_level: uint,
     options: map[cstring]CoreOption,
     options_updated: bool,
+    hardware_render_callback: ^lr.RetroHwRenderCallback,
 }
 
 load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
@@ -41,6 +42,10 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
     lr.initialize_core(&core, &callbacks)
 
     lr.load_rom(&core, rom_path) or_return
+
+    if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+        GLOBAL_STATE.emulator_state.hardware_render_callback.context_reset()
+    }
 
     GLOBAL_STATE.emulator_state.core = core
 
