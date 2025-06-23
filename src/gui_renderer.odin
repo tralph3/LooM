@@ -43,9 +43,17 @@ TEXT_SHADER_LOCS: struct {
     tex: i32,
 }
 
+
+TextureCacheKey :: struct {
+    fontId: u16,
+    fontSize: u16,
+    str: string,
+    color: cl.Color,
+}
+
 // TODO: invalidate cache some time... otherwise it'll grow
 // indefinitely
-text_texture_cache: map[struct {u16, string, cl.Color}]u32
+text_texture_cache: map[TextureCacheKey]u32
 
 gui_renderer_init :: proc () -> (ok: bool) {
     gl.Enable(gl.BLEND)
@@ -174,9 +182,8 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             config: ^cl.TextRenderData = &rcmd.renderData.text
             str := strings.string_from_ptr(config.stringContents.chars, int(config.stringContents.length))
 
-            font_texture, cached := text_texture_cache[{ config.fontSize, str, config.textColor }]
+            font_texture, cached := text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
             if !cached {
-                log.info("Generating text texture")
                 font: ^ttf.Font = GLOBAL_STATE.video_state.fonts[config.fontId]
                 if !ttf.SetFontSize(font, f32(config.fontSize)) {
                     log.errorf("Failed setting font size: {}", sdl.GetError())
@@ -206,7 +213,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
 
                 sdl.DestroySurface(surface)
 
-                text_texture_cache[{ config.fontSize, str, config.textColor }] = font_texture
+                text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }] = font_texture
             }
             vertices: [12]c.float = {
                 rect.x / window_w, (rect.y + rect.h) / window_h, 0,
