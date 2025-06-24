@@ -77,11 +77,8 @@ gui_renderer_deinit :: proc () {
 }
 
 gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextElementConfig, user_data: rawptr) -> cl.Dimensions {
-    if text.length == 0 {
-        return { 0, 0 }
-    }
-
     context = GLOBAL_STATE.ctx
+    assert(text.length > 0)
 
     fonts := GLOBAL_STATE.video_state.fonts
     font := fonts[config.fontId]
