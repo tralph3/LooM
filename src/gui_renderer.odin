@@ -104,8 +104,9 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
     window_w := f32(window_x)
     window_h := f32(window_y)
 
-    gl.Viewport(0, 0, window_x, window_y)
     gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+    gl.Viewport(0, 0, window_x, window_y)
+
     for i in 0..<rcommands.length {
         rcmd := cl.RenderCommandArray_Get(rcommands, i)
         bounding_box: cl.BoundingBox = rcmd.boundingBox

@@ -12,6 +12,7 @@ import gl "vendor:OpenGL"
 
 fbo_id: u32
 tex_id: u32
+depth_rbo: u32
 gl_context: sdl.GLContext
 emu_context: sdl.GLContext
 
@@ -20,10 +21,6 @@ VideoState :: struct {
     text_engine: ^ttf.TextEngine,
     pixel_format: lr.RetroPixelFormat,
     fonts: [dynamic]^ttf.Font,
-
-    // dont use
-    renderer: ^sdl.Renderer,
-    render_texture: ^sdl.Texture,
 
     actual_width: u32,
     actual_height: u32,
@@ -64,7 +61,7 @@ renderer_init :: proc () -> (ok: bool) {
 
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
-    sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_CORE))
+    sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
     sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 0)
 
     gl_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
@@ -84,15 +81,12 @@ renderer_init :: proc () -> (ok: bool) {
 }
 
 renderer_deinit :: proc () {
-    sdl.DestroyTexture(GLOBAL_STATE.video_state.render_texture)
-
     for font in GLOBAL_STATE.video_state.fonts {
         ttf.CloseFont(font)
     }
     delete(GLOBAL_STATE.video_state.fonts)
 
     ttf.DestroyRendererTextEngine(GLOBAL_STATE.video_state.text_engine)
-    sdl.DestroyRenderer(GLOBAL_STATE.video_state.renderer)
     sdl.DestroyWindow(GLOBAL_STATE.video_state.window)
 
     ttf.Quit()
@@ -117,8 +111,12 @@ renderer_init_framebuffer :: proc () {
     width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
     height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
 
-    gl.DeleteTextures(1, &tex_id)
-    gl.DeleteFramebuffers(1, &fbo_id)
+    if tex_id != 0 {
+        gl.DeleteTextures(1, &tex_id)
+    }
+    if fbo_id != 0 {
+        gl.DeleteFramebuffers(1, &fbo_id)
+    }
 
     if width == 0 || height == 0 {
         width = 1920
@@ -134,9 +132,14 @@ renderer_init_framebuffer :: proc () {
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
+    gl.GenRenderbuffers(1, &depth_rbo)
+    gl.BindRenderbuffer(gl.RENDERBUFFER, depth_rbo)
+    gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, width, height)
+
     gl.GenFramebuffers(1, &fbo_id)
     gl.BindFramebuffer(gl.FRAMEBUFFER, fbo_id)
     gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex_id, 0)
+    gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depth_rbo)
 
     framebuffer_status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
     if framebuffer_status != gl.FRAMEBUFFER_COMPLETE {
@@ -145,17 +148,27 @@ renderer_init_framebuffer :: proc () {
 
     gl.BindTexture(gl.TEXTURE_2D, 0)
     gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+    gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
 }
 
-renderer_init_opengl_core_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
+renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     sdl.GL_DestroyContext(emu_context)
 
     major_ver := render_cb.version_major
     minor_ver := render_cb.version_minor
 
+    if major_ver < 3 {
+        // run in 3.3 compat mode
+        major_ver = 3
+        minor_ver = 3
+        sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
+    } else {
+        sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_CORE))
+    }
+
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, i32(major_ver))
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, i32(minor_ver))
-    sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_CORE))
+
     sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 1)
 
     emu_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
