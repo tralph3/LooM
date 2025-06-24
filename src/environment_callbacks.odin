@@ -1193,7 +1193,7 @@ env_callback_get_midi_interface :: proc (data: rawptr) { // TODO
  *
  * @see RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
  */
-env_callback_get_fastforwarding :: proc (data: rawptr) { // TODO
+env_callback_get_fastforwarding :: proc (data: rawptr) { // DONE
     (^bool)(data)^ = GLOBAL_STATE.emulator_state.fast_forward
 }
 
