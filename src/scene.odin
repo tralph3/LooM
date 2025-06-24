@@ -13,6 +13,8 @@ Scene :: struct {
     on_exit: SceneOnExit,
     update: SceneUpdate,
     render: SceneRender,
+
+    allowed_transitons: bit_set[SceneID],
 }
 
 SceneID :: enum {
@@ -30,6 +32,7 @@ SCENES := [SceneID]Scene{
                 layout := gui_layout_login_screen()
                 gui_renderer_render_commands(&layout)
             },
+            allowed_transitons = { .MENU },
         },
         .MENU = {
         },
@@ -40,6 +43,7 @@ SCENES := [SceneID]Scene{
                 layout := gui_layout_pause_screen()
                 gui_renderer_render_commands(&layout)
             },
+            allowed_transitons = { .RUNNING, .MENU },
         },
         .RUNNING = {
             update = proc () {
@@ -50,12 +54,20 @@ SCENES := [SceneID]Scene{
             render = proc () {
                 layout := gui_layout_running_screen()
                 gui_renderer_render_commands(&layout)
-            }
+            },
+            allowed_transitons = { .PAUSE, .MENU },
         },
 }
 
 scene_change :: proc (new_scene_id: SceneID) {
     current_scene := scene_get(GLOBAL_STATE.current_scene_id)
+
+    if new_scene_id not_in current_scene.allowed_transitons {
+        log.warnf("Attempted an invalid scene change. From '{}' to '{}'",
+                  GLOBAL_STATE.current_scene_id, new_scene_id)
+        return
+    }
+
     new_scene := scene_get(new_scene_id)
 
     if current_scene.on_exit != nil {
