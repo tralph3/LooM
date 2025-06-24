@@ -63,6 +63,5 @@ gui_update :: proc () {
 @(private="file")
 gui_error_handler :: proc "c" (error_data: cl.ErrorData) {
     context = GLOBAL_STATE.ctx
-
-    log.errorf("GUI Error: {}: {}", error_data.errorType, error_data.errorText)
+    log.errorf("CLAY: {}: {}", error_data.errorType, error_data.errorText)
 }

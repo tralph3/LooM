@@ -55,8 +55,6 @@ CachedTextTexture :: struct {
     last_access: u64,
 }
 
-// TODO: invalidate cache some time... otherwise it'll grow
-// indefinitely
 text_texture_cache: map[TextTextureCacheKey]CachedTextTexture
 
 gui_renderer_init :: proc () -> (ok: bool) {
@@ -84,14 +82,14 @@ gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextEle
     font := fonts[config.fontId]
 
     if !ttf.SetFontSize(font, f32(config.fontSize)) {
-        log.errorf("Measure text error: Failed setting font size: {}", sdl.GetError())
+        log.errorf("CLAY: Measure text error: Failed setting font size: {}", sdl.GetError())
         return { 0, 0 }
     }
 
     width: i32
     height: i32
     if (!ttf.GetStringSize(font, cstring(text.chars), uint(text.length), &width, &height)) {
-        log.errorf("Measure text error: Failed measuring text: {}", sdl.GetError())
+        log.errorf("CLAY: Measure text error: Failed measuring text: {}", sdl.GetError())
         return { 0, 0 }
     }
 

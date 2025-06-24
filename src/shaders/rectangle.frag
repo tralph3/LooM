@@ -29,7 +29,6 @@ void main() {
     vec2 local = pixelCoord - rect.xy;
     vec2 size = rect.zw;
 
-    // Flip Y because OpenGL grows up
     local.y = size.y - local.y;
 
     float dist = -1.0;
