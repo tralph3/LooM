@@ -84,9 +84,6 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     last_time = sdl.GetTicksNS()
 
     GLOBAL_STATE.input_state.mouse_wheel_y = 0
-
-    input_process()
-
     gui_update()
 
     buffered_bytes := int(GLOBAL_STATE.audio_state.buffer.size)
