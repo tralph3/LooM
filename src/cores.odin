@@ -70,3 +70,8 @@ unload_game :: proc () {
         core_options_free()
     }
 }
+
+reset_game :: proc () {
+    GLOBAL_STATE.emulator_state.core.api.reset()
+    cb.clear(&GLOBAL_STATE.audio_state.buffer)
+}
