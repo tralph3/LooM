@@ -27,7 +27,7 @@ gui_layout_running_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     height = cl.SizingGrow({}),
                 },
             },
-            aspectRatio = { f32(GLOBAL_STATE.video_state.actual_width) / f32(GLOBAL_STATE.video_state.actual_height) },
+            aspectRatio = { f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_width) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_height) },
             image = { rawptr(uintptr(fbo_id)) },
         }) { }
     }
