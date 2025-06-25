@@ -1,7 +1,7 @@
 package libretro
 
 import "core:dynlib"
-import "core:os"
+import "core:os/os2"
 import "core:strings"
 import "core:log"
 import "core:c"
@@ -75,15 +75,29 @@ initialize_core :: proc (core: ^LibretroCore, callbacks: ^Callbacks) {
 load_rom :: proc (core: ^LibretroCore, rom_path: string) -> (ok: bool) {
     log.infof("Loading rom '%s'", rom_path)
 
-    rom_contents, ok_read_entire_file := os.read_entire_file(rom_path)
-    if !ok_read_entire_file {
-        log.errorf("Failed reading rom '%s'", rom_path)
-        return false
-    }
+    sys_info: SystemInfo
+    core.api.get_system_info(&sys_info)
+
+    rom_contents: []byte
     defer delete(rom_contents)
 
+    if !sys_info.need_fullpath {
+        rom_contents = os2.read_entire_file_from_path(rom_path, allocator=context.allocator) or_else nil
+        if rom_contents == nil {
+            log.errorf("Failed reading rom '%s'", rom_path)
+            return false
+        }
+    }
+
+    full_path := os2.get_absolute_path(rom_path, allocator=context.allocator) or_else ""
+    if full_path == "" {
+        log.errorf("Failed getting full path for '%s'", rom_path)
+        return false
+    }
+    defer delete(full_path)
+
     info := GameInfo {
-        path = strings.clone_to_cstring(rom_path),
+        path = strings.clone_to_cstring(full_path),
         data = raw_data(rom_contents),
         size = len(rom_contents),
         meta = "",
