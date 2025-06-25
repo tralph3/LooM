@@ -31,6 +31,8 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .GetSystemDirectory: env_callback_get_system_directory(data)
         case .GetSaveDirectory: env_callback_get_save_directory(data)
         case .GetFastforwarding: env_callback_get_fastforwarding(data)
+        case .SetGeometry: env_callback_set_geometry(data)
+        case .SetSystemAvInfo: env_callback_set_system_av_info(data)
 
         // case RetroEnvironment.SetVariables:
         // emulator_clone_variables(([^]RetroVariable)(data))
@@ -747,7 +749,11 @@ env_callback_get_save_directory :: proc (data: rawptr) { // TODO
  * @see retro_system_av_info
  * @see RETRO_ENVIRONMENT_SET_GEOMETRY
  */
-env_callback_set_system_av_info :: proc (data: rawptr) { // TODO
+env_callback_set_system_av_info :: proc (data: rawptr) { // TODO: revise when more video backends are supported
+    GLOBAL_STATE.emulator_state.av_info = (^lr.SystemAvInfo)(data)^
+
+    renderer_init_framebuffer()
+    audio_update_sample_rate()
 }
 
 /**
@@ -941,7 +947,12 @@ env_callback_set_memory_maps :: proc (data: rawptr) { // TODO
  * @return \c true if the environment call is available.
  * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
  */
-env_callback_set_geometry :: proc (data: rawptr) { // TODO
+env_callback_set_geometry :: proc (data: rawptr) { // DONE
+    geo := (^lr.GameGeometry)(data)^
+    // ignore max_width and max_height
+    GLOBAL_STATE.emulator_state.av_info.geometry.base_width = geo.base_width
+    GLOBAL_STATE.emulator_state.av_info.geometry.base_height = geo.base_height
+    GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio = geo.aspect_ratio
 }
 
 /**
