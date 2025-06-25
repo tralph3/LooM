@@ -33,25 +33,8 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .GetFastforwarding: env_callback_get_fastforwarding(data)
         case .SetGeometry: env_callback_set_geometry(data)
         case .SetSystemAvInfo: env_callback_set_system_av_info(data)
-
-        // case RetroEnvironment.SetVariables:
-        // emulator_clone_variables(([^]RetroVariable)(data))
-        // case RetroEnvironment.SetCoreOptions:
-        // log.warn("Called with SetCoreOptions") // TODO: deprecated, implement for compatibility
-        // case RetroEnvironment.SetCoreOptionsV2:
-        // emulator_clone_core_options_v2((^RetroCoreOptionsV2)(data)^)
-        // case RetroEnvironment.SetCoreOptionsV2Intl:
-        // emulator_clone_core_options_v2((^RetroCoreOptionsV2Intl)(data)^)
-        // case RetroEnvironment.GetLanguage:
-        // log.infof("Setting core language to %s", RetroLanguage.English)
-        // (^RetroLanguage)(data)^ = RetroLanguage.English // TODO: fetch system language
-        // case RetroEnvironment.GetVariable:
-        // var := (^RetroVariable)(data)
-        // log.error(STATE.core_options[var.key])
-        // return false
-
-        case:
-        log.warnf("Callback not supported: '%s'", command)
+        case .GetHwRenderInterface: env_callback_get_hw_render_interface(data)
+        case: log.warnf("Callback not supported: '%s'", command)
         return false
     }
 
