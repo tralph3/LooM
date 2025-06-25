@@ -117,9 +117,17 @@ renderer_init_framebuffer :: proc () {
         gl.DeleteFramebuffers(1, &fbo_id)
     }
 
-    if width == 0 || height == 0 {
-        width = 1920
-        height = 1080
+    aspect := GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio
+    if aspect == 0.0 {
+        aspect = 4.0 / 3.0
+    }
+    if width == 0 && height == 0 {
+        width = 640
+        height = i32(f32(width) / aspect)
+    } else if width == 0 {
+        width = i32(f32(height) * aspect)
+    } else if height == 0 {
+        height = i32(f32(width) / aspect)
     }
 
     gl.GenTextures(1, &tex_id)
