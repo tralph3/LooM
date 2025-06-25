@@ -44,16 +44,16 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
 
     lr.load_rom(&core, rom_path) or_return
 
-    if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
-        GLOBAL_STATE.emulator_state.hardware_render_callback.context_reset()
-    }
-
     GLOBAL_STATE.emulator_state.core = core
 
     core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
 
     renderer_init_framebuffer()
     audio_update_sample_rate()
+
+    if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+        GLOBAL_STATE.emulator_state.hardware_render_callback.context_reset()
+    }
 
     return true
 }
