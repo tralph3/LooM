@@ -63,7 +63,6 @@ unload_game :: proc () {
         if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
             GLOBAL_STATE.emulator_state.hardware_render_callback.context_destroy()
         }
-        sdl.GL_DestroyContext(emu_context)
         lr.unload_core(&GLOBAL_STATE.emulator_state.core)
         cb.clear(&GLOBAL_STATE.audio_state.buffer)
         GLOBAL_STATE.emulator_state.performance_level = 0

@@ -14,7 +14,6 @@ fbo_id: u32
 tex_id: u32
 depth_rbo: u32
 gl_context: sdl.GLContext
-emu_context: sdl.GLContext
 
 VideoState :: struct {
     window: ^sdl.Window,
@@ -152,40 +151,12 @@ renderer_init_framebuffer :: proc () {
 }
 
 renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
-    sdl.GL_DestroyContext(emu_context)
-
-    major_ver := render_cb.version_major
-    minor_ver := render_cb.version_minor
-
-    if major_ver < 3 {
-        // run in 3.3 compat mode
-        major_ver = 3
-        minor_ver = 3
-        sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
-    } else {
-        sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_CORE))
-    }
-
-    sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, i32(major_ver))
-    sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, i32(minor_ver))
-
-    sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 1)
-
-    emu_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
-    if emu_context == nil {
-        log.errorf("Failed creating OpenGL context: {}", sdl.GetError())
-    }
-
-    renderer_init_framebuffer()
-
     render_cb.get_proc_address = sdl.GL_GetProcAddress
     render_cb.get_current_framebuffer = proc "c" () -> c.uintptr_t {
         return c.uintptr_t(fbo_id)
     }
 
     GLOBAL_STATE.emulator_state.hardware_render_callback = render_cb
-
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
 }
 
 // build_ui_layout :: proc () -> cl.ClayArray(cl.RenderCommand){
