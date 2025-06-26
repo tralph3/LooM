@@ -14,6 +14,7 @@ fbo_id: u32
 tex_id: u32
 depth_rbo: u32
 gl_context: sdl.GLContext
+emu_context: sdl.GLContext
 
 VideoState :: struct {
     window: ^sdl.Window,
@@ -132,6 +133,8 @@ renderer_init_framebuffer :: proc () {
 
     gl.GenTextures(1, &tex_id)
     gl.BindTexture(gl.TEXTURE_2D, tex_id)
+    defer gl.BindTexture(gl.TEXTURE_2D, 0)
+
     gl.TexImage2D(
         gl.TEXTURE_2D, 0, gl.RGBA8,
         width, height,
@@ -141,10 +144,14 @@ renderer_init_framebuffer :: proc () {
 
     gl.GenRenderbuffers(1, &depth_rbo)
     gl.BindRenderbuffer(gl.RENDERBUFFER, depth_rbo)
+    defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
+
     gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, width, height)
 
     gl.GenFramebuffers(1, &fbo_id)
     gl.BindFramebuffer(gl.FRAMEBUFFER, fbo_id)
+    defer gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+
     gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex_id, 0)
     gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depth_rbo)
 
@@ -152,13 +159,20 @@ renderer_init_framebuffer :: proc () {
     if framebuffer_status != gl.FRAMEBUFFER_COMPLETE {
         log.errorf("Incomplete framebuffer: {}", framebuffer_status)
     }
-
-    gl.BindTexture(gl.TEXTURE_2D, 0)
-    gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-    gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
 }
 
 renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
+    sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
+    sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
+    sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
+    sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 1)
+
+    emu_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
+    if emu_context == nil {
+        log.errorf("Failed creating OpenGL context: {}", sdl.GetError())
+        return
+    }
+
     render_cb.get_proc_address = sdl.GL_GetProcAddress
     render_cb.get_current_framebuffer = proc "c" () -> c.uintptr_t {
         return c.uintptr_t(fbo_id)

@@ -124,12 +124,16 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
             }
 
-            gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
             gl.BindVertexArray(vao)
+            defer gl.BindVertexArray(0)
+            gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+            defer gl.BindBuffer(gl.ARRAY_BUFFER, 0)
             gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
             gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
             gl.EnableVertexAttribArray(0)
+            defer gl.DisableVertexAttribArray(0)
             gl.UseProgram(rectangle_shader)
+            defer gl.UseProgram(0)
 
             gl.Uniform4f(RECTANGLE_SHADER_LOCS.rect, rect.x, rect.y, rect.w, rect.h)
             gl.Uniform2f(RECTANGLE_SHADER_LOCS.screenSize, window_w, window_h)
@@ -174,11 +178,6 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             }
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
-
-            gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-            gl.BindVertexArray(0)
-            gl.UseProgram(0)
-            gl.DisableVertexAttribArray(0)
         }
         case .Text: {
             config: ^cl.TextRenderData = &rcmd.renderData.text
@@ -229,24 +228,23 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
             }
 
-            gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
             gl.BindVertexArray(vao)
+            defer gl.BindVertexArray(0)
+            gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+            defer gl.BindBuffer(gl.ARRAY_BUFFER, 0)
             gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
             gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
             gl.EnableVertexAttribArray(0)
+            defer gl.DisableVertexAttribArray(0)
             gl.ActiveTexture(gl.TEXTURE0)
             gl.BindTexture(gl.TEXTURE_2D, font_texture.id)
+            defer gl.BindTexture(gl.TEXTURE_2D, 0)
 
             gl.UseProgram(text_shader)
+            defer gl.UseProgram(0)
             gl.Uniform1i(TEXT_SHADER_LOCS.tex, 0)
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
-
-            gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-            gl.BindTexture(gl.TEXTURE_2D, 0)
-            gl.BindVertexArray(0)
-            gl.UseProgram(0)
-            gl.DisableVertexAttribArray(0)
         }
         case .ScissorStart: {
             gl.Enable(gl.SCISSOR_TEST)
@@ -257,6 +255,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         }
         case .Image: {
             gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo_id)
+            defer gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
             gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 
             if GLOBAL_STATE.emulator_state.hardware_render_callback != nil && GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin {
@@ -272,8 +271,6 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                     gl.COLOR_BUFFER_BIT, gl.NEAREST
                 )
             }
-
-            gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
         }
         case .Custom: {
             log.warn("CLAY: Custom render command is not used")

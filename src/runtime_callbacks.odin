@@ -14,7 +14,7 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
     GLOBAL_STATE.video_state.actual_width = width
     GLOBAL_STATE.video_state.actual_height = height
 
-    if int((uintptr)(data)) ==  lr.RETRO_HW_FRAME_BUFFER_VALID {
+    if int((uintptr)(data)) == lr.RETRO_HW_FRAME_BUFFER_VALID {
         // hardware rendering, nothing to do
     } else {
         // software rendering

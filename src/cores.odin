@@ -41,19 +41,22 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
     }
 
     lr.initialize_core(&core, &callbacks)
-
     lr.load_rom(&core, rom_path) or_return
 
     GLOBAL_STATE.emulator_state.core = core
 
     core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
 
-    renderer_init_framebuffer()
-    audio_update_sample_rate()
-
     if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
+        renderer_init_framebuffer()
         GLOBAL_STATE.emulator_state.hardware_render_callback.context_reset()
+        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
+    } else {
+        renderer_init_framebuffer()
     }
+
+    audio_update_sample_rate()
 
     return true
 }
@@ -61,7 +64,10 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
 unload_game :: proc () {
     if GLOBAL_STATE.emulator_state.core.loaded {
         if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+            sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
             GLOBAL_STATE.emulator_state.hardware_render_callback.context_destroy()
+            sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
+            sdl.GL_DestroyContext(emu_context)
         }
         lr.unload_core(&GLOBAL_STATE.emulator_state.core)
         cb.clear(&GLOBAL_STATE.audio_state.buffer)
@@ -71,6 +77,10 @@ unload_game :: proc () {
 }
 
 reset_game :: proc () {
-    GLOBAL_STATE.emulator_state.core.api.reset()
+    if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
+        GLOBAL_STATE.emulator_state.core.api.reset()
+        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
+    }
     cb.clear(&GLOBAL_STATE.audio_state.buffer)
 }
