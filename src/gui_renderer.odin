@@ -174,6 +174,11 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             }
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
+
+            gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+            gl.BindVertexArray(0)
+            gl.UseProgram(0)
+            gl.DisableVertexAttribArray(0)
         }
         case .Text: {
             config: ^cl.TextRenderData = &rcmd.renderData.text
@@ -200,7 +205,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
 
                 gl.GenTextures(1, &cached_texture.id)
                 gl.BindTexture(gl.TEXTURE_2D, cached_texture.id)
-                gl.PixelStorei(gl.UNPACK_ROW_LENGTH, surface.pitch / bytes_per_pixel);
+                gl.PixelStorei(gl.UNPACK_ROW_LENGTH, surface.pitch / bytes_per_pixel)
                 gl.TexImage2D(
                     gl.TEXTURE_2D, 0, gl.RGBA8,
                     surface.w, surface.h,
@@ -208,7 +213,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
                 gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
-                gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0);
+                gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
                 sdl.DestroySurface(surface)
 
                 text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }] = cached_texture
@@ -238,7 +243,10 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
 
             gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+            gl.BindTexture(gl.TEXTURE_2D, 0)
             gl.BindVertexArray(0)
+            gl.UseProgram(0)
+            gl.DisableVertexAttribArray(0)
         }
         case .ScissorStart: {
             gl.Enable(gl.SCISSOR_TEST)
@@ -275,8 +283,6 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         }
         }
     }
-
-    gl.UseProgram(0)
 
     keys_to_remove: [dynamic]TextTextureCacheKey
     defer delete(keys_to_remove)
