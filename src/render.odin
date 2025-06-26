@@ -13,6 +13,7 @@ import gl "vendor:OpenGL"
 fbo_id: u32
 tex_id: u32
 depth_rbo: u32
+stencil_rbo: u32
 gl_context: sdl.GLContext
 emu_context: sdl.GLContext
 
@@ -107,7 +108,7 @@ renderer_destroy_framebuffer :: proc () {
 
 }
 
-renderer_init_framebuffer :: proc () {
+renderer_init_framebuffer :: proc (depth := false, stencil := false) {
     width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
     height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
 
@@ -116,6 +117,12 @@ renderer_init_framebuffer :: proc () {
     }
     if fbo_id != 0 {
         gl.DeleteFramebuffers(1, &fbo_id)
+    }
+    if depth_rbo != 0 {
+        gl.DeleteRenderbuffers(1, &depth_rbo)
+    }
+    if stencil_rbo != 0 {
+        gl.DeleteRenderbuffers(1, &stencil_rbo)
     }
 
     aspect := GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio
@@ -142,18 +149,35 @@ renderer_init_framebuffer :: proc () {
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 
-    gl.GenRenderbuffers(1, &depth_rbo)
-    gl.BindRenderbuffer(gl.RENDERBUFFER, depth_rbo)
-    defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
+    if depth {
+        gl.GenRenderbuffers(1, &depth_rbo)
+        gl.BindRenderbuffer(gl.RENDERBUFFER, depth_rbo)
+        defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
 
-    gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, width, height)
+        gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, width, height)
+    }
+
+    if stencil {
+        gl.GenRenderbuffers(1, &stencil_rbo)
+        gl.BindRenderbuffer(gl.RENDERBUFFER, stencil_rbo)
+        defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
+
+        gl.RenderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, width, height)
+    }
 
     gl.GenFramebuffers(1, &fbo_id)
     gl.BindFramebuffer(gl.FRAMEBUFFER, fbo_id)
     defer gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 
     gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex_id, 0)
-    gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, depth_rbo)
+
+    if depth {
+        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth_rbo);
+    }
+
+    if stencil {
+        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.RENDERBUFFER, stencil_rbo);
+    }
 
     framebuffer_status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
     if framebuffer_status != gl.FRAMEBUFFER_COMPLETE {

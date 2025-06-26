@@ -49,7 +49,8 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
 
     if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
         sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
-        renderer_init_framebuffer()
+        renderer_init_framebuffer(
+            depth=GLOBAL_STATE.emulator_state.hardware_render_callback.depth, stencil=GLOBAL_STATE.emulator_state.hardware_render_callback.stencil)
         GLOBAL_STATE.emulator_state.hardware_render_callback.context_reset()
         sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
     } else {
