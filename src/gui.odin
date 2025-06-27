@@ -11,6 +11,10 @@ GuiState :: struct {
 }
 
 gui_init :: proc () -> (ok: bool) {
+    // TODO: Temp fix. Clay runs out of elements with the debug view
+    // on. Ideally it should't draw out of view elements.
+    cl.SetMaxElementCount(10000)
+
     min_arena_size := cl.MinMemorySize()
     memory, err := make([]byte, min_arena_size)
     if err != nil {
