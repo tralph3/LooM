@@ -4,6 +4,7 @@ import cl "clay"
 import sdl "vendor:sdl3"
 import "core:slice"
 import "core:log"
+import "core:strings"
 
 GuiState :: struct {
     arena: cl.Arena,
@@ -63,5 +64,5 @@ gui_update :: proc () {
 @(private="file")
 gui_error_handler :: proc "c" (error_data: cl.ErrorData) {
     context = GLOBAL_STATE.ctx
-    log.errorf("CLAY: {}: {}", error_data.errorType, error_data.errorText)
+    log.errorf("CLAY: {}: {}", error_data.errorType, strings.string_from_ptr(error_data.errorText.chars, int(error_data.errorText.length)))
 }
