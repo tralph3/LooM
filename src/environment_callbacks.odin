@@ -18,26 +18,25 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
     // log.debugf("Processing env callback: '{}'", command)
 
     #partial switch command {
-        case .GetCoreOptionsVersion: env_callback_get_core_options_version(data)
-        case .GetCanDupe: env_callback_get_can_dupe(data)
-        case .SetPixelFormat: env_callback_set_pixel_format(data)
-        case .GetLogInterface: env_callback_get_log_interface(data)
-        case .SetPerformanceLevel: env_callback_set_performance_level(data)
-        case .SetVariables: env_callback_set_variables(data)
-        case .SetCoreOptionsV2: env_callback_set_core_options_v2(data)
-        case .SetCoreOptionsV2Intl: env_callback_set_core_options_v2_intl(data)
-        case .GetVariable: env_callback_get_variable(data)
-        case .GetVariableUpdate: env_callback_get_variable_update(data)
-        case .SetHwSharedContext: env_callback_set_hw_shared_context(data)
-        case .GetPreferredHwRender: env_callback_get_preferred_hw_render(data)
+        case .GetCoreOptionsVersion: return env_callback_get_core_options_version(data)
+        case .GetCanDupe: return env_callback_get_can_dupe(data)
+        case .SetPixelFormat: return env_callback_set_pixel_format(data)
+        case .GetLogInterface: return env_callback_get_log_interface(data)
+        case .SetPerformanceLevel: return env_callback_set_performance_level(data)
+        case .SetVariables: return env_callback_set_variables(data)
+        case .SetCoreOptionsV2: return env_callback_set_core_options_v2(data)
+        case .SetCoreOptionsV2Intl: return env_callback_set_core_options_v2_intl(data)
+        case .GetVariable: return env_callback_get_variable(data)
+        case .GetVariableUpdate: return env_callback_get_variable_update(data)
+        case .SetHwSharedContext: return env_callback_set_hw_shared_context(data)
+        case .GetPreferredHwRender: return env_callback_get_preferred_hw_render(data)
         case .SetHwRender: return env_callback_set_hw_render(data)
-        case .GetSystemDirectory: env_callback_get_system_directory(data)
-        case .GetSaveDirectory: env_callback_get_save_directory(data)
-        case .GetFastforwarding: env_callback_get_fastforwarding(data)
-        case .SetGeometry: env_callback_set_geometry(data)
-        case .SetSystemAvInfo: env_callback_set_system_av_info(data)
-        case .GetHwRenderInterface: env_callback_get_hw_render_interface(data)
-        case .SetCoreOptionsDisplay: env_callback_set_core_options_display(data)
+        case .GetSystemDirectory: return env_callback_get_system_directory(data)
+        case .GetSaveDirectory: return env_callback_get_save_directory(data)
+        case .GetFastforwarding: return env_callback_get_fastforwarding(data)
+        case .SetGeometry: return env_callback_set_geometry(data)
+        case .SetSystemAvInfo: return env_callback_set_system_av_info(data)
+        case .SetCoreOptionsDisplay: return env_callback_set_core_options_display(data)
         case: log.warnf("Callback not supported: '{}'", command)
         return false
     }
@@ -53,7 +52,8 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
  * These numbers respectively set the screen rotation to 0, 90, 180, and 270 degrees counter-clockwise.
  * @returns \c true if the screen rotation was set successfully.
  */
-env_callback_set_rotation :: proc (data: rawptr) { // TODO
+env_callback_set_rotation :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -67,7 +67,8 @@ env_callback_set_rotation :: proc (data: rawptr) { // TODO
  * @deprecated As of 2019 this callback is considered deprecated in favor of
  * using core options to manage overscan in a more nuanced, core-specific way.
  */
-env_callback_get_overscan :: proc (data: rawptr) { // TODO
+env_callback_get_overscan :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -79,8 +80,11 @@ env_callback_get_overscan :: proc (data: rawptr) { // TODO
  * @returns \c true if the environment call is available.
  * @see retro_video_refresh_t
  */
-env_callback_get_can_dupe :: proc (data: rawptr) { // DONE
+env_callback_get_can_dupe :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
     (^bool)(data)^ = true
+    return true
 }
 
 /*
@@ -121,7 +125,8 @@ env_callback_get_can_dupe :: proc (data: rawptr) { // DONE
  * @see RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION
  * @note The frontend must make its own copy of the message and the underlying string.
  */
-env_callback_set_message :: proc (data: rawptr) { // TODO
+env_callback_set_message :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -133,7 +138,8 @@ env_callback_set_message :: proc (data: rawptr) { // TODO
  * @param data Ignored.
  * @returns \c true if the environment call is available.
  */
-env_callback_shutdown :: proc (data: rawptr) { // TODO
+env_callback_shutdown :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -152,8 +158,10 @@ env_callback_shutdown :: proc (data: rawptr) { // TODO
  * If called, it should be called in <tt>retro_load_game()</tt>.
  * @param[in] data <tt>const unsigned*</tt>.
 */
-env_callback_set_performance_level :: proc (data: rawptr) { // TODO: Get performance level of device and compare the two
+env_callback_set_performance_level :: proc (data: rawptr) -> bool { // TODO: Get performance level of device and compare the two
+    if data == nil { return false }
     GLOBAL_STATE.emulator_state.performance_level = (^uint)(data)^
+    return true
 }
 
 /**
@@ -172,8 +180,11 @@ env_callback_set_performance_level :: proc (data: rawptr) { // TODO: Get perform
  * This is now discouraged in favor of \c RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY.
  * @see RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
  */
-env_callback_get_system_directory :: proc (data: rawptr) { // TODO
+env_callback_get_system_directory :: proc (data: rawptr) -> bool { // TODO
+    if data == nil { return false }
+
     (^cstring)(data)^ = "./system"
+    return true
 }
 
 /**
@@ -189,8 +200,16 @@ env_callback_get_system_directory :: proc (data: rawptr) { // TODO
  * or <tt>retro_get_system_av_info()</tt>.
  * @see retro_pixel_format
  */
-env_callback_set_pixel_format :: proc (data: rawptr) { // DONE
-    GLOBAL_STATE.video_state.pixel_format = (^lr.RetroPixelFormat)(data)^
+env_callback_set_pixel_format :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
+    format := (^lr.RetroPixelFormat)(data)^
+    if format < min(lr.RetroPixelFormat) || format > max(lr.RetroPixelFormat) {
+        return false
+    }
+
+    GLOBAL_STATE.video_state.pixel_format = format
+    return true
 }
 
 /**
@@ -208,7 +227,8 @@ env_callback_set_pixel_format :: proc (data: rawptr) { // DONE
  * @return \c true if the environment call is recognized.
  * @see retro_input_descriptor
  */
-env_callback_set_input_descriptors :: proc (data: rawptr) { // TODO
+env_callback_set_input_descriptors :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -223,7 +243,8 @@ env_callback_set_input_descriptors :: proc (data: rawptr) { // TODO
  * @see retro_keyboard_callback
  * @see retro_key
  */
-env_callback_set_keyboard_callback :: proc (data: rawptr) { // TODO
+env_callback_set_keyboard_callback :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -248,7 +269,8 @@ env_callback_set_keyboard_callback :: proc (data: rawptr) { // TODO
  * @see retro_disk_control_callback
  * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
  */
-env_callback_set_disk_control_interface :: proc (data: rawptr) { // TODO
+env_callback_set_disk_control_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -275,9 +297,7 @@ env_callback_set_disk_control_interface :: proc (data: rawptr) { // TODO
  * \c NULL to <tt>retro_video_refresh_t</tt>.
  */
 env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO: add other apis
-    if data == nil {
-        return false
-    }
+    if data == nil { return false }
 
     render_cb := (^lr.RetroHwRenderCallback)(data)
     #partial switch render_cb.context_type {
@@ -308,11 +328,14 @@ env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO: add other a
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
  */
-env_callback_get_variable :: proc (data: rawptr) { // DONE
+env_callback_get_variable :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return true }
+
     var := (^lr.RetroVariable)(data)
     var.value = GLOBAL_STATE.emulator_state.options[var.key].current_value
 
-    GLOBAL_STATE.emulator_state.options_updated = false
+    core_options_set_dirty(false)
+    return true
 }
 
 /**
@@ -363,8 +386,9 @@ env_callback_get_variable :: proc (data: rawptr) { // DONE
  * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
-env_callback_set_variables :: proc (data: rawptr) { // TODO
+env_callback_set_variables :: proc (data: rawptr) -> bool { // TODO
     core_options_set_variables(auto_cast data)
+    return true
 }
 
 /**
@@ -383,8 +407,11 @@ env_callback_set_variables :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
-env_callback_get_variable_update :: proc (data: rawptr) { // DONE
+env_callback_get_variable_update :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
     (^bool)(data)^ = GLOBAL_STATE.emulator_state.options_updated
+    return true
 }
 
 /**
@@ -402,7 +429,8 @@ env_callback_get_variable_update :: proc (data: rawptr) { // DONE
  * @returns \c true if the environment call is available.
  * @see retro_load_game
  */
-env_callback_set_support_no_game :: proc (data: rawptr) { // TODO
+env_callback_set_support_no_game :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -418,7 +446,8 @@ env_callback_set_support_no_game :: proc (data: rawptr) { // TODO
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @returns \c true if the environment call is available.
  */
-env_callback_get_libretro_path :: proc (data: rawptr) { // TODO
+env_callback_get_libretro_path :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /* Environment call 20 was an obsolete version of SET_AUDIO_CALLBACK.
@@ -441,7 +470,8 @@ env_callback_get_libretro_path :: proc (data: rawptr) { // TODO
  * It will return \c false in those cases.
  * @see retro_frame_time_callback
  */
-env_callback_set_frame_time_callback :: proc (data: rawptr) { // TODO
+env_callback_set_frame_time_callback :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -478,7 +508,8 @@ env_callback_set_frame_time_callback :: proc (data: rawptr) { // TODO
  * @see retro_audio_sample_batch_t
  * @see RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK
  */
-env_callback_set_audio_callback :: proc (data: rawptr) { // TODO
+env_callback_set_audio_callback :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -498,7 +529,8 @@ env_callback_set_audio_callback :: proc (data: rawptr) { // TODO
  * @see retro_rumble_interface
  * @defgroup GET_RUMBLE_INTERFACE Rumble Interface
  */
-env_callback_get_rumble_interface :: proc (data: rawptr) { // TODO
+env_callback_get_rumble_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -539,7 +571,8 @@ env_callback_get_rumble_interface :: proc (data: rawptr) { // TODO
  * may depend on the active driver.
  * @see RETRO_DEVICE
  */
-env_callback_get_input_device_capabilities :: proc (data: rawptr) { // TODO
+env_callback_get_input_device_capabilities :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -556,7 +589,8 @@ env_callback_get_input_device_capabilities :: proc (data: rawptr) { // TODO
  * @see RETRO_SENSOR
  * @addtogroup RETRO_SENSOR
  */
-env_callback_get_sensor_interface :: proc (data: rawptr) { // TODO
+env_callback_get_sensor_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -579,7 +613,8 @@ env_callback_get_sensor_interface :: proc (data: rawptr) { // TODO
  * @see retro_camera_callback
  * @see RETRO_ENVIRONMENT_SET_HW_RENDER
  */
-env_callback_get_camera_interface :: proc (data: rawptr) { // TODO
+env_callback_get_camera_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -602,12 +637,11 @@ env_callback_get_camera_interface :: proc (data: rawptr) { // TODO
  * @see retro_log_callback
  * @note Cores can fall back to \c stderr if this interface is not available.
  */
-env_callback_get_log_interface :: proc(data: rawptr) { // DONE
-    if data == nil {
-        return
-    }
+env_callback_get_log_interface :: proc(data: rawptr) -> bool { // DONE
+    if data == nil { return false }
 
     ((^lr.RetroLogCallback)(data)^).log = c_log_callback
+    return true
 }
 
 /**
@@ -623,7 +657,8 @@ env_callback_get_log_interface :: proc(data: rawptr) { // DONE
  * @returns \c true if the environment call is available.
  * @see retro_perf_callback
  */
-env_callback_get_perf_interface :: proc (data: rawptr) { // TODO
+env_callback_get_perf_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -637,14 +672,16 @@ env_callback_get_perf_interface :: proc (data: rawptr) { // TODO
  * even if there's no location information available.
  * @see retro_location_callback
  */
-env_callback_get_location_interface :: proc (data: rawptr) { // TODO
+env_callback_get_location_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
  * @deprecated An obsolete alias to \c RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY kept for compatibility.
  * @see RETRO_ENVIRONMENT_GET_CORE_ASSETS_DIRECTORY
  **/
-env_callback_get_content_directory :: proc (data: rawptr) { // TODO
+env_callback_get_content_directory :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -661,7 +698,8 @@ env_callback_get_content_directory :: proc (data: rawptr) { // TODO
  * @returns \c true if the environment call is available,
  * even if the value returned in \c data is <tt>NULL</tt>.
  */
-env_callback_get_core_assets_directory :: proc (data: rawptr) { // TODO
+env_callback_get_core_assets_directory :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -695,8 +733,11 @@ env_callback_get_core_assets_directory :: proc (data: rawptr) { // TODO
  * @see retro_get_memory_data
  * @see RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
  */
-env_callback_get_save_directory :: proc (data: rawptr) { // TODO
+env_callback_get_save_directory :: proc (data: rawptr) -> bool { // TODO
+    if data == nil { return false }
+
     (^cstring)(data)^ = "./saves"
+    return true
 }
 
 /**
@@ -736,11 +777,14 @@ env_callback_get_save_directory :: proc (data: rawptr) { // TODO
  * @see retro_system_av_info
  * @see RETRO_ENVIRONMENT_SET_GEOMETRY
  */
-env_callback_set_system_av_info :: proc (data: rawptr) { // TODO: revise when more video backends are supported
+env_callback_set_system_av_info :: proc (data: rawptr) -> bool { // TODO: revise when more video backends are supported
+    if data == nil { return false }
+
     GLOBAL_STATE.emulator_state.av_info = (^lr.SystemAvInfo)(data)^
 
     renderer_init_framebuffer()
     audio_update_sample_rate()
+    return true
 }
 
 /**
@@ -764,7 +808,8 @@ env_callback_set_system_av_info :: proc (data: rawptr) { // TODO: revise when mo
  * it \em must do so from within \c retro_set_environment().
  * @see retro_get_proc_address_interface
  */
-env_callback_set_proc_address_callback :: proc (data: rawptr) { // TODO
+env_callback_set_proc_address_callback :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -821,7 +866,8 @@ env_callback_set_proc_address_callback :: proc (data: rawptr) { // TODO
  * @see retro_subsystem_info
  * @see retro_load_game_special
  */
-env_callback_set_subsystem_info :: proc (data: rawptr) { // TODO
+env_callback_set_subsystem_info :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -884,7 +930,8 @@ env_callback_set_subsystem_info :: proc (data: rawptr) { // TODO
  * @see retro_set_controller_port_device
  * @see RETRO_DEVICE_SUBCLASS
  */
-env_callback_set_controller_info :: proc (data: rawptr) { // TODO
+env_callback_set_controller_info :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -909,7 +956,8 @@ env_callback_set_controller_info :: proc (data: rawptr) { // TODO
  * @see retro_get_memory_data
  * @see retro_memory_descriptor
  */
-env_callback_set_memory_maps :: proc (data: rawptr) { // TODO
+env_callback_set_memory_maps :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -934,12 +982,15 @@ env_callback_set_memory_maps :: proc (data: rawptr) { // TODO
  * @return \c true if the environment call is available.
  * @see RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO
  */
-env_callback_set_geometry :: proc (data: rawptr) { // DONE
+env_callback_set_geometry :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
     geo := (^lr.GameGeometry)(data)^
     // ignore max_width and max_height
     GLOBAL_STATE.emulator_state.av_info.geometry.base_width = geo.base_width
     GLOBAL_STATE.emulator_state.av_info.geometry.base_height = geo.base_height
     GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio = geo.aspect_ratio
+    return true
 }
 
 /**
@@ -954,7 +1005,8 @@ env_callback_set_geometry :: proc (data: rawptr) { // DONE
  * @returns \c true if the environment call is available,
  * even if the frontend couldn't provide a name.
  */
-env_callback_get_username :: proc (data: rawptr) { // TODO
+env_callback_get_username :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -972,7 +1024,8 @@ env_callback_get_username :: proc (data: rawptr) { // TODO
  * @see retro_language
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
  */
-env_callback_get_language :: proc (data: rawptr) { // TODO
+env_callback_get_language :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1001,7 +1054,8 @@ env_callback_get_language :: proc (data: rawptr) { // TODO
  * and the framebuffer was successfully returned.
  * @see retro_framebuffer
  */
-env_callback_get_current_software_framebuffer :: proc (data: rawptr) { // TODO
+env_callback_get_current_software_framebuffer :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1029,7 +1083,8 @@ env_callback_get_current_software_framebuffer :: proc (data: rawptr) { // TODO
  * has a \c retro_hw_render_interface implementation,
  * a result of \c false is not necessarily an error.
  */
-env_callback_get_hw_render_interface :: proc (data: rawptr) { // TODO
+env_callback_get_hw_render_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1050,7 +1105,8 @@ env_callback_get_hw_render_interface :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
  * @see retro_get_memory_data
  */
-env_callback_set_support_achievements :: proc (data: rawptr) { // TODO
+env_callback_set_support_achievements :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1071,7 +1127,8 @@ env_callback_set_support_achievements :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT
  * @see RETRO_ENVIRONMENT_SET_HW_RENDER
  */
-env_callback_set_hw_render_context_negotiation_interface :: proc (data: rawptr) { // TODO
+env_callback_set_hw_render_context_negotiation_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1088,7 +1145,8 @@ env_callback_set_hw_render_context_negotiation_interface :: proc (data: rawptr) 
  * @see retro_unserialize
  * @see RETRO_SERIALIZATION_QUIRK
  */
-env_callback_set_serialization_quirks :: proc (data: rawptr) { // TODO
+env_callback_set_serialization_quirks :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1103,8 +1161,9 @@ env_callback_set_serialization_quirks :: proc (data: rawptr) { // TODO
  * @returns \c true if the environment call is available
  * and the frontend supports shared hardware contexts.
  */
-env_callback_set_hw_shared_context :: proc (data: rawptr) { // TODO: ~do as needed to support shared contexts~ on second thought... just ignore it, give it its own context
+env_callback_set_hw_shared_context :: proc (data: rawptr) -> bool { // TODO: ~do as needed to support shared contexts~ on second thought... just ignore it, give it its own context
     GLOBAL_STATE.video_state.shared_context = true
+    return true
 }
 
 /**
@@ -1122,7 +1181,8 @@ env_callback_set_hw_shared_context :: proc (data: rawptr) { // TODO: ~do as need
  * @see retro_dirent
  * @see file_stream
  */
-env_callback_get_vfs_interface :: proc (data: rawptr) { // TODO
+env_callback_get_vfs_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1138,7 +1198,8 @@ env_callback_get_vfs_interface :: proc (data: rawptr) { // TODO
  * or no LEDs are accessible.
  * @see retro_led_interface
  */
-env_callback_get_led_interface :: proc (data: rawptr) { // TODO
+env_callback_get_led_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1164,7 +1225,8 @@ env_callback_get_led_interface :: proc (data: rawptr) { // TODO
  * If \c false, the core should assume that the frontend will not skip any steps.
  * @see retro_av_enable_flags
  */
-env_callback_get_audio_video_enable :: proc (data: rawptr) { // TODO
+env_callback_get_audio_video_enable :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1177,7 +1239,8 @@ env_callback_get_audio_video_enable :: proc (data: rawptr) { // TODO
  * even if \c data is \c NULL.
  * @see retro_midi_interface
  */
-env_callback_get_midi_interface :: proc (data: rawptr) { // TODO
+env_callback_get_midi_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1190,8 +1253,11 @@ env_callback_get_midi_interface :: proc (data: rawptr) { // TODO
  *
  * @see RETRO_ENVIRONMENT_SET_FASTFORWARDING_OVERRIDE
  */
-env_callback_get_fastforwarding :: proc (data: rawptr) { // DONE
+env_callback_get_fastforwarding :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
     (^bool)(data)^ = GLOBAL_STATE.emulator_state.fast_forward
+    return true
 }
 
 /**
@@ -1204,7 +1270,8 @@ env_callback_get_fastforwarding :: proc (data: rawptr) { // DONE
  * @return \c true if this environment call is available,
  * regardless of the value returned in \c data.
 */
-env_callback_get_target_refresh_rate :: proc (data: rawptr) { // TODO
+env_callback_get_target_refresh_rate :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1223,7 +1290,8 @@ env_callback_get_target_refresh_rate :: proc (data: rawptr) { // TODO
  * @see RETRO_DEVICE_JOYPAD
  * @see RETRO_DEVICE_ID_JOYPAD_MASK
  */
-env_callback_get_input_bitmasks :: proc (data: rawptr) { // TODO
+env_callback_get_input_bitmasks :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1251,8 +1319,11 @@ env_callback_get_input_bitmasks :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
-env_callback_get_core_options_version :: proc (data: rawptr) { // DONE
+env_callback_get_core_options_version :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
     (^c.int)(data)^ = 2
+    return true
 }
 
 /**
@@ -1327,7 +1398,8 @@ env_callback_get_core_options_version :: proc (data: rawptr) { // DONE
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL
  */
-env_callback_set_core_options :: proc (data: rawptr) { // TODO
+env_callback_set_core_options :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1351,7 +1423,8 @@ env_callback_set_core_options :: proc (data: rawptr) { // TODO
  * @see retro_core_options_intl
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS
  */
-env_callback_set_core_options_intl :: proc (data: rawptr) { // TODO
+env_callback_set_core_options_intl :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1381,12 +1454,12 @@ env_callback_set_core_options_intl :: proc (data: rawptr) { // TODO
  * @see retro_core_option_display
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK
  */
-env_callback_set_core_options_display :: proc (data: rawptr) { // DONE
-    if data == nil {
-        return
-    }
+env_callback_set_core_options_display :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return true }
+
     opt_display := (^lr.RetroCoreOptionDisplay)(data)
     core_option_set_visibility(opt_display.key, opt_display.visible)
+    return true
 }
 
 /**
@@ -1410,8 +1483,11 @@ env_callback_set_core_options_display :: proc (data: rawptr) { // DONE
  * @see RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE
  * @see RETRO_ENVIRONMENT_SET_HW_RENDER
  */
-env_callback_get_preferred_hw_render :: proc (data: rawptr) { // TODO: set preference according to user config
+env_callback_get_preferred_hw_render :: proc (data: rawptr) -> bool { // TODO: set preference according to user config
+    if data == nil { return false }
+
     (^lr.RetroHwContextType)(data)^ = .OPENGL_CORE
+    return true
 }
 
 /**
@@ -1429,7 +1505,8 @@ env_callback_get_preferred_hw_render :: proc (data: rawptr) { // TODO: set prefe
  * @return \c true if this environment call is available.
  * @see RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE
  */
-env_callback_get_disk_control_interface_version :: proc (data: rawptr) { // TODO
+env_callback_get_disk_control_interface_version :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1448,7 +1525,8 @@ env_callback_get_disk_control_interface_version :: proc (data: rawptr) { // TODO
  * even if \c data is \c NULL.
  * @see retro_disk_control_ext_callback
  */
-env_callback_set_disk_control_ext_interface :: proc (data: rawptr) { // TODO
+env_callback_set_disk_control_ext_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1468,7 +1546,8 @@ env_callback_set_disk_control_ext_interface :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_SET_MESSAGE_EXT
  * @see RETRO_ENVIRONMENT_SET_MESSAGE
  */
-env_callback_get_message_interface_version :: proc (data: rawptr) { // TODO
+env_callback_get_message_interface_version :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1491,7 +1570,8 @@ env_callback_get_message_interface_version :: proc (data: rawptr) { // TODO
  * @see retro_message_ext
  * @see RETRO_ENVIRONMENT_GET_MESSAGE_INTERFACE_VERSION
  */
-env_callback_set_message_ext :: proc (data: rawptr) { // TODO
+env_callback_set_message_ext :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1513,7 +1593,8 @@ env_callback_set_message_ext :: proc (data: rawptr) { // TODO
  * Behavior is undefined if \c NULL.
  * @return \c true if this environment call is available.
  */
-env_callback_get_input_max_users :: proc (data: rawptr) { // TODO
+env_callback_get_input_max_users :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1530,7 +1611,8 @@ env_callback_get_input_max_users :: proc (data: rawptr) { // TODO
  *
  * @see retro_audio_buffer_status_callback
  */
-env_callback_set_audio_buffer_status_callback :: proc (data: rawptr) { // TODO
+env_callback_set_audio_buffer_status_callback :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1569,7 +1651,8 @@ env_callback_set_audio_buffer_status_callback :: proc (data: rawptr) { // TODO
  *
  * @see RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK
  */
-env_callback_set_minimum_audio_latency :: proc (data: rawptr) { // TODO
+env_callback_set_minimum_audio_latency :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1597,7 +1680,8 @@ env_callback_set_minimum_audio_latency :: proc (data: rawptr) { // TODO
  * @see retro_fastforwarding_override
  * @see RETRO_ENVIRONMENT_GET_FASTFORWARDING
  */
-env_callback_set_fastforwarding_override :: proc (data: rawptr) { // TODO
+env_callback_set_fastforwarding_override :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /* const struct retro_system_content_info_override * --
@@ -1668,7 +1752,8 @@ env_callback_set_fastforwarding_override :: proc (data: rawptr) { // TODO
  * an array of retro_system_content_info_override
  * structs, only the first instance will be registered
  */
-env_callback_set_content_info_override :: proc (data: rawptr) { // TODO
+env_callback_set_content_info_override :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /* const struct retro_game_info_ext ** --
@@ -1704,7 +1789,8 @@ env_callback_set_content_info_override :: proc (data: rawptr) { // TODO
  *   size equal to the num_info argument passed to
  *   retro_load_game_special()
  */
-env_callback_get_game_info_ext :: proc (data: rawptr) { // TODO
+env_callback_get_game_info_ext :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1764,12 +1850,14 @@ env_callback_get_game_info_ext :: proc (data: rawptr) { // TODO
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL
  */
-env_callback_set_core_options_v2 :: proc (data: rawptr) { // DONE
+env_callback_set_core_options_v2 :: proc (data: rawptr) -> bool { // TODO: Support categories
     if data == nil {
-        return
+        core_options_free()
+    } else {
+        core_options_set_v2((^lr.RetroCoreOptionsV2)(data))
     }
 
-    core_options_set_v2((^lr.RetroCoreOptionsV2)(data))
+    return true
 }
 
 /**
@@ -1787,12 +1875,14 @@ env_callback_set_core_options_v2 :: proc (data: rawptr) { // DONE
  * @see retro_core_options_v2_intl
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
-env_callback_set_core_options_v2_intl :: proc (data: rawptr) { // TODO: use local language when appropriate
+env_callback_set_core_options_v2_intl :: proc (data: rawptr) -> bool { // TODO: use local language when appropriate
     if data == nil {
-        return
+        core_options_free()
+    } else {
+        core_options_set_v2_intl((^lr.RetroCoreOptionsV2Intl)(data))
     }
 
-    core_options_set_v2_intl((^lr.RetroCoreOptionsV2Intl)(data))
+    return true
 }
 
 /**
@@ -1814,7 +1904,8 @@ env_callback_set_core_options_v2_intl :: proc (data: rawptr) { // TODO: use loca
  * even if \c data is \c NULL.
  * @see retro_core_options_update_display_callback
  */
-env_callback_set_core_options_update_display_callback :: proc (data: rawptr) { // TODO
+env_callback_set_core_options_update_display_callback :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1849,14 +1940,16 @@ env_callback_set_core_options_update_display_callback :: proc (data: rawptr) { /
  * @see RETRO_ENVIRONMENT_GET_VARIABLE
  * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
  */
-env_callback_set_variable :: proc (data: rawptr) { // TODO
+env_callback_set_variable :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /* struct retro_throttle_state * --
  * Allows an implementation to get details on the actual rate
  * the frontend is attempting to call retro_run().
  */
-env_callback_get_throttle_state :: proc (data: rawptr) { // TODO
+env_callback_get_throttle_state :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1870,7 +1963,8 @@ env_callback_get_throttle_state :: proc (data: rawptr) { // TODO
  * even if \c data is \c NULL.
  * @see retro_savestate_context
  */
-env_callback_get_savestate_context :: proc (data: rawptr) { // TODO
+env_callback_get_savestate_context :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1902,7 +1996,8 @@ env_callback_get_savestate_context :: proc (data: rawptr) { // TODO
  * @see retro_hw_render_interface_type
  * @see retro_hw_render_context_negotiation_interface
  */
-env_callback_get_hw_render_context_negotiation_interface_support :: proc (data: rawptr) { // TODO
+env_callback_get_hw_render_context_negotiation_interface_support :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1912,7 +2007,8 @@ env_callback_get_hw_render_context_negotiation_interface_support :: proc (data: 
  * Set to \c true if the frontend has verified that JIT compilation is possible.
  * @return \c true if the environment call is available.
  */
-env_callback_get_jit_capable :: proc (data: rawptr) { // TODO
+env_callback_get_jit_capable :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1926,7 +2022,8 @@ env_callback_get_jit_capable :: proc (data: rawptr) { // TODO
  * or if \c data is \c NULL.
  * @see retro_microphone_interface
  */
-env_callback_get_microphone_interface :: proc (data: rawptr) { // TODO
+env_callback_get_microphone_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1945,7 +2042,8 @@ env_callback_get_microphone_interface :: proc (data: rawptr) { // TODO
  * @return \c true if the environment call is available.
  * @see retro_device_power
  */
-env_callback_get_device_power :: proc (data: rawptr) { // TODO
+env_callback_get_device_power :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /* const struct retro_netpacket_callback * --
@@ -1970,7 +2068,8 @@ env_callback_get_device_power :: proc (data: rawptr) { // TODO
  * multiplayer, where a deterministic core supporting multiple
  * input devices does not need to take any action on its own.
  */
-env_callback_set_netpacket_interface :: proc (data: rawptr) { // TODO
+env_callback_set_netpacket_interface :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1985,7 +2084,8 @@ env_callback_set_netpacket_interface :: proc (data: rawptr) { // TODO
  * implementation to find a suitable directory.
  * @return \c true if the environment call is available.
  */
-env_callback_get_playlist_directory :: proc (data: rawptr) { // TODO
+env_callback_get_playlist_directory :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
 
 /**
@@ -1999,5 +2099,6 @@ env_callback_get_playlist_directory :: proc (data: rawptr) { // TODO
  * implementation to find a suitable directory.
  * @return \c true if the environment call is available.
  */
-env_callback_get_file_browser_start_directory :: proc (data: rawptr) { // TODO
+env_callback_get_file_browser_start_directory :: proc (data: rawptr) -> bool { // TODO
+    return false
 }
