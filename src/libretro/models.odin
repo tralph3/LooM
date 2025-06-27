@@ -4,6 +4,8 @@ import "core:c"
 import sdl "vendor:sdl3"
 
 RETRO_NUM_CORE_OPTION_VALUES_MAX :: 128
+RETRO_DEVICE_TYPE_SHIFT: u32 : 8
+RETRO_DEVICE_MASK: u32 : ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
 
 Callbacks :: struct {
     environment: proc "c" (RetroEnvironment, rawptr) -> bool,

@@ -77,6 +77,10 @@ input_poll_callback :: proc "c" () {
 }
 
 input_state_callback :: proc "c" (port: u32, device: lr.RetroDevice, index: u32, id: lr.RetroDeviceId) -> i16 {
+    // masking the device id ensures that if new values are added in
+    // the future the frontend won't break until explicitely supported
+    device := lr.RetroDevice(u32(device) & lr.RETRO_DEVICE_MASK)
+
     // TODO: support multiple devices
     #partial switch device {
     case .None:
