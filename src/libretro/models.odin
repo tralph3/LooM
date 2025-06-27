@@ -8,12 +8,12 @@ RETRO_DEVICE_TYPE_SHIFT: u32 : 8
 RETRO_DEVICE_MASK: u32 : ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
 
 Callbacks :: struct {
-    environment: proc "c" (RetroEnvironment, rawptr) -> bool,
-    video_refresh: proc "c" (rawptr, u32, u32, u32),
-    input_poll: proc "c" (),
-    input_state: proc "c" (u32, RetroDevice, u32, RetroDeviceId) -> i16,
-    audio_sample: proc "c" (i16, i16),
-    audio_sample_batch: proc "c" (^i16, i32) -> i32,
+    environment: EnvironmentCallback,
+    video_refresh: VideoRefreshCallback,
+    input_poll: InputPollCallback,
+    input_state: InputStateCallback,
+    audio_sample: AudioSampleCallback,
+    audio_sample_batch: AudioSampleBatchCallback,
 }
 
 GameGeometry :: struct {

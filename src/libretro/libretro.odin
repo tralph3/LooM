@@ -8,6 +8,13 @@ import "core:c"
 
 RETRO_HW_FRAME_BUFFER_VALID :: -1
 
+EnvironmentCallback :: proc "c" (RetroEnvironment, rawptr) -> bool
+VideoRefreshCallback :: proc "c" (rawptr, u32, u32, u32)
+InputPollCallback :: proc "c" ()
+InputStateCallback :: proc "c" (u32, RetroDevice, u32, RetroDeviceId) -> i16
+AudioSampleCallback :: proc "c" (i16, i16)
+AudioSampleBatchCallback :: proc "c" (^i16, i32) -> i32
+
 LibretroCore :: struct {
     loaded: bool,
     api: LibretroCoreAPI,
@@ -19,13 +26,13 @@ LibretroCoreAPI :: struct {
     api_version: proc "c" () -> c.uint,
     get_system_info: proc "c" (^SystemInfo),
     get_system_av_info: proc "c" (^SystemAvInfo),
-    set_environment: proc "c" (proc "c" (RetroEnvironment, rawptr) -> bool),
-    set_video_refresh: proc "c" (proc "c" (rawptr, u32, u32, u32)),
+    set_environment: proc "c" (EnvironmentCallback),
+    set_video_refresh: proc "c" (VideoRefreshCallback),
     set_controller_port_device: proc "c" (port, device: c.uint),
-    set_input_poll: proc "c" (proc "c" ()),
-    set_input_state: proc "c" (proc "c" (u32, RetroDevice, u32, RetroDeviceId) -> i16),
-    set_audio_sample: proc "c" (proc "c" (i16, i16)),
-    set_audio_sample_batch: proc "c" (proc "c" (^i16, i32) -> i32),
+    set_input_poll: proc "c" (InputPollCallback),
+    set_input_state: proc "c" (InputStateCallback),
+    set_audio_sample: proc "c" (AudioSampleCallback),
+    set_audio_sample_batch: proc "c" (AudioSampleBatchCallback),
     run: proc "c" (),
     reset: proc "c" (),
     load_game: proc "c" (^GameInfo) -> bool,
