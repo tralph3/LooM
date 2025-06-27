@@ -83,6 +83,8 @@ reset_game :: proc () {
         sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
         GLOBAL_STATE.emulator_state.core.api.reset()
         sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
+    } else {
+        GLOBAL_STATE.emulator_state.core.api.reset()
     }
     cb.clear(&GLOBAL_STATE.audio_state.buffer)
 }
