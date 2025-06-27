@@ -16,6 +16,7 @@ CoreOption :: struct {
     values: [dynamic]CoreOptionValue,
     current_value: cstring,
     default_value: cstring,
+    visible: bool,
 }
 
 EmulatorState :: struct {

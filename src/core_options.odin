@@ -33,6 +33,7 @@ core_options_set_v2 :: proc (options: ^lr.RetroCoreOptionsV2) {
             info = clone_cstring(definition.info),
             current_value = clone_cstring(definition.default_value),
             default_value = clone_cstring(definition.default_value),
+            visible = true,
         }
 
         for value, i in definition.values {
@@ -59,7 +60,7 @@ core_options_set_variables :: proc (options: [^]lr.RetroVariable) {
             break
         }
 
-        core_option: CoreOption
+        core_option := CoreOption { visible = true }
 
         // value format: "Display; default|val2|val3"
         char_idx: int
@@ -149,4 +150,11 @@ core_options_print_all :: proc () {
 
         fmt.println("\n--------------")
     }
+}
+
+core_option_set_visibility :: proc (key: cstring, visible: bool) -> (ok: bool) {
+    option := (&GLOBAL_STATE.emulator_state.options[key]) or_return
+    option.visible = visible
+
+    return true
 }

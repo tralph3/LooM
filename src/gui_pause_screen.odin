@@ -218,7 +218,9 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
         }) {
             for _, &option in GLOBAL_STATE.emulator_state.options {
-                gui_core_option_layout(&option)
+                if option.visible {
+                    gui_core_option_layout(&option)
+                }
             }
         }
     }

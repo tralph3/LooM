@@ -294,3 +294,8 @@ RetroHwRenderCallback :: struct {
     context_destroy: RetroHwContextReset,
     debug_context: bool,
 }
+
+RetroCoreOptionDisplay :: struct {
+    key: cstring,
+    visible: bool,
+}

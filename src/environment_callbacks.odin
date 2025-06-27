@@ -34,7 +34,8 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetGeometry: env_callback_set_geometry(data)
         case .SetSystemAvInfo: env_callback_set_system_av_info(data)
         case .GetHwRenderInterface: env_callback_get_hw_render_interface(data)
-        case: log.warnf("Callback not supported: '%s'", command)
+        case .SetCoreOptionsDisplay: env_callback_set_core_options_display(data)
+        case: log.warnf("Callback not supported: '{}'", command)
         return false
     }
 
@@ -1377,7 +1378,12 @@ env_callback_set_core_options_intl :: proc (data: rawptr) { // TODO
  * @see retro_core_option_display
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK
  */
-env_callback_set_core_options_display :: proc (data: rawptr) { // TODO
+env_callback_set_core_options_display :: proc (data: rawptr) { // DONE
+    if data == nil {
+        return
+    }
+    opt_display := (^lr.RetroCoreOptionDisplay)(data)
+    core_option_set_visibility(opt_display.key, opt_display.visible)
 }
 
 /**
