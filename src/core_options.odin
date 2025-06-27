@@ -136,7 +136,7 @@ core_option_set :: proc (key: cstring, val: cstring) -> (ok: bool) {
 
     option.current_value = clone_cstring(val)
 
-    GLOBAL_STATE.emulator_state.options_updated = true
+    core_options_set_dirty(true)
 
     return true
 }
@@ -157,4 +157,12 @@ core_option_set_visibility :: proc (key: cstring, visible: bool) -> (ok: bool) {
     option.visible = visible
 
     return true
+}
+
+core_options_set_dirty :: proc (status: bool) {
+    GLOBAL_STATE.emulator_state.options_updated = status
+}
+
+core_options_get_dirty :: proc () -> bool {
+    return GLOBAL_STATE.emulator_state.options_updated
 }
