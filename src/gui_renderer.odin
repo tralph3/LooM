@@ -55,6 +55,15 @@ CachedTextTexture :: struct {
     last_access: u64,
 }
 
+CustomRenderType :: enum {
+    EmulatorFramebuffer,
+}
+
+CustomRenderData :: struct {
+    type: CustomRenderType,
+    data: rawptr,
+}
+
 text_texture_cache: map[TextTextureCacheKey]CachedTextTexture
 
 gui_renderer_init :: proc () -> (ok: bool) {
@@ -71,6 +80,8 @@ gui_renderer_init :: proc () -> (ok: bool) {
 }
 
 gui_renderer_deinit :: proc () {
+    gl.DeleteBuffers(1, &vbo)
+    gl.DeleteVertexArrays(1, &vao)
     delete(text_texture_cache)
 }
 
@@ -245,25 +256,49 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.Disable(gl.SCISSOR_TEST)
         }
         case .Image: {
-            gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo_id)
-            gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+            texture_id := (^u32)(rcmd.renderData.image.imageData)^
 
-            if GLOBAL_STATE.emulator_state.hardware_render_callback != nil && GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin {
-                gl.BlitFramebuffer(
-                    0, 0, i32(GLOBAL_STATE.video_state.actual_width), i32(GLOBAL_STATE.video_state.actual_height),
-                    i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
-                    gl.COLOR_BUFFER_BIT, gl.NEAREST
-                )
-            } else {
-                gl.BlitFramebuffer(
-                    0, i32(GLOBAL_STATE.video_state.actual_height), i32(GLOBAL_STATE.video_state.actual_width), 0,
-                    i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
-                    gl.COLOR_BUFFER_BIT, gl.NEAREST
-                )
+            vertices: [12]c.float = {
+                rect.x / window_w, (rect.y + rect.h) / window_h, 0,
+                rect.x / window_w, rect.y / window_h, 0,
+                (rect.x + rect.w) / window_w, rect.y / window_h, 0,
+                (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
             }
+
+            gl.BindVertexArray(vao)
+            gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+            gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
+            gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
+            gl.EnableVertexAttribArray(0)
+            gl.ActiveTexture(gl.TEXTURE0)
+            gl.BindTexture(gl.TEXTURE_2D, texture_id)
+
+            gl.UseProgram(text_shader)
+            gl.Uniform1i(TEXT_SHADER_LOCS.tex, 0)
+
+            gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
         }
         case .Custom: {
-            log.warn("CLAY: Custom render command is not used")
+            config := (^CustomRenderData)(rcmd.renderData.custom.customData)
+            switch config.type {
+            case .EmulatorFramebuffer:
+                gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo_id)
+                gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+
+                if GLOBAL_STATE.emulator_state.hardware_render_callback != nil && GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin {
+                    gl.BlitFramebuffer(
+                        0, 0, i32(GLOBAL_STATE.video_state.actual_width), i32(GLOBAL_STATE.video_state.actual_height),
+                        i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
+                        gl.COLOR_BUFFER_BIT, gl.NEAREST
+                    )
+                } else {
+                    gl.BlitFramebuffer(
+                        0, i32(GLOBAL_STATE.video_state.actual_height), i32(GLOBAL_STATE.video_state.actual_width), 0,
+                        i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
+                        gl.COLOR_BUFFER_BIT, gl.NEAREST
+                    )
+                }
+            }
         }
         case .None: {
             log.warn("CLAY: Attempted to render None render command")
