@@ -39,7 +39,10 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
             bbp = 4
         }
 
-        gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, i32(pitch / bbp), i32(height), 0, format, type, data)
+        gl.PixelStorei(gl.UNPACK_ROW_LENGTH, i32(pitch / bbp))
+        defer gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
+
+        gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, i32(width), i32(height), 0, format, type, data)
         gl.BindTexture(gl.TEXTURE_2D, 0)
     }
 }
