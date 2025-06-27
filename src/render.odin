@@ -42,6 +42,8 @@ renderer_init :: proc () -> (ok: bool) {
         }
     }
 
+    sdl.SetHint(sdl.HINT_VIDEO_ALLOW_SCREENSAVER, "0")
+
     if !sdl.Init({ .VIDEO, .AUDIO, .EVENTS, .GAMEPAD, .JOYSTICK }) {
         log.errorf("Failed initializing SDL: {}", sdl.GetError())
         return false
