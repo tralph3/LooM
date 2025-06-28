@@ -56,7 +56,7 @@ CachedTextTexture :: struct {
 }
 
 CustomRenderType :: enum {
-    EmulatorFramebuffer,
+    EmulatorFramebuffer = 1,
 }
 
 CustomRenderData :: struct {
@@ -279,8 +279,8 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
         }
         case .Custom: {
-            config := (^CustomRenderData)(rcmd.renderData.custom.customData)
-            switch config.type {
+            type := CustomRenderType(uintptr(rcmd.renderData.custom.customData))
+            switch type {
             case .EmulatorFramebuffer:
                 gl.BindFramebuffer(gl.READ_FRAMEBUFFER, GLOBAL_STATE.video_state.fbo.framebuffer)
                 gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
