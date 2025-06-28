@@ -84,7 +84,6 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
 
     last_time = sdl.GetTicksNS()
 
-    GLOBAL_STATE.input_state.mouse_wheel_y = 0
     gui_update()
 
     buffered_bytes := int(GLOBAL_STATE.audio_state.buffer.size)
@@ -122,15 +121,7 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
             log.warn("Failed showing cursor: {}", sdl.GetError())
         }
 
-        if event.type == .KEY_DOWN && event.key.scancode == .SPACE && !event.key.repeat {
-            GLOBAL_STATE.emulator_state.fast_forward = !GLOBAL_STATE.emulator_state.fast_forward
-        } else if event.type == .KEY_DOWN && event.key.scancode == .ESCAPE && !event.key.repeat {
-            if GLOBAL_STATE.current_scene_id == .PAUSE {
-                scene_change(.RUNNING)
-            } else {
-                scene_change(.PAUSE)
-            }
-        }
+        input_handle_key_pressed(event)
     }
 
     return .CONTINUE

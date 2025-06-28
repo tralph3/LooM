@@ -10,3 +10,6 @@ InputState :: struct {
     mouse_wheel_y: f32,
     mouse_pos: [2]i16
 }
+
+input_handle_key_pressed :: proc (event: ^sdl.Event) {
+}

@@ -56,6 +56,7 @@ gui_update :: proc () {
     state := sdl.GetMouseState(&mouse_x, &mouse_y)
 
     cl.UpdateScrollContainers(true, { 0, GLOBAL_STATE.input_state.mouse_wheel_y } * 10, 0.016)
+    GLOBAL_STATE.input_state.mouse_wheel_y = 0
 
     window_x: i32
     window_y: i32
