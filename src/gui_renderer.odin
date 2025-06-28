@@ -13,12 +13,16 @@ vbo: u32
 vao: u32
 rectangle_shader: u32
 text_shader: u32
+framebuffer_shader: u32
 
 vertex_rectangle_shader_src: cstring = #load("./shaders/rectangle.vert")
 fragment_rectangle_shader_src: cstring = #load("./shaders/rectangle.frag")
 
 vertex_text_shader_src: cstring = #load("./shaders/text.vert")
 fragment_text_shader_src: cstring = #load("./shaders/text.frag")
+
+vertex_framebuffer_shader_src: cstring = #load("./shaders/framebuffer.vert")
+fragment_framebuffer_shader_src: cstring = #load("./shaders/framebuffer.frag")
 
 @(private="file")
 RECTANGLE_SHADER_LOCS: struct {
@@ -41,6 +45,13 @@ RECTANGLE_SHADER_LOCS: struct {
 @(private="file")
 TEXT_SHADER_LOCS: struct {
     tex: i32,
+}
+
+@(private="file")
+FRAMEBUFFER_SHADER_LOCS: struct {
+    tex: i32,
+    uvSubregion: i32,
+    flipY: i32,
 }
 
 TextTextureCacheKey :: struct {
@@ -75,6 +86,7 @@ gui_renderer_init :: proc () -> (ok: bool) {
 
     rectangle_shader = load_shader(vertex_rectangle_shader_src, fragment_rectangle_shader_src, &RECTANGLE_SHADER_LOCS) or_return
     text_shader = load_shader(vertex_text_shader_src, fragment_text_shader_src, &TEXT_SHADER_LOCS) or_return
+    framebuffer_shader = load_shader(vertex_framebuffer_shader_src, fragment_framebuffer_shader_src, &FRAMEBUFFER_SHADER_LOCS) or_return
 
     return true
 }
@@ -117,6 +129,8 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
 
     gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
     gl.Viewport(0, 0, window_x, window_y)
+    gl.ClearColor(0, 0, 0, 1)
+    gl.Clear(gl.COLOR_BUFFER_BIT)
 
     for i in 0..<rcommands.length {
         rcmd := cl.RenderCommandArray_Get(rcommands, i)
@@ -281,29 +295,49 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         case .Custom: {
             type := CustomRenderType(uintptr(rcmd.renderData.custom.customData))
             switch type {
-            case .EmulatorFramebuffer:
-                gl.BindFramebuffer(gl.READ_FRAMEBUFFER, GLOBAL_STATE.video_state.fbo.framebuffer)
-                gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-
-                if GLOBAL_STATE.emulator_state.hardware_render_callback != nil && GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin {
-                    gl.BlitFramebuffer(
-                        0, 0, i32(GLOBAL_STATE.video_state.actual_width), i32(GLOBAL_STATE.video_state.actual_height),
-                        i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
-                        gl.COLOR_BUFFER_BIT, gl.NEAREST
-                    )
-                } else {
-                    gl.BlitFramebuffer(
-                        0, i32(GLOBAL_STATE.video_state.actual_height), i32(GLOBAL_STATE.video_state.actual_width), 0,
-                        i32(rect.x), i32(rect.y), i32(rect.w + rect.x), i32(rect.h + rect.y),
-                        gl.COLOR_BUFFER_BIT, gl.NEAREST
-                    )
+            case .EmulatorFramebuffer: {
+                vertices: [12]c.float = {
+                    rect.x / window_w, (rect.y + rect.h) / window_h, 0,
+                    rect.x / window_w, rect.y / window_h, 0,
+                    (rect.x + rect.w) / window_w, rect.y / window_h, 0,
+                    (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
                 }
-            }
+
+                gl.BindVertexArray(vao)
+                gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+                gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
+                gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
+                gl.EnableVertexAttribArray(0)
+                gl.ActiveTexture(gl.TEXTURE0)
+                gl.BindTexture(gl.TEXTURE_2D, GLOBAL_STATE.video_state.fbo.texture)
+
+                gl.UseProgram(framebuffer_shader)
+                gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.tex, 0)
+
+                if GLOBAL_STATE.emulator_state.hardware_render_callback != nil &&
+                    GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin
+                {
+                    gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.flipY, 0)
+
+                } else {
+                    gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.flipY, 1)
+                }
+
+                if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+                    gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion,
+                                 0, 0,
+                                 f32(GLOBAL_STATE.video_state.actual_width) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width),
+                                 f32(GLOBAL_STATE.video_state.actual_height) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height))
+                } else {
+                    gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion, 0, 0, 1, 1)
+                }
+
+                gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
+            }}
         }
         case .None: {
             log.warn("CLAY: Attempted to render None render command")
-        }
-        }
+        }}
     }
 
     gl.BindFramebuffer(gl.FRAMEBUFFER, 0)

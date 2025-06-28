@@ -148,7 +148,7 @@ video_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
     defer gl.BindTexture(gl.TEXTURE_2D, 0)
 
     gl.TexImage2D(
-        gl.TEXTURE_2D, 0, gl.RGBA8,
+        gl.TEXTURE_2D, 0, gl.RGB8,
         width, height,
         0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
