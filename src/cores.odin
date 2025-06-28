@@ -49,13 +49,13 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
     core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
 
     if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
-        renderer_init_emulator_framebuffer(
+        video_init_emulator_framebuffer(
             depth=GLOBAL_STATE.emulator_state.hardware_render_callback.depth,
             stencil=GLOBAL_STATE.emulator_state.hardware_render_callback.stencil,
         )
         run_inside_emulator_context(GLOBAL_STATE.emulator_state.hardware_render_callback.context_reset)
     } else {
-        renderer_init_emulator_framebuffer()
+        video_init_emulator_framebuffer()
     }
 
     audio_update_sample_rate()

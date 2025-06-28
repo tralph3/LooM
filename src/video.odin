@@ -33,7 +33,7 @@ VideoState :: struct {
     shared_context: bool,
 }
 
-renderer_init :: proc () -> (ok: bool) {
+video_init :: proc () -> (ok: bool) {
     when ODIN_OS == .Linux {
         wayland_display := os2.get_env("WAYLAND_DISPLAY", allocator=context.allocator)
         defer delete(wayland_display)
@@ -58,7 +58,7 @@ renderer_init :: proc () -> (ok: bool) {
         return false
     }
 
-    renderer_load_font("./assets/Ubuntu.ttf", 38)
+    video_load_font("./assets/Ubuntu.ttf", 38)
 
     GLOBAL_STATE.video_state.window = sdl.CreateWindow("Libretro Frontend", 800, 600, { .RESIZABLE, .OPENGL })
     if GLOBAL_STATE.video_state.window == nil {
@@ -87,20 +87,20 @@ renderer_init :: proc () -> (ok: bool) {
     return true
 }
 
-renderer_deinit :: proc () {
+video_deinit :: proc () {
     for font in GLOBAL_STATE.video_state.fonts {
         ttf.CloseFont(font)
     }
     delete(GLOBAL_STATE.video_state.fonts)
 
-    renderer_destroy_emulator_framebuffer()
+    video_destroy_emulator_framebuffer()
     sdl.DestroyWindow(GLOBAL_STATE.video_state.window)
 
     ttf.Quit()
     sdl.Quit()
 }
 
-renderer_load_font :: proc (path: cstring, size: f32) {
+video_load_font :: proc (path: cstring, size: f32) {
     font := ttf.OpenFont(path, size)
     if font == nil {
         log.errorf("Failed loading font '{}': {}", path, sdl.GetError())
@@ -110,7 +110,7 @@ renderer_load_font :: proc (path: cstring, size: f32) {
     append(&GLOBAL_STATE.video_state.fonts, font)
 }
 
-renderer_destroy_emulator_framebuffer :: proc () {
+video_destroy_emulator_framebuffer :: proc () {
     fbo := GLOBAL_STATE.video_state.fbo
     if fbo.framebuffer  != 0 { gl.DeleteFramebuffers(1,  &fbo.framebuffer) }
     if fbo.depth        != 0 { gl.DeleteRenderbuffers(1, &fbo.depth)       }
@@ -118,11 +118,11 @@ renderer_destroy_emulator_framebuffer :: proc () {
     if fbo.texture      != 0 { gl.DeleteTextures(1,      &fbo.texture)     }
 }
 
-renderer_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
+video_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
     width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
     height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
 
-    renderer_destroy_emulator_framebuffer()
+    video_destroy_emulator_framebuffer()
 
     aspect := GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio
     if aspect == 0.0 {
@@ -181,7 +181,7 @@ renderer_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
     GLOBAL_STATE.video_state.fbo = fbo
 }
 
-renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
+video_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))

@@ -40,8 +40,8 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
 app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.AppResult {
     context = GLOBAL_STATE.ctx
 
-    if !renderer_init() {
-        log.error("Failed initializing renderer")
+    if !video_init() {
+        log.error("Failed initializing video")
         return .FAILURE
     }
 
@@ -134,7 +134,7 @@ app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     unload_game()
     audio_deinit()
     gui_deinit()
-    renderer_deinit()
+    video_deinit()
 }
 
 main :: proc () {
