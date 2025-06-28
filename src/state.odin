@@ -4,7 +4,7 @@ import lr "libretro"
 import cl "clay"
 import "base:runtime"
 
-GLOBAL_STATE := struct {
+GLOBAL_STATE := struct #no_copy {
     current_user: string,
     gui_state: GuiState,
     video_state: VideoState,
