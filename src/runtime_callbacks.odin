@@ -7,9 +7,7 @@ import "core:log"
 import gl "vendor:OpenGL"
 
 video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch: u32) {
-    if data == nil {
-        return
-    }
+    if data == nil { return }
 
     GLOBAL_STATE.video_state.actual_width = width
     GLOBAL_STATE.video_state.actual_height = height
@@ -18,7 +16,8 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
         // hardware rendering, nothing to do
     } else {
         // software rendering
-        gl.BindTexture(gl.TEXTURE_2D, tex_id)
+        gl.BindTexture(gl.TEXTURE_2D, GLOBAL_STATE.video_state.fbo.texture)
+        defer gl.BindTexture(gl.TEXTURE_2D, 0)
 
         format: u32
         type: u32
@@ -43,7 +42,6 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
         defer gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
 
         gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, i32(width), i32(height), 0, format, type, data)
-        gl.BindTexture(gl.TEXTURE_2D, 0)
     }
 }
 

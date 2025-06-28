@@ -1,6 +1,7 @@
 package main
 
 import gl "vendor:OpenGL"
+import sdl "vendor:sdl3"
 import "base:intrinsics"
 import "core:reflect"
 import "core:strings"
@@ -123,4 +124,21 @@ get_program_log :: proc(program: u32) -> string {
     }
 
     return strings.clone("")
+}
+
+run_inside_emulator_context_c :: #force_inline proc "contextless" (func: proc "c" ()) {
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
+    func()
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
+}
+
+run_inside_emulator_context_odin :: #force_inline proc (func: proc ()) {
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
+    func()
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
+}
+
+run_inside_emulator_context :: proc {
+    run_inside_emulator_context_c,
+    run_inside_emulator_context_odin,
 }

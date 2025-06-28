@@ -782,7 +782,7 @@ env_callback_set_system_av_info :: proc (data: rawptr) -> bool { // TODO: revise
 
     GLOBAL_STATE.emulator_state.av_info = (^lr.SystemAvInfo)(data)^
 
-    renderer_init_framebuffer()
+    renderer_init_emulator_framebuffer()
     audio_update_sample_rate()
     return true
 }

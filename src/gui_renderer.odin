@@ -282,7 +282,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             config := (^CustomRenderData)(rcmd.renderData.custom.customData)
             switch config.type {
             case .EmulatorFramebuffer:
-                gl.BindFramebuffer(gl.READ_FRAMEBUFFER, fbo_id)
+                gl.BindFramebuffer(gl.READ_FRAMEBUFFER, GLOBAL_STATE.video_state.fbo.framebuffer)
                 gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
 
                 if GLOBAL_STATE.emulator_state.hardware_render_callback != nil && GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin {

@@ -10,18 +10,22 @@ import "core:log"
 import "core:c"
 import gl "vendor:OpenGL"
 
-fbo_id: u32
-tex_id: u32
-depth_rbo: u32
-stencil_rbo: u32
-gl_context: sdl.GLContext
-emu_context: sdl.GLContext
+FBO :: struct {
+    framebuffer: u32,
+    texture: u32,
+    depth: u32,
+    stencil: u32,
+}
 
 VideoState :: struct {
     window: ^sdl.Window,
-    text_engine: ^ttf.TextEngine,
     pixel_format: lr.RetroPixelFormat,
     fonts: [dynamic]^ttf.Font,
+
+    fbo: FBO,
+
+    main_context: sdl.GLContext,
+    emu_context: sdl.GLContext,
 
     actual_width: u32,
     actual_height: u32,
@@ -67,15 +71,15 @@ renderer_init :: proc () -> (ok: bool) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
     sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 0)
 
-    gl_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
-    if gl_context == nil {
+    GLOBAL_STATE.video_state.main_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
+    if GLOBAL_STATE.video_state.main_context == nil {
         log.errorf("Failed creating OpenGL context: {}", sdl.GetError())
         return false
     }
 
     gl.load_up_to(3, 3, sdl.gl_set_proc_address)
 
-    if !sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context) {
+    if !sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context) {
         log.errorf("Failed making OpenGL context current: {}", sdl.GetError())
         return false
     }
@@ -89,7 +93,7 @@ renderer_deinit :: proc () {
     }
     delete(GLOBAL_STATE.video_state.fonts)
 
-    ttf.DestroyRendererTextEngine(GLOBAL_STATE.video_state.text_engine)
+    renderer_destroy_emulator_framebuffer()
     sdl.DestroyWindow(GLOBAL_STATE.video_state.window)
 
     ttf.Quit()
@@ -106,26 +110,19 @@ renderer_load_font :: proc (path: cstring, size: f32) {
     append(&GLOBAL_STATE.video_state.fonts, font)
 }
 
-renderer_destroy_framebuffer :: proc () {
-
+renderer_destroy_emulator_framebuffer :: proc () {
+    fbo := GLOBAL_STATE.video_state.fbo
+    if fbo.framebuffer  != 0 { gl.DeleteFramebuffers(1,  &fbo.framebuffer) }
+    if fbo.depth        != 0 { gl.DeleteRenderbuffers(1, &fbo.depth)       }
+    if fbo.stencil      != 0 { gl.DeleteRenderbuffers(1, &fbo.stencil)     }
+    if fbo.texture      != 0 { gl.DeleteTextures(1,      &fbo.texture)     }
 }
 
-renderer_init_framebuffer :: proc (depth := false, stencil := false) {
+renderer_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
     width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
     height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
 
-    if tex_id != 0 {
-        gl.DeleteTextures(1, &tex_id)
-    }
-    if fbo_id != 0 {
-        gl.DeleteFramebuffers(1, &fbo_id)
-    }
-    if depth_rbo != 0 {
-        gl.DeleteRenderbuffers(1, &depth_rbo)
-    }
-    if stencil_rbo != 0 {
-        gl.DeleteRenderbuffers(1, &stencil_rbo)
-    }
+    renderer_destroy_emulator_framebuffer()
 
     aspect := GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio
     if aspect == 0.0 {
@@ -140,8 +137,14 @@ renderer_init_framebuffer :: proc (depth := false, stencil := false) {
         height = i32(f32(width) / aspect)
     }
 
-    gl.GenTextures(1, &tex_id)
-    gl.BindTexture(gl.TEXTURE_2D, tex_id)
+    fbo: FBO
+
+    gl.GenFramebuffers(1, &fbo.framebuffer)
+    gl.BindFramebuffer(gl.FRAMEBUFFER, fbo.framebuffer)
+    defer gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+
+    gl.GenTextures(1, &fbo.texture)
+    gl.BindTexture(gl.TEXTURE_2D, fbo.texture)
     defer gl.BindTexture(gl.TEXTURE_2D, 0)
 
     gl.TexImage2D(
@@ -150,41 +153,32 @@ renderer_init_framebuffer :: proc (depth := false, stencil := false) {
         0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+    gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fbo.texture, 0)
 
     if depth {
-        gl.GenRenderbuffers(1, &depth_rbo)
-        gl.BindRenderbuffer(gl.RENDERBUFFER, depth_rbo)
+        gl.GenRenderbuffers(1, &fbo.depth)
+        gl.BindRenderbuffer(gl.RENDERBUFFER, fbo.depth)
         defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
 
         gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, width, height)
+        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, fbo.depth)
     }
 
     if stencil {
-        gl.GenRenderbuffers(1, &stencil_rbo)
-        gl.BindRenderbuffer(gl.RENDERBUFFER, stencil_rbo)
+        gl.GenRenderbuffers(1, &fbo.stencil)
+        gl.BindRenderbuffer(gl.RENDERBUFFER, fbo.stencil)
         defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
 
         gl.RenderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, width, height)
-    }
-
-    gl.GenFramebuffers(1, &fbo_id)
-    gl.BindFramebuffer(gl.FRAMEBUFFER, fbo_id)
-    defer gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-
-    gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex_id, 0)
-
-    if depth {
-        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth_rbo);
-    }
-
-    if stencil {
-        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.RENDERBUFFER, stencil_rbo);
+        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.RENDERBUFFER, fbo.stencil)
     }
 
     framebuffer_status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
     if framebuffer_status != gl.FRAMEBUFFER_COMPLETE {
         log.errorf("Incomplete framebuffer: {}", framebuffer_status)
     }
+
+    GLOBAL_STATE.video_state.fbo = fbo
 }
 
 renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
@@ -193,92 +187,16 @@ renderer_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
     sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 1)
 
-    emu_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
-    if emu_context == nil {
+    GLOBAL_STATE.video_state.emu_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
+    if GLOBAL_STATE.video_state.emu_context == nil {
         log.errorf("Failed creating OpenGL context: {}", sdl.GetError())
         return
     }
 
     render_cb.get_proc_address = sdl.GL_GetProcAddress
     render_cb.get_current_framebuffer = proc "c" () -> c.uintptr_t {
-        return c.uintptr_t(fbo_id)
+        return c.uintptr_t(GLOBAL_STATE.video_state.fbo.framebuffer)
     }
 
     GLOBAL_STATE.emulator_state.hardware_render_callback = render_cb
 }
-
-// build_ui_layout :: proc () -> cl.ClayArray(cl.RenderCommand){
-//     cl.BeginLayout()
-
-//     if cl.UI()({
-//         id = cl.ID("Main Container"),
-//         layout = {
-//             sizing = { width = cl.SizingGrow({}), height = cl.SizingGrow({})},
-//         }
-//     }) {
-//         if cl.UI()({
-//             id = cl.ID("Side Container"),
-//             layout = {
-//                 sizing = { width = cl.SizingFixed(230), height = cl.SizingGrow({}) },
-//                 padding = { 10, 10, 10, 10, },
-//                 childAlignment = {
-//                     x = .Center,
-//                     y = .Center,
-//                 },
-//                 layoutDirection = .TopToBottom,
-//             },
-//             backgroundColor = { 0x18, 0x18, 0x18, 255 },
-//         }) {
-//             sidebar_entry("Play", .PLAY)
-//             sidebar_entry("Settings", .SETTINGS)
-//             sidebar_entry("Quit", .QUIT)
-//         }
-
-//         if cl.UI()({
-//             id = cl.ID("Main Content Container"),
-//             layout = {
-//                 layoutDirection = .TopToBottom,
-//                 sizing = { width = cl.SizingGrow({}), height = cl.SizingGrow({})},
-//                 childGap = 16,
-//                 padding = { 20, 20, 20, 20, },
-//             },
-//             scroll = { vertical = true },
-//         }) {
-//             #partial switch UI_STATE.selected_menu {
-//                 case .PLAY:
-//                 for i in 0..<len(game_entries) {
-//                     menu_entry(game_entries[i][0], game_entries[i][1], i)
-//                 }
-//                 case .SETTINGS:
-
-//                 #partial switch STATE.state {
-//                     case .MENU:
-//                     menu_entry("Setting 1", "This is a description, hopefully its size is correctly calculated.\nNow here comes a newline!", 0)
-//                     menu_entry("Setting 2", "This is a description", 0)
-//                     menu_entry("Setting 3", "This is a description", 0)
-//                     menu_entry("Setting 4", "This is a description", 0)
-//                     case .PAUSED:
-//                     for i in 0..<len(STATE.core_options_definitions.definitions) {
-//                         setting(i)
-//                     }
-//                 }
-
-//             }
-
-//         }
-//     }
-
-//     return cl.EndLayout()
-// }
-
-// render_core_framebuffer :: proc () {
-//     rl.UpdateTexture(
-//         STATE.video.render_texture,
-//         STATE.video.data)
-
-//     rl.DrawTexturePro(
-//         STATE.video.render_texture,
-//         rl.Rectangle{0, 0, f32(STATE.video.width),f32(STATE.video.height)},
-//         rl.Rectangle{0, 0, f32(rl.GetScreenWidth()),f32(rl.GetScreenHeight())},
-//         rl.Vector2(0), 0, rl.WHITE)
-// }

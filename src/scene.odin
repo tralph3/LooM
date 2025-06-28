@@ -48,10 +48,10 @@ SCENES := [SceneID]Scene{
         .RUNNING = {
             update = proc () {
                 if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
-                    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, emu_context)
+                    run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.run)
+                } else {
+                    GLOBAL_STATE.emulator_state.core.api.run()
                 }
-                GLOBAL_STATE.emulator_state.core.api.run()
-                sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, gl_context)
             },
             render = proc () {
                 layout := gui_layout_running_screen()

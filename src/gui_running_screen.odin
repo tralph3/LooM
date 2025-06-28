@@ -28,11 +28,9 @@ gui_layout_running_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                 },
             },
             aspectRatio = { f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_width) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_height) },
-            custom = {
-                &CustomRenderData {
-                    type = .EmulatorFramebuffer,
-                }
-            }
+            custom = { &CustomRenderData {
+                type = .EmulatorFramebuffer,
+            }}
         }) { }
     }
 

@@ -188,7 +188,9 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                         },
                     },
                     aspectRatio = { f32(GLOBAL_STATE.video_state.actual_width) / f32(GLOBAL_STATE.video_state.actual_height) },
-                    image = { rawptr(uintptr(fbo_id)) },
+                    custom = { &CustomRenderData {
+                        type = .EmulatorFramebuffer,
+                    }}
                 }) { }
             }
         }
