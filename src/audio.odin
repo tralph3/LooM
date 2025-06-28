@@ -14,7 +14,7 @@ AUDIO_BUFFER_OVERFLOW_LIMIT :: 1024 * 52
 
 COPY_BUFFER: [AUDIO_BUFFER_SIZE_BYTES]byte
 
-AudioState :: struct {
+AudioState :: struct #no_copy {
     buffer: cb.CircularBuffer(AUDIO_BUFFER_SIZE_BYTES),
     stream: ^sdl.AudioStream,
 }

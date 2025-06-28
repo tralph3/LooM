@@ -5,6 +5,7 @@ import lr "libretro"
 import "core:log"
 
 InputState :: struct {
+InputState :: struct #no_copy {
     i: [lr.RetroDeviceIdJoypad]i16,
     analog: [6]i16,
     mouse_wheel_y: f32,

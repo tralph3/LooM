@@ -7,6 +7,7 @@ import "core:log"
 import "core:strings"
 
 GuiState :: struct {
+GuiState :: struct #no_copy {
     arena: cl.Arena,
 }
 

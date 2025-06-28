@@ -17,7 +17,7 @@ FBO :: struct {
     stencil: u32,
 }
 
-VideoState :: struct {
+VideoState :: struct #no_copy {
     window: ^sdl.Window,
     pixel_format: lr.RetroPixelFormat,
     fonts: [dynamic]^ttf.Font,
