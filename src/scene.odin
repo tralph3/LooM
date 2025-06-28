@@ -86,3 +86,11 @@ scene_change :: proc (new_scene_id: SceneID) {
 scene_get :: proc (scene_id: SceneID) -> Scene {
     return SCENES[scene_id]
 }
+
+scene_init :: proc () {
+    initial_scene := scene_get(GLOBAL_STATE.current_scene_id)
+
+    if initial_scene.on_enter != nil {
+        initial_scene.on_enter()
+    }
+}
