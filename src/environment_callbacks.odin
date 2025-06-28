@@ -37,11 +37,11 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetGeometry: return env_callback_set_geometry(data)
         case .SetSystemAvInfo: return env_callback_set_system_av_info(data)
         case .SetCoreOptionsDisplay: return env_callback_set_core_options_display(data)
+        case .GetInputBitmasks: return env_callback_get_input_bitmasks(data)
         case: log.warnf("Callback not supported: '{}'", command)
-        return false
     }
 
-    return true
+    return false
 }
 
 /**
@@ -1290,8 +1290,8 @@ env_callback_get_target_refresh_rate :: proc (data: rawptr) -> bool { // TODO
  * @see RETRO_DEVICE_JOYPAD
  * @see RETRO_DEVICE_ID_JOYPAD_MASK
  */
-env_callback_get_input_bitmasks :: proc (data: rawptr) -> bool { // TODO
-    return false
+env_callback_get_input_bitmasks :: proc (data: rawptr) -> bool { // DONE
+    return true
 }
 
 /**

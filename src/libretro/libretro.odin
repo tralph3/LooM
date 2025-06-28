@@ -11,7 +11,7 @@ RETRO_HW_FRAME_BUFFER_VALID :: -1
 EnvironmentCallback :: proc "c" (RetroEnvironment, rawptr) -> bool
 VideoRefreshCallback :: proc "c" (rawptr, u32, u32, u32)
 InputPollCallback :: proc "c" ()
-InputStateCallback :: proc "c" (u32, RetroDevice, u32, RetroDeviceId) -> i16
+InputStateCallback :: proc "c" (u32, RetroDevice, u32, u32) -> i16
 AudioSampleCallback :: proc "c" (i16, i16)
 AudioSampleBatchCallback :: proc "c" (^i16, i32) -> i32
 

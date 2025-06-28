@@ -4,8 +4,10 @@ import "core:c"
 import sdl "vendor:sdl3"
 
 RETRO_NUM_CORE_OPTION_VALUES_MAX :: 128
+
 RETRO_DEVICE_TYPE_SHIFT: u32 : 8
 RETRO_DEVICE_MASK: u32 : ((1 << RETRO_DEVICE_TYPE_SHIFT) - 1)
+RETRO_DEVICE_ID_JOYPAD_MASK :: 256
 
 Callbacks :: struct {
     environment: EnvironmentCallback,
@@ -132,23 +134,34 @@ RetroEnvironment :: enum c.int {
     GetFileBrowserStartDirectory                  = 80,
 }
 
-RetroDeviceId :: enum c.int {
-    JoypadB      =  0,
-    JoypadY      =  1,
-    JoypadSelect =  2,
-    JoypadStart  =  3,
-    JoypadUp     =  4,
-    JoypadDown   =  5,
-    JoypadLeft   =  6,
-    JoypadRight  =  7,
-    JoypadA      =  8,
-    JoypadX      =  9,
-    JoypadL      = 10,
-    JoypadR      = 11,
-    JoypadL2     = 12,
-    JoypadR2     = 13,
-    JoypadL3     = 14,
-    JoypadR3     = 15,
+RetroDeviceIdJoypad :: enum c.int {
+    B      =  0,
+    Y      =  1,
+    Select =  2,
+    Start  =  3,
+    Up     =  4,
+    Down   =  5,
+    Left   =  6,
+    Right  =  7,
+    A      =  8,
+    X      =  9,
+    L      = 10,
+    R      = 11,
+    L2     = 12,
+    R2     = 13,
+    L3     = 14,
+    R3     = 15,
+}
+
+RetroDeviceIdAnalog :: enum c.int {
+    X = 0,
+    Y = 1,
+}
+
+RetroDeviceIndexAnalog :: enum c.int {
+    Left   = 0,
+    Right  = 1,
+    Button = 2,
 }
 
 RetroDevice :: enum c.int {
