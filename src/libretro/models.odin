@@ -314,3 +314,12 @@ RetroCoreOptionDisplay :: struct {
     key: cstring,
     visible: bool,
 }
+
+RetroRumbleEffect :: enum c.int {
+    Strong = 0,
+    Weak   = 1,
+}
+
+RetroRumbleInterface :: struct {
+    set_rumble_state: proc "c" (port: uint, effect: RetroRumbleEffect, strength: u16) -> bool
+}
