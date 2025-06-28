@@ -38,6 +38,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetSystemAvInfo: return env_callback_set_system_av_info(data)
         case .SetCoreOptionsDisplay: return env_callback_set_core_options_display(data)
         case .GetInputBitmasks: return env_callback_get_input_bitmasks(data)
+        case .GetRumbleInterface: return env_callback_get_rumble_interface(data)
         case: log.warnf("Callback not supported: '{}'", command)
     }
 
@@ -530,7 +531,10 @@ env_callback_set_audio_callback :: proc (data: rawptr) -> bool { // TODO
  * @defgroup GET_RUMBLE_INTERFACE Rumble Interface
  */
 env_callback_get_rumble_interface :: proc (data: rawptr) -> bool { // TODO
-    return false
+    if data == nil { return false }
+
+    (^lr.RetroRumbleInterface)(data).set_rumble_state = input_set_rumble
+    return true
 }
 
 /**
