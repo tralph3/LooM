@@ -73,6 +73,7 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
 last_time: u64
 app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     context = GLOBAL_STATE.ctx
+    defer free_all(GLOBAL_STATE.ctx.temp_allocator)
 
     if GLOBAL_STATE.should_exit {
         return .SUCCESS
