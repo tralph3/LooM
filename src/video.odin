@@ -19,6 +19,7 @@ FBO :: struct {
 
 VideoState :: struct #no_copy {
     window: ^sdl.Window,
+    window_size: [2]i32,
     pixel_format: lr.RetroPixelFormat,
     fonts: [dynamic]^ttf.Font,
 
@@ -79,6 +80,11 @@ video_init :: proc () -> (ok: bool) {
 
     gl.load_up_to(3, 3, sdl.gl_set_proc_address)
 
+    major, minor: i32
+    gl.GetIntegerv(gl.MAJOR_VERSION, &major)
+    gl.GetIntegerv(gl.MINOR_VERSION, &minor)
+    gl.load_up_to(int(major), int(minor), sdl.gl_set_proc_address)
+
     if !sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context) {
         log.errorf("Failed making OpenGL context current: {}", sdl.GetError())
         return false
@@ -92,6 +98,7 @@ video_deinit :: proc () {
         ttf.CloseFont(font)
     }
     delete(GLOBAL_STATE.video_state.fonts)
+    GLOBAL_STATE.video_state.fonts = nil
 
     video_destroy_emulator_framebuffer()
     sdl.DestroyWindow(GLOBAL_STATE.video_state.window)
