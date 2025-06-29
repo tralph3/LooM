@@ -14,6 +14,7 @@ vao: u32
 rectangle_shader: u32
 text_shader: u32
 framebuffer_shader: u32
+frame_counter: i32
 
 vertex_rectangle_shader_src: cstring = #load("./shaders/rectangle.vert")
 fragment_rectangle_shader_src: cstring = #load("./shaders/rectangle.frag")
@@ -23,6 +24,8 @@ fragment_text_shader_src: cstring = #load("./shaders/text.frag")
 
 vertex_framebuffer_shader_src: cstring = #load("./shaders/framebuffer.vert")
 fragment_framebuffer_shader_src: cstring = #load("./shaders/framebuffer.frag")
+
+crt_mattias_shader_source: cstring = #load("./shaders/crt-mattias.frag")
 
 @(private="file")
 RECTANGLE_SHADER_LOCS: struct {
@@ -50,8 +53,12 @@ TEXT_SHADER_LOCS: struct {
 @(private="file")
 FRAMEBUFFER_SHADER_LOCS: struct {
     tex: i32,
+    texSize: i32,
     uvSubregion: i32,
     flipY: i32,
+    frameCount: i32,
+    outputSize: i32,
+    inputSize: i32,
 }
 
 TextTextureCacheKey :: struct {
@@ -77,6 +84,17 @@ CustomRenderData :: struct {
 
 text_texture_cache: map[TextTextureCacheKey]CachedTextTexture
 
+gui_load_framebuffer_shader :: proc (shader_src: cstring) {
+    prog_id, ok := load_shader(vertex_framebuffer_shader_src, shader_src, &FRAMEBUFFER_SHADER_LOCS)
+    if !ok {
+        log.error("Framebuffer shader loading failed. Aborting.")
+        return
+    }
+
+    gl.DeleteProgram(framebuffer_shader)
+    framebuffer_shader = prog_id
+}
+
 gui_renderer_init :: proc () -> (ok: bool) {
     gl.Enable(gl.BLEND)
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -95,6 +113,7 @@ gui_renderer_deinit :: proc () {
     gl.DeleteBuffers(1, &vbo)
     gl.DeleteVertexArrays(1, &vao)
     delete(text_texture_cache)
+    text_texture_cache = nil
 }
 
 gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextElementConfig, user_data: rawptr) -> cl.Dimensions {
@@ -120,15 +139,11 @@ gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextEle
 }
 
 gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)) {
-    window_x: i32
-    window_y: i32
-    sdl.GetWindowSize(GLOBAL_STATE.video_state.window, &window_x, &window_y)
-
-    window_w := f32(window_x)
-    window_h := f32(window_y)
+    window_w := f32(GLOBAL_STATE.video_state.window_size.x)
+    window_h := f32(GLOBAL_STATE.video_state.window_size.y)
 
     gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-    gl.Viewport(0, 0, window_x, window_y)
+    gl.Viewport(0, 0, GLOBAL_STATE.video_state.window_size.x, GLOBAL_STATE.video_state.window_size.y)
     gl.ClearColor(0, 0, 0, 1)
     gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -331,6 +346,13 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 } else {
                     gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion, 0, 0, 1, 1)
                 }
+
+                if FRAMEBUFFER_SHADER_LOCS.frameCount != -1 { gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.frameCount, frame_counter) }
+                if FRAMEBUFFER_SHADER_LOCS.outputSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.outputSize, rect.w, rect.h) }
+                if FRAMEBUFFER_SHADER_LOCS.texSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.texSize,
+                                                                        f32(GLOBAL_STATE.video_state.actual_width), f32(GLOBAL_STATE.video_state.actual_height)) }
+                if FRAMEBUFFER_SHADER_LOCS.inputSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.inputSize,
+                                                                          f32(GLOBAL_STATE.video_state.actual_width), f32(GLOBAL_STATE.video_state.actual_height)) }
 
                 gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
             }}
