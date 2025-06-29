@@ -11,6 +11,11 @@ GLOBAL_STATE := struct #no_copy {
     audio_state: AudioState,
     input_state: InputState,
     emulator_state: EmulatorState,
+    user_state: UserState,
+
+    game_entries: [dynamic]GameEntry,
+
+    config: Config,
 
     current_scene_id: SceneID,
 
@@ -18,5 +23,5 @@ GLOBAL_STATE := struct #no_copy {
 
     ctx: runtime.Context,
 } {
-    current_scene_id = .RUNNING,
+    current_scene_id = .LOGIN,
 }

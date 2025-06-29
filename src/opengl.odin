@@ -23,13 +23,13 @@ load_shader_locs :: proc (uniform_table: ^$T, shader_program: u32, location := #
 
         loc := gl.GetUniformLocation(shader_program, name_cstr)
 
+        uniform_ptr := (^i32)(uintptr(uniform_table) + uniform.offset)
+        uniform_ptr^ = loc
+
         if loc == -1 {
             log.warnf("Uniform '{}' wasn't found in program: {}", uniform.name, location=location)
             continue
         }
-
-        uniform_ptr := (^i32)(uintptr(uniform_table) + uniform.offset)
-        uniform_ptr^ = loc
 	}
 }
 

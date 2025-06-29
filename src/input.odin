@@ -14,9 +14,16 @@ InputPlayerState :: struct #no_copy {
     gamepad: ^sdl.Gamepad,
 }
 
+InputMouseState :: struct #no_copy {
+    wheel_movement: [2]f32,
+    clicked: bool,
+    down: bool,
+    position: [2]f32,
+}
+
 InputState :: struct #no_copy {
     players: [INPUT_MAX_PLAYERS]InputPlayerState,
-    mouse_wheel_y: f32,
+    mouse: InputMouseState,
 }
 
 input_init :: proc () -> (ok: bool) {
@@ -70,15 +77,49 @@ input_handle_key_pressed :: proc (event: ^sdl.Event) {
     if event.key.repeat { return }
 
     #partial switch event.key.scancode {
-    case .LEFT:
-        gui_focus_left()
-    case .RIGHT:
-        gui_focus_right()
-    case .UP:
-        gui_focus_up()
-    case .DOWN:
-        gui_focus_down()
+    // case .LEFT:
+    //     gui_focus_left()
+    // case .RIGHT:
+    //     gui_focus_right()
+    // case .UP:
+    //     gui_focus_up()
+    // case .DOWN:
+    //     gui_focus_down()
     case .ESCAPE:
+        scene_change(.PAUSE)
+    case .M:
+        gui_load_framebuffer_shader(crt_mattias_shader_source)
+    }
+}
+
+input_handle_mouse :: proc (event: ^sdl.Event) {
+    assert(event.type == .MOUSE_WHEEL ||
+           event.type == .MOUSE_BUTTON_DOWN ||
+           event.type == .MOUSE_BUTTON_UP ||
+           event.type == .MOUSE_MOTION)
+
+    #partial switch event.type {
+    case .MOUSE_MOTION:
+        GLOBAL_STATE.input_state.mouse.position = { event.motion.x, event.motion.y }
+    case .MOUSE_BUTTON_DOWN:
+        GLOBAL_STATE.input_state.mouse.clicked = true
+        GLOBAL_STATE.input_state.mouse.down = true
+    case .MOUSE_BUTTON_UP:
+        GLOBAL_STATE.input_state.mouse.down = false
+    case .MOUSE_WHEEL:
+        GLOBAL_STATE.input_state.mouse.wheel_movement = { event.wheel.x, event.wheel.y }
+    }
+}
+
+input_reset :: proc () {
+    GLOBAL_STATE.input_state.mouse.wheel_movement = {}
+    GLOBAL_STATE.input_state.mouse.clicked = false
+}
+
+input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
+    if event.type != .GAMEPAD_BUTTON_DOWN { return }
+    #partial switch sdl.GamepadButton(event.gbutton.button) {
+    case .GUIDE, .TOUCHPAD:
         scene_change(.PAUSE)
     }
 }

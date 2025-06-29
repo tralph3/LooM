@@ -26,8 +26,8 @@ SceneID :: enum {
 
 SCENES := [SceneID]Scene{
         .LOGIN = {
-            update = proc () {
-            },
+            on_enter = proc () {},
+            update = proc () {},
             render = proc () {
                 layout := gui_layout_login_screen()
                 gui_renderer_render_commands(&layout)
@@ -35,6 +35,12 @@ SCENES := [SceneID]Scene{
             allowed_transitons = { .MENU },
         },
         .MENU = {
+            update = proc () {},
+            render = proc () {
+                layout := gui_layout_menu_screen()
+                gui_renderer_render_commands(&layout)
+            },
+            allowed_transitons = { .RUNNING, .LOGIN },
         },
         .PAUSE = {
             update = proc () {
@@ -61,12 +67,12 @@ SCENES := [SceneID]Scene{
         },
 }
 
-scene_change :: proc (new_scene_id: SceneID) {
+scene_change :: proc (new_scene_id: SceneID, location:=#caller_location) {
     current_scene := scene_get(GLOBAL_STATE.current_scene_id)
 
     if new_scene_id not_in current_scene.allowed_transitons {
-        log.warnf("Attempted an invalid scene change. From '{}' to '{}'",
-                  GLOBAL_STATE.current_scene_id, new_scene_id)
+        log.warnf("Attempted an invalid scene change. From '{}' to '{}' -> {}",
+                  GLOBAL_STATE.current_scene_id, new_scene_id, location)
         return
     }
 

@@ -6,7 +6,6 @@ import "core:slice"
 import "core:log"
 import "core:strings"
 
-GuiState :: struct {
 GuiState :: struct #no_copy {
     arena: cl.Arena,
 }
@@ -52,23 +51,22 @@ gui_deinit :: proc () {
 }
 
 gui_update :: proc () {
-    mouse_x: f32
-    mouse_y: f32
-    state := sdl.GetMouseState(&mouse_x, &mouse_y)
+    cl.UpdateScrollContainers(true, GLOBAL_STATE.input_state.mouse.wheel_movement * 5, 0.016)
 
-    cl.UpdateScrollContainers(true, { 0, GLOBAL_STATE.input_state.mouse_wheel_y } * 10, 0.016)
-    GLOBAL_STATE.input_state.mouse_wheel_y = 0
-
-    window_x: i32
-    window_y: i32
-    sdl.GetWindowSize(GLOBAL_STATE.video_state.window, &window_x, &window_y)
-
-    cl.SetPointerState({mouse_x, mouse_y}, .LEFT in state)
-    cl.SetLayoutDimensions({ f32(window_x), f32(window_y) })
+    cl.SetPointerState(GLOBAL_STATE.input_state.mouse.position, GLOBAL_STATE.input_state.mouse.down)
+    cl.SetLayoutDimensions({ f32(GLOBAL_STATE.video_state.window_size.x), f32(GLOBAL_STATE.video_state.window_size.y) })
 }
 
 @(private="file")
 gui_error_handler :: proc "c" (error_data: cl.ErrorData) {
     context = GLOBAL_STATE.ctx
     log.errorf("CLAY: {}: {}", error_data.errorType, strings.string_from_ptr(error_data.errorText.chars, int(error_data.errorText.length)))
+}
+
+gui_is_clicked :: proc () -> bool {
+    return cl.Hovered() && GLOBAL_STATE.input_state.mouse.clicked
+}
+
+gui_is_focused :: proc () -> bool {
+    return cl.Hovered()
 }

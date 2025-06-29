@@ -32,6 +32,9 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
 app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.AppResult {
     context = GLOBAL_STATE.ctx
 
+    config_init()
+    game_entries_generate()
+
     if !video_init() {
         log.error("Failed initializing video")
         return .FAILURE
@@ -54,15 +57,32 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
 
     scene_init()
 
-    //load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
-    //load_game("./cores/mesen_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
-    //load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
-    //load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
-    load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
-    //load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
-    //load_game("./cores/mupen64plus_next_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
-    //load_game("./cores/mupen64plus_next_libretro_debug.so", "./roms/Super Mario 64 (U) [!].z64")
-    //load_game("./cores/parallel_n64_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
+    //core_load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
+    //core_load_game("./cores/mesen_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
+    //core_load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
+    //core_load_game("./cores/bsnes_libretro.so", "./roms/Super Castlevania IV (USA).sfc")
+    //core_load_game("./cores/bsnes_libretro.so", "./roms/Donkey Kong Country (USA).sfc")
+    //core_load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Mario World 2 - Yoshi's Island (USA) (Rev-A).sfc")
+    //core_load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
+    //core_load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    //core_load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    //core_load_game("./cores/melondsds_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
+    //core_load_game("./cores/mupen64plus_next_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
+    //core_load_game("./cores/mupen64plus_next_libretro.so", "./roms/Doshin the Giant (J) [64DD].n64")
+    //core_load_game("./cores/mupen64plus_next_libretro_debug.so", "./roms/Super Mario 64 (U) [!].z64")
+    //core_load_game("./cores/parallel_n64_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
+    //core_load_game("./cores/parallel_n64_libretro_debug.so", "./roms/Super Mario 64 (U) [!].z64")
+    //core_load_game("./cores/gambatte_libretro.so", "./roms/Donkey Kong Country (UE).gbc")
+    //core_load_game("./cores/mednafen_psx_hw_libretro.so", "./roms/Silent Hill (USA).cue")
+    //core_load_game("./cores/mednafen_psx_hw_libretro_debug.so", "./roms/Silent Hill (USA).cue")
+    //core_load_game("./cores/mednafen_psx_libretro_debug.so", "./roms/Silent Hill (USA).cue")
+    //core_load_game("./cores/mednafen_psx_libretro.so", "./roms/Silent Hill (USA).cue")
+    //core_load_game("./cores/swanstation_libretro.so", "./roms/Silent Hill (USA).cue")
+    //core_load_game("./cores/swanstation_libretro.so", "./roms/Final Fantasy VII (Spain) (Disc 1) (Rev 1).cue")
+    //core_load_game("./cores/swanstation_libretro.so", "./roms/padtest.cue")
+    //core_load_game("./cores/azahar_libretro.so", "./roms/Tetris Ultimate (USA) (En,Fr,Es,Pt).3ds")
+    //core_load_game("./cores/dosbox_pure_libretro.so", "/home/tralph3/Downloads/tomb3dem.zip")
+    //core_load_game("./cores/pcsx2_libretro.so", "./roms/SAN_ANDREAS.ISO")
 
     return .CONTINUE
 }
@@ -99,6 +119,10 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
 
     sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
 
+    frame_counter += 1
+
+    input_reset()
+
     return .CONTINUE
 }
 
@@ -108,20 +132,16 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
     #partial switch event.type {
     case .QUIT:
         GLOBAL_STATE.should_exit = true
-    case .MOUSE_WHEEL:
-        GLOBAL_STATE.input_state.mouse_wheel_y = event.wheel.y
+    case .MOUSE_WHEEL, .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP, .MOUSE_MOTION:
+        input_handle_mouse(event)
     case .GAMEPAD_ADDED, .GAMEPAD_REMOVED:
         input_open_gamepads()
     case .GAMEPAD_BUTTON_DOWN, .GAMEPAD_AXIS_MOTION:
-        if !sdl.HideCursor() {
-            log.warn("Failed hiding cursor: {}", sdl.GetError())
-        }
-    case .KEY_DOWN, .MOUSE_MOTION:
-        if !sdl.ShowCursor() {
-            log.warn("Failed showing cursor: {}", sdl.GetError())
-        }
-
+        input_handle_gamepad_pressed(event)
+    case .KEY_DOWN:
         input_handle_key_pressed(event)
+    case .WINDOW_RESIZED:
+        GLOBAL_STATE.video_state.window_size = { event.window.data1, event.window.data2 }
     }
 
     return .CONTINUE
@@ -131,7 +151,7 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
 app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     context = GLOBAL_STATE.ctx
 
-    unload_game()
+    core_unload_game()
     input_deinit()
     audio_deinit()
     gui_deinit()

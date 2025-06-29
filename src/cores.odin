@@ -4,6 +4,7 @@ import lr "libretro"
 import sdl "vendor:sdl3"
 import cb "circular_buffer"
 import "core:log"
+import "core:strings"
 
 CoreOptionValue :: struct {
     value: cstring,
@@ -29,9 +30,7 @@ EmulatorState :: struct {
     fast_forward: bool,
 }
 
-load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
-    core := lr.load_core(core_path) or_return
-
+core_load :: proc (core_path: string) -> (core: lr.LibretroCore, ok: bool) {
     callbacks := lr.Callbacks {
         environment = process_env_callback,
         video_refresh = video_refresh_callback,
@@ -40,11 +39,20 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
         audio_sample = audio_sample_callback,
         audio_sample_batch = audio_sample_batch_callback,
     }
+    core = lr.load_core(core_path, &callbacks) or_return
 
-    lr.initialize_core(&core, &callbacks)
-    lr.load_rom(&core, rom_path) or_return
+    return core, true
+}
 
-    GLOBAL_STATE.emulator_state.core = core
+core_load_game :: proc {
+    core_load_game_by_path,
+    core_load_game_by_core,
+}
+
+core_load_game_by_core :: proc (core: ^lr.LibretroCore, rom_path: string) -> (ok: bool) {
+    lr.load_rom(core, rom_path) or_return
+
+    GLOBAL_STATE.emulator_state.core = core^
 
     core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
 
@@ -64,20 +72,44 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
     return true
 }
 
-unload_game :: proc () {
+core_load_game_by_path :: proc (core_path: string, rom_path: string) -> (ok: bool) {
+    core := core_load(core_path) or_return
+    core_load_game_by_core(&core, rom_path) or_return
+    return true
+}
+
+core_unload_game :: proc () {
     if GLOBAL_STATE.emulator_state.core.loaded {
         if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
             run_inside_emulator_context(GLOBAL_STATE.emulator_state.hardware_render_callback.context_destroy)
             sdl.GL_DestroyContext(GLOBAL_STATE.video_state.emu_context)
         }
-        lr.unload_core(&GLOBAL_STATE.emulator_state.core)
+        core_unload(&GLOBAL_STATE.emulator_state.core)
         cb.clear(&GLOBAL_STATE.audio_state.buffer)
         GLOBAL_STATE.emulator_state.performance_level = 0
-        core_options_free()
+        GLOBAL_STATE.emulator_state.hardware_render_callback = nil
     }
 }
 
-reset_game :: proc () {
+core_unload :: proc (core: ^lr.LibretroCore) {
+    lr.unload_core(core)
+    core_options_free()
+}
+
+// You only need to free the returned array, the strings themselves
+// are views into the core's memory
+core_get_valid_extensions :: proc (core: ^lr.LibretroCore, allocator:=context.allocator) -> []string {
+    if core == nil || !core.loaded { return {} }
+    return strings.split(string(core.system_info.valid_extensions), "|", allocator=allocator)
+}
+
+core_hard_reset :: proc () {
+    // this should unload the core completely and re-run the same
+    // game, useful for applying core options that require full
+    // restarts
+}
+
+core_reset_game :: proc () {
     if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
         run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.reset)
     } else {

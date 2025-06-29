@@ -5,100 +5,133 @@ import sdl "vendor:sdl3"
 import "core:math/ease"
 import "core:log"
 
-gui_quick_access_button_layout :: proc (label: string, cb: proc ()) {
+UI_PAUSE_BUTTON_TEXT_CONFIG := cl.TextElementConfig {
+    textColor = UI_COLOR_MAIN_TEXT,
+    fontSize = 24,
+    textAlignment = .Center,
+}
+
+gui_pause_button_layout :: proc (label: string, callback: proc ()) {
     if cl.UI()({
         layout = {
             sizing = {
                 width = cl.SizingGrow({}),
-                height = cl.SizingGrow({}),
             },
-            padding = cl.PaddingAll(24),
+            childAlignment = {
+                x = .Center,
+            },
+            padding = {
+                top = UI_SPACING_12,
+                bottom = UI_SPACING_12,
+                left = UI_SPACING_32,
+                right = UI_SPACING_32,
+            },
         },
-        cornerRadius = cl.CornerRadiusAll(10),
-        backgroundColor = UI_COLOR_BACKGROUND,
-        border = cl.Hovered() ? {
+        border = gui_is_focused() ? {
             color = UI_COLOR_ACCENT,
             width = cl.BorderOutside(10),
         } : {},
+        cornerRadius = cl.CornerRadiusAll(5),
+        backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
     }) {
-        cl.TextDynamic(label, cl.TextConfig({
-            textColor = UI_COLOR_MAIN_TEXT,
-            fontSize = 24,
-        }))
+        cl.TextDynamic(label, &UI_PAUSE_BUTTON_TEXT_CONFIG)
 
-        if cl.Hovered() {
-            state := sdl.GetMouseState(nil, nil)
-
-            if .LEFT in state {
-                cb()
-            }
+        if gui_is_clicked() {
+            callback()
         }
     }
 }
 
-gui_core_option_layout :: proc (option: ^CoreOption) {
-    if cl.UI()({
-        layout = {
-            sizing = {
-                width = cl.SizingGrow({}),
-                height = cl.SizingGrow({}),
-            },
-            layoutDirection = .LeftToRight,
-            padding = cl.PaddingAll(24),
-        },
-        cornerRadius = cl.CornerRadiusAll(10),
-        backgroundColor = UI_COLOR_BACKGROUND,
-        border = cl.Hovered() ? {
-            color = UI_COLOR_ACCENT,
-            width = cl.BorderOutside(10),
-        } : {},
-    }) {
-        if cl.UI()({
-            layout = {
-                sizing = {
-                    width = cl.SizingFit({}),
-                    height = cl.SizingFit({}),
-                },
-                layoutDirection = .TopToBottom,
-            },
-        }) {
-            cl.TextDynamic(string(option.display), cl.TextConfig({
-                textColor = UI_COLOR_MAIN_TEXT,
-                fontSize = 24,
-            }))
+// gui_quick_access_button_layout :: proc (label: string, cb: proc ()) {
+//     if cl.UI()({
+//         layout = {
+//             sizing = {
+//                 width = cl.SizingGrow({}),
+//                 height = cl.SizingGrow({}),
+//             },
+//             padding = cl.PaddingAll(24),
+//         },
+//         cornerRadius = cl.CornerRadiusAll(10),
+//         backgroundColor = UI_COLOR_BACKGROUND,
+//         border = cl.Hovered() ? {
+//             color = UI_COLOR_ACCENT,
+//             width = cl.BorderOutside(10),
+//         } : {},
+//     }) {
+//         cl.TextDynamic(label, cl.TextConfig({
+//             textColor = UI_COLOR_MAIN_TEXT,
+//             fontSize = 24,
+//         }))
 
-            cl.TextDynamic(string(option.info), cl.TextConfig({
-                textColor = UI_COLOR_MAIN_TEXT,
-                fontSize = 16,
-            }))
-        }
+//         if gui_is_clicked() {
+//             cb()
+//         }
+//     }
+// }
 
-        if cl.UI()({
-            layout = {
-                sizing = {
-                    width = cl.SizingGrow({}),
-                    height = cl.SizingGrow({}),
-                },
-            },
-        }) {}
+// gui_core_option_layout :: proc (option: ^CoreOption) {
+//     if cl.UI()({
+//         layout = {
+//             sizing = {
+//                 width = cl.SizingGrow({}),
+//                 height = cl.SizingGrow({}),
+//             },
+//             layoutDirection = .LeftToRight,
+//             padding = cl.PaddingAll(24),
+//         },
+//         cornerRadius = cl.CornerRadiusAll(10),
+//         backgroundColor = UI_COLOR_BACKGROUND,
+//         border = cl.Hovered() ? {
+//             color = UI_COLOR_ACCENT,
+//             width = cl.BorderOutside(10),
+//         } : {},
+//     }) {
+//         if cl.UI()({
+//             layout = {
+//                 sizing = {
+//                     width = cl.SizingFit({}),
+//                     height = cl.SizingFit({}),
+//                 },
+//                 layoutDirection = .TopToBottom,
+//             },
+//         }) {
+//             cl.TextDynamic(string(option.display), cl.TextConfig({
+//                 textColor = UI_COLOR_MAIN_TEXT,
+//                 fontSize = 24,
+//             }))
 
-        if cl.UI()({
-            layout = {
-                sizing = {
-                    width = cl.SizingFit({}),
-                    height = cl.SizingFit({}),
-                },
-                layoutDirection = .TopToBottom,
-            },
-        }) {
-            cl.TextDynamic(string(option.current_value), cl.TextConfig({
-                textColor = UI_COLOR_MAIN_TEXT,
-                fontSize = 24,
-                textAlignment = .Right,
-            }))
-        }
-    }
-}
+//             cl.TextDynamic(string(option.info), cl.TextConfig({
+//                 textColor = UI_COLOR_MAIN_TEXT,
+//                 fontSize = 16,
+//             }))
+//         }
+
+//         if cl.UI()({
+//             layout = {
+//                 sizing = {
+//                     width = cl.SizingGrow({}),
+//                     height = cl.SizingGrow({}),
+//                 },
+//             },
+//         }) {}
+
+//         if cl.UI()({
+//             layout = {
+//                 sizing = {
+//                     width = cl.SizingFit({}),
+//                     height = cl.SizingFit({}),
+//                 },
+//                 layoutDirection = .TopToBottom,
+//             },
+//         }) {
+//             cl.TextDynamic(string(option.current_value), cl.TextConfig({
+//                 textColor = UI_COLOR_MAIN_TEXT,
+//                 fontSize = 24,
+//                 textAlignment = .Right,
+//             }))
+//         }
+//     }
+// }
 
 gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
     cl.BeginLayout()
@@ -119,108 +152,84 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         backgroundColor = { 0, 0, 0, 255 },
     }) {
         if cl.UI()({
-            id = cl.ID("Top Container"),
+            id = cl.ID("Game"),
             layout = {
                 sizing = {
                     width = cl.SizingGrow({}),
-                    height = cl.SizingPercent(0.5),
+                    height = cl.SizingGrow({}),
                 },
-                childAlignment = {
-                    x = .Center,
-                    y = .Center,
-                },
-                layoutDirection = .LeftToRight,
             },
-            backgroundColor = { 0, 0, 0, 255 },
-        }) {
-            if cl.UI()({
-                id = cl.ID("Quick Access"),
-                layout = {
-                    sizing = {
-                        width = cl.SizingPercent(0.5),
-                        height = cl.SizingGrow({}),
-                    },
-                    layoutDirection = .TopToBottom,
-                },
-                border = {
-                    color = { 0, 0, 0, 255 },
-                    width = { 0, 0, 5, 0, 0 },
-                },
-                backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
-            }) {
-                gui_quick_access_button_layout("Resume", proc () {
-                    scene_change(.RUNNING)
-                })
-                gui_quick_access_button_layout("Reset", proc () {
-                    reset_game()
-                    scene_change(.RUNNING)
-                })
-                gui_quick_access_button_layout("Close", proc () {
-                    unload_game()
-                    scene_change(.LOGIN)
-                })
-            }
-
-            if cl.UI()({
-                id = cl.ID("Game Container"),
-                layout = {
-                    sizing = {
-                        width = cl.SizingGrow({}),
-                        height = cl.SizingGrow({}),
-                    },
-                    childAlignment = {
-                        x = .Center,
-                        y = .Center,
-                    },
-                },
-                backgroundColor = { 0, 0, 0, 255 },
-                border = {
-                    color = { 0, 0, 0, 255 },
-                    width = { 0, 0, 5, 0, 0 },
-                },
-            }) {
-                if cl.UI()({
-                    id = cl.ID("Game"),
-                    layout = {
-                        sizing = {
-                            width = cl.SizingGrow({}),
-                            height = cl.SizingGrow({}),
-                        },
-                    },
-                    aspectRatio = { f32(GLOBAL_STATE.video_state.actual_width) / f32(GLOBAL_STATE.video_state.actual_height) },
-                    custom = { rawptr(uintptr(CustomRenderType.EmulatorFramebuffer)) },
-                }) { }
-            }
-        }
+            aspectRatio = { f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_width) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_height) },
+            custom = { rawptr(uintptr(CustomRenderType.EmulatorFramebuffer)) },
+        }) { }
 
         if cl.UI()({
-            id = cl.ID("Bottom Container"),
             layout = {
                 sizing = {
                     width = cl.SizingGrow({}),
-                    height = cl.SizingPercent(0.5),
+                    height = cl.SizingGrow({}),
                 },
                 childAlignment = {
                     x = .Center,
                     y = .Center,
                 },
-                childGap = 16,
-                layoutDirection = .TopToBottom,
-                padding = {
-                    left = 128,
-                    right = 128,
+            },
+            floating = {
+	            attachment = {
+                    element = .LeftTop,
+                    parent = .LeftTop,
                 },
+                attachTo = .Root,
             },
-            clip = {
-                vertical = true,
-                childOffset = cl.GetScrollOffset(),
-            },
-            backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
+            backgroundColor = { 0, 0, 0, 170 },
         }) {
-            for _, &option in GLOBAL_STATE.emulator_state.options {
-                if option.visible {
-                    gui_core_option_layout(&option)
-                }
+            if cl.UI()({
+                id = cl.ID("Pause Options Container"),
+                layout = {
+                    sizing = {
+                        width = cl.SizingFixed(UI_SPACING_256),
+                    },
+                    padding = cl.PaddingAll(UI_SPACING_12),
+                    layoutDirection = .TopToBottom,
+                    childGap = UI_SPACING_12,
+                },
+                cornerRadius = cl.CornerRadiusAll(5),
+                backgroundColor = UI_COLOR_BACKGROUND,
+            }) {
+                cl.Text("PAUSED", &UI_PAUSE_BUTTON_TEXT_CONFIG)
+
+                gui_pause_button_layout("Resume", proc () {
+                    scene_change(.RUNNING)
+                })
+                gui_pause_button_layout("Save State", proc () {
+                    log.info("Saved state!")
+                    scene_change(.RUNNING)
+                })
+                gui_pause_button_layout("Load State", proc () {
+                    log.info("Saved state!")
+                    scene_change(.RUNNING)
+                })
+                gui_pause_button_layout("Controller", proc () {
+                    log.info("Controller config!")
+                })
+                gui_pause_button_layout("Shaders", proc () {
+                    log.info("Shader menu!")
+                })
+                gui_pause_button_layout("Manual", proc () {
+                    log.info("Game manual!")
+                })
+                gui_pause_button_layout("Reset", proc () {
+                    core_reset_game()
+                    scene_change(.RUNNING)
+                })
+                gui_pause_button_layout("Hard Reset", proc () {
+                    core_hard_reset()
+                    scene_change(.RUNNING)
+                })
+                gui_pause_button_layout("Close", proc () {
+                    core_unload_game()
+                    scene_change(.MENU)
+                })
             }
         }
     }

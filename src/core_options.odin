@@ -118,6 +118,7 @@ core_options_free :: proc () {
     }
 
     delete(GLOBAL_STATE.emulator_state.options)
+    GLOBAL_STATE.emulator_state.options = nil
 }
 
 core_option_get_values :: proc (key: cstring) -> (vals: []CoreOptionValue, ok: bool) {
