@@ -59,6 +59,7 @@ load_game :: proc (core_path: string, rom_path: string) -> (ok: bool) {
     }
 
     audio_update_sample_rate()
+    input_configure_core()
 
     return true
 }

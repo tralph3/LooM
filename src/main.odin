@@ -47,6 +47,11 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
         return .FAILURE
     }
 
+    if !input_init() {
+        log.error("Failed initializing input")
+        return .FAILURE
+    }
+
     scene_init()
 
     //load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
@@ -105,6 +110,8 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
         GLOBAL_STATE.should_exit = true
     case .MOUSE_WHEEL:
         GLOBAL_STATE.input_state.mouse_wheel_y = event.wheel.y
+    case .GAMEPAD_ADDED, .GAMEPAD_REMOVED:
+        input_open_gamepads()
     case .GAMEPAD_BUTTON_DOWN, .GAMEPAD_AXIS_MOTION:
         if !sdl.HideCursor() {
             log.warn("Failed hiding cursor: {}", sdl.GetError())
@@ -125,6 +132,7 @@ app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     context = GLOBAL_STATE.ctx
 
     unload_game()
+    input_deinit()
     audio_deinit()
     gui_deinit()
     video_deinit()

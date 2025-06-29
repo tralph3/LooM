@@ -28,7 +28,7 @@ LibretroCoreAPI :: struct {
     get_system_av_info: proc "c" (^SystemAvInfo),
     set_environment: proc "c" (EnvironmentCallback),
     set_video_refresh: proc "c" (VideoRefreshCallback),
-    set_controller_port_device: proc "c" (port, device: c.uint),
+    set_controller_port_device: proc "c" (port: c.int, device: RetroDevice),
     set_input_poll: proc "c" (InputPollCallback),
     set_input_state: proc "c" (InputStateCallback),
     set_audio_sample: proc "c" (AudioSampleCallback),
