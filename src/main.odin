@@ -140,6 +140,9 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
         input_handle_gamepad_pressed(event)
     case .KEY_DOWN:
         input_handle_key_pressed(event)
+        input_update_core_keyboard_state(event)
+    case .KEY_UP:
+        input_update_core_keyboard_state(event)
     case .WINDOW_RESIZED:
         GLOBAL_STATE.video_state.window_size = { event.window.data1, event.window.data2 }
     }

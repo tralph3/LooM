@@ -23,6 +23,8 @@ InputMouseState :: struct #no_copy {
 
 InputState :: struct #no_copy {
     players: [INPUT_MAX_PLAYERS]InputPlayerState,
+    // there's no keyboard input per player
+    keyboard: [len(lr.RetroKey)]bool,
     mouse: InputMouseState,
 }
 
@@ -87,8 +89,8 @@ input_handle_key_pressed :: proc (event: ^sdl.Event) {
     //     gui_focus_down()
     case .ESCAPE:
         scene_change(.PAUSE)
-    case .M:
-        gui_load_framebuffer_shader(crt_mattias_shader_source)
+    // case .M:
+    //     gui_load_framebuffer_shader(crt_mattias_shader_source)
     }
 }
 
@@ -149,4 +151,59 @@ input_configure_core :: proc () {
             GLOBAL_STATE.emulator_state.core.api.set_controller_port_device(i32(i), .Joypad)
         }
     }
+}
+
+input_update_core_keyboard_state :: proc (event: ^sdl.Event) {
+    if GLOBAL_STATE.emulator_state.keyboard_callback == nil { return }
+
+    modifiers := input_get_modifiers_bitmap()
+
+    is_down := event.type == .KEY_DOWN ? true : false
+    retro_keycode: lr.RetroKey
+    utf32: u32
+    #partial switch event.key.scancode {
+    case .A..=.Z:
+        retro_keycode = auto_cast (i32(event.key.scancode) + (i32(lr.RetroKey.A) - i32(sdl.Scancode.A)))
+        utf32 = 0x61 + u32(event.key.scancode) - u32(sdl.Scancode.A)
+    case .SPACE:
+        retro_keycode = .Space
+        utf32 = 0x20
+    case .BACKSPACE:
+        retro_keycode = .Backspace
+        utf32 = 0x08
+    case .RETURN:
+        retro_keycode = .Return
+        utf32 = 0x0D
+    }
+
+    GLOBAL_STATE.emulator_state.keyboard_callback(is_down, retro_keycode, utf32, modifiers)
+}
+
+input_get_modifiers_bitmap :: proc () -> u16 {
+    modifiers: u16 = 0
+    keyboard_state := sdl.GetKeyboardState(nil)
+
+    if keyboard_state[sdl.Scancode.LSHIFT] || keyboard_state[sdl.Scancode.RSHIFT] {
+        modifiers |= u16(lr.RetroMod.Shift)
+    }
+    if keyboard_state[sdl.Scancode.LCTRL] || keyboard_state[sdl.Scancode.RCTRL] {
+        modifiers |= u16(lr.RetroMod.Ctrl)
+    }
+    if keyboard_state[sdl.Scancode.LALT] || keyboard_state[sdl.Scancode.RALT] {
+        modifiers |= u16(lr.RetroMod.Alt)
+    }
+    if keyboard_state[sdl.Scancode.LGUI] || keyboard_state[sdl.Scancode.RGUI] {
+        modifiers |= u16(lr.RetroMod.Meta)
+    }
+    if keyboard_state[sdl.Scancode.NUMLOCKCLEAR] {
+        modifiers |= u16(lr.RetroMod.NumLock)
+    }
+    if keyboard_state[sdl.Scancode.CAPSLOCK] {
+        modifiers |= u16(lr.RetroMod.CapsLock)
+    }
+    if keyboard_state[sdl.Scancode.SCROLLLOCK] {
+        modifiers |= u16(lr.RetroMod.ScrolLock)
+    }
+
+    return modifiers
 }

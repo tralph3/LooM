@@ -26,13 +26,13 @@ odin_log_callback :: proc "c" (log_level: lr.RetroLogLevel, msg: cstring, n: c.i
     defer delete(full_msg)
 
     switch log_level {
-    case .DEBUG:
+    case .Debug:
         log.debug(full_msg)
-    case .INFO:
+    case .Info:
         log.info(full_msg)
-    case .WARN:
+    case .Warn:
         log.warn(full_msg)
-    case .ERROR:
+    case .Error:
         log.error(full_msg)
     }
 }

@@ -39,6 +39,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetCoreOptionsDisplay: return env_callback_set_core_options_display(data)
         case .GetInputBitmasks: return env_callback_get_input_bitmasks(data)
         case .GetRumbleInterface: return env_callback_get_rumble_interface(data)
+        case .SetKeyboardCallback: return env_callback_set_keyboard_callback(data)
         case: log.warnf("Callback not supported: '{}'", command)
     }
 
@@ -244,8 +245,11 @@ env_callback_set_input_descriptors :: proc (data: rawptr) -> bool { // TODO
  * @see retro_keyboard_callback
  * @see retro_key
  */
-env_callback_set_keyboard_callback :: proc (data: rawptr) -> bool { // TODO
-    return false
+env_callback_set_keyboard_callback :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
+    GLOBAL_STATE.emulator_state.keyboard_callback = (^lr.RetroKeyboardCallback)(data).callback
+    return true
 }
 
 /**

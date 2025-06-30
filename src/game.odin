@@ -60,6 +60,7 @@ game_entries_generate :: proc (allocator:=context.allocator) {
     //     log.info(entry)
     // }
 
+    append(&GLOBAL_STATE.game_entries, GameEntry{core="./cores/b2_libretro.so", path="./roms/Legend of Zelda, The (U) (PRG1) [!].nes"})
     append(&GLOBAL_STATE.game_entries, GameEntry{core="./cores/mesen_libretro.so", path="./roms/Legend of Zelda, The (U) (PRG1) [!].nes"})
     append(&GLOBAL_STATE.game_entries, GameEntry{core="./cores/mesen_libretro.so", path="./roms/Super Mario Bros. (Europe) (Rev A).nes"})
     append(&GLOBAL_STATE.game_entries, GameEntry{core="./cores/bsnes_libretro.so", path="./roms/Super Castlevania IV (USA).sfc"})

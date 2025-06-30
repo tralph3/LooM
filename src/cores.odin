@@ -28,6 +28,7 @@ EmulatorState :: struct {
     options_updated: bool,
     hardware_render_callback: ^lr.RetroHwRenderCallback,
     fast_forward: bool,
+    keyboard_callback: lr.KeyboardCallbackFunc,
 }
 
 core_load :: proc (core_path: string) -> (core: lr.LibretroCore, ok: bool) {
