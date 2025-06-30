@@ -2,6 +2,7 @@ package main
 
 import sdl "vendor:sdl3"
 import lr "libretro"
+import cl "clay"
 import "core:log"
 import "core:slice"
 import "core:c"
@@ -81,18 +82,24 @@ input_handle_key_pressed :: proc (event: ^sdl.Event) {
     if event.key.repeat { return }
 
     #partial switch event.key.scancode {
-    // case .LEFT:
-    //     gui_focus_left()
-    // case .RIGHT:
-    //     gui_focus_right()
-    // case .UP:
-    //     gui_focus_up()
-    // case .DOWN:
-    //     gui_focus_down()
+        // case .LEFT:
+        //     gui_focus_left()
+        // case .RIGHT:
+        //     gui_focus_right()
+        // case .UP:
+        //     gui_focus_up()
+        // case .DOWN:
+        //     gui_focus_down()
     case .ESCAPE:
         scene_change(.PAUSE)
-    // case .M:
-    //     gui_load_framebuffer_shader(crt_mattias_shader_source)
+        // case .M:
+        //     gui_load_framebuffer_shader(crt_mattias_shader_source)
+    }
+
+    when ODIN_DEBUG {
+        if event.key.scancode == .F12 {
+            cl.SetDebugModeEnabled(true)
+        }
     }
 }
 

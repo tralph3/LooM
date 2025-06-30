@@ -1,5 +1,7 @@
 package main
 
+import cl "clay"
+
 UI_SPACING_4   :: 4.0
 UI_SPACING_8   :: 8.0
 UI_SPACING_12  :: 12.0
@@ -23,3 +25,19 @@ UI_FONTSIZE_36 :: 36.0
 UI_FONTSIZE_48 :: 48.0
 UI_FONTSIZE_60 :: 60.0
 UI_FONTSIZE_72 :: 72.0
+
+UI_COLOR_BACKGROUND :: cl.Color { 0x18, 0x18, 0x18, 0xFF }
+UI_COLOR_SECONDARY_BACKGROUND :: cl.Color { 37, 44, 55, 0xFF }
+UI_COLOR_ACCENT :: cl.Color { 4, 114, 77, 0xFF }
+
+UI_COLOR_MAIN_TEXT :: cl.Color { 244, 244, 249, 0xFF }
+
+UI_USER_TILE_SIZE :: 180
+UI_USER_TILE_GAP :: UI_SPACING_16
+
+@(rodata)
+UI_PAUSE_BUTTON_TEXT_CONFIG := cl.TextElementConfig {
+    textColor = UI_COLOR_MAIN_TEXT,
+    fontSize = 24,
+    textAlignment = .Center,
+}

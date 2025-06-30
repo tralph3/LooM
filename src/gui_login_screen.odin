@@ -4,15 +4,6 @@ import cl "clay"
 import "core:log"
 import sdl "vendor:sdl3"
 
-UI_COLOR_BACKGROUND :: cl.Color { 0x18, 0x18, 0x18, 0xFF }
-UI_COLOR_SECONDARY_BACKGROUND :: cl.Color { 37, 44, 55, 0xFF }
-UI_COLOR_ACCENT :: cl.Color { 4, 114, 77, 0xFF }
-
-UI_COLOR_MAIN_TEXT :: cl.Color { 244, 244, 249, 0xFF }
-
-UI_USER_TILE_SIZE :: 180
-UI_USER_TILE_GAP :: UI_SPACING_16
-
 gui_layout_login_user_tile :: proc (username: string) -> (clicked: bool) {
     if cl.UI()({
         backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,

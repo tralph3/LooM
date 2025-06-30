@@ -32,10 +32,6 @@ gui_init :: proc () -> (ok: bool) {
 
     cl.SetMeasureTextFunction(gui_renderer_measure_text, nil)
 
-    when ODIN_DEBUG {
-        cl.SetDebugModeEnabled(true)
-    }
-
     gui_renderer_init() or_return
 
     return true

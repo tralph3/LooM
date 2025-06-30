@@ -5,13 +5,6 @@ import sdl "vendor:sdl3"
 import "core:math/ease"
 import "core:log"
 
-@(rodata)
-UI_PAUSE_BUTTON_TEXT_CONFIG := cl.TextElementConfig {
-    textColor = UI_COLOR_MAIN_TEXT,
-    fontSize = 24,
-    textAlignment = .Center,
-}
-
 gui_pause_button_layout :: proc (label: string) -> (clicked: bool) {
     if cl.UI()({
         layout = {
