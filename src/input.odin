@@ -144,14 +144,18 @@ input_set_rumble :: proc "c" (port: uint, effect: lr.RetroRumbleEffect, strength
     return true
 }
 
-input_update_core_keyboard_state :: proc (event: ^sdl.Event) {
+input_update_emulator_keyboard_state :: proc (event: ^sdl.Event) {
+    // TODO: not all keys are properly handled by this
+    retro_keycode := lr.RetroKey(event.key.key)
+    is_down := event.type == .KEY_DOWN ? true : false
+
+    if retro_keycode < max(lr.RetroKey) {
+        GLOBAL_STATE.input_state.keyboard[retro_keycode] = is_down ? 1 : 0
+    }
+
     if GLOBAL_STATE.emulator_state.keyboard_callback == nil { return }
 
     modifiers := input_get_modifiers_bitmap(event.key.mod)
-
-    is_down := event.type == .KEY_DOWN ? true : false
-    // TODO: not all keys are properly handled by this
-    retro_keycode := lr.RetroKey(event.key.key)
     // TODO: map utf32
     utf32: u32
 
