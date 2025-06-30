@@ -80,3 +80,7 @@ game_entries_load :: proc (allocator:=context.allocator) {
     append(&GLOBAL_STATE.game_entries, GameEntry{core="./cores/dosbox_pure_libretro.so", path="/home/tralph3/Downloads/tomb3dem.zip"})
     append(&GLOBAL_STATE.game_entries, GameEntry{core="./cores/pcsx2_libretro.so", path="./roms/SAN_ANDREAS.ISO"})
 }
+
+game_entries_unload :: proc () {
+    delete(GLOBAL_STATE.game_entries)
+}

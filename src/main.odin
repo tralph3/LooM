@@ -129,6 +129,7 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
 app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     context = GLOBAL_STATE.ctx
 
+    game_entries_unload()
     core_unload_game()
     input_deinit()
     audio_deinit()
