@@ -5,6 +5,7 @@ import sdl "vendor:sdl3"
 import "core:math/ease"
 import "core:log"
 
+@(rodata)
 UI_PAUSE_BUTTON_TEXT_CONFIG := cl.TextElementConfig {
     textColor = UI_COLOR_MAIN_TEXT,
     fontSize = 24,
@@ -202,8 +203,7 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     scene_change(.RUNNING)
                 })
                 gui_pause_button_layout("Save State", proc () {
-                    core_save_state()
-                    scene_change(.RUNNING)
+                    event_push(.SaveState)
                 })
                 gui_pause_button_layout("Load State", proc () {
                     core_load_state()

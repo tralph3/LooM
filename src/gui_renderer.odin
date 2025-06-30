@@ -374,8 +374,8 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 gl.UseProgram(GLOBAL_STATE.gui_renderer_state.framebuffer_shader)
                 gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.tex, 0)
 
-                if GLOBAL_STATE.emulator_state.hardware_render_callback != nil &&
-                    GLOBAL_STATE.emulator_state.hardware_render_callback.bottom_left_origin
+                if emulator_is_hw_rendered() &&
+                    GLOBAL_STATE.emulator_state.hw_render_cb.bottom_left_origin
                 {
                     gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.flipY, 0)
 
@@ -383,7 +383,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                     gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.flipY, 1)
                 }
 
-                if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+                if emulator_is_hw_rendered() {
                     gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion,
                                  0, 0,
                                  f32(GLOBAL_STATE.emulator_state.actual_width) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width),

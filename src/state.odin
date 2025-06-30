@@ -20,8 +20,9 @@ GLOBAL_STATE := struct #no_copy {
 
     current_scene_id: SceneID,
 
-    should_exit: bool,
     frame_counter: u64,
+
+    event_offset: u32,
 
     ctx: runtime.Context,
 } {

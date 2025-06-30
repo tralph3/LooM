@@ -53,11 +53,7 @@ SCENES := [SceneID]Scene{
         },
         .RUNNING = {
             update = proc () {
-                if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
-                    run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.run)
-                } else {
-                    GLOBAL_STATE.emulator_state.core.api.run()
-                }
+                run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.run)
             },
             render = proc () {
                 layout := gui_layout_running_screen()

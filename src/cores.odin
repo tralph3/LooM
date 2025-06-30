@@ -31,14 +31,16 @@ core_load_game_by_core :: proc (core: ^lr.LibretroCore, rom_path: string) -> (ok
 
     GLOBAL_STATE.emulator_state.core = core^
 
+    GLOBAL_STATE.emulator_state.loaded = true
+
     core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
 
-    if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
+    if emulator_is_hw_rendered() {
         video_init_emulator_framebuffer(
-            depth=GLOBAL_STATE.emulator_state.hardware_render_callback.depth,
-            stencil=GLOBAL_STATE.emulator_state.hardware_render_callback.stencil,
+            depth=GLOBAL_STATE.emulator_state.hw_render_cb.depth,
+            stencil=GLOBAL_STATE.emulator_state.hw_render_cb.stencil,
         )
-        run_inside_emulator_context(GLOBAL_STATE.emulator_state.hardware_render_callback.context_reset)
+        run_inside_emulator_context(GLOBAL_STATE.emulator_state.hw_render_cb.context_reset)
     } else {
         video_init_emulator_framebuffer()
     }
@@ -56,15 +58,15 @@ core_load_game_by_path :: proc (core_path: string, rom_path: string) -> (ok: boo
 }
 
 core_unload_game :: proc () {
-    if GLOBAL_STATE.emulator_state.core.loaded {
-        if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
-            run_inside_emulator_context(GLOBAL_STATE.emulator_state.hardware_render_callback.context_destroy)
-            sdl.GL_DestroyContext(GLOBAL_STATE.video_state.emu_context)
-        }
-        core_unload(&GLOBAL_STATE.emulator_state.core)
-        cb.clear(&GLOBAL_STATE.audio_state.buffer)
-        GLOBAL_STATE.emulator_state = {}
+    if !GLOBAL_STATE.emulator_state.loaded { return }
+
+    if emulator_is_hw_rendered() {
+        run_inside_emulator_context(GLOBAL_STATE.emulator_state.hw_render_cb.context_destroy)
+        sdl.GL_DestroyContext(GLOBAL_STATE.video_state.emu_context)
     }
+    core_unload(&GLOBAL_STATE.emulator_state.core)
+    cb.clear(&GLOBAL_STATE.audio_state.buffer)
+    GLOBAL_STATE.emulator_state = {}
 }
 
 core_unload :: proc (core: ^lr.LibretroCore) {
@@ -86,11 +88,7 @@ core_hard_reset :: proc () {
 }
 
 core_reset_game :: proc () {
-    if GLOBAL_STATE.emulator_state.hardware_render_callback != nil {
-        run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.reset)
-    } else {
-        GLOBAL_STATE.emulator_state.core.api.reset()
-    }
+    run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.reset)
     cb.clear(&GLOBAL_STATE.audio_state.buffer)
 }
 
@@ -99,12 +97,12 @@ core_save_state :: proc () {
     buffer := make([]byte, size)
     defer delete(buffer)
 
-    log.infof("Need {} for save", size)
-
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
     if !GLOBAL_STATE.emulator_state.core.api.serialize(raw_data(buffer), len(buffer)) {
         log.error("Failed saving save state")
         return
     }
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
 
     f, err := os2.open("./savestate", { .Write, .Create })
     if err != nil {
@@ -122,8 +120,10 @@ core_load_state :: proc () {
     buffer, _ := os2.read_entire_file_from_path("./savestate", allocator=context.allocator)
     defer delete(buffer)
 
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
     if !GLOBAL_STATE.emulator_state.core.api.unserialize(raw_data(buffer), len(buffer)) {
         log.error("Failed loading save state")
         return
     }
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
 }

@@ -27,7 +27,7 @@ load_shader_locs :: proc (uniform_table: ^$T, shader_program: u32, location := #
         uniform_ptr^ = loc
 
         if loc == -1 {
-            log.warnf("Uniform '{}' wasn't found in program: {}", uniform.name, location=location)
+            log.warnf("Uniform '{}' wasn't found in program.", uniform.name, location=location)
             continue
         }
 	}
@@ -126,19 +126,12 @@ get_program_log :: proc(program: u32) -> string {
     return strings.clone("")
 }
 
-run_inside_emulator_context_c :: #force_inline proc "contextless" (func: proc "c" ()) {
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
-    func()
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
-}
-
-run_inside_emulator_context_odin :: #force_inline proc (func: proc ()) {
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
-    func()
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
-}
-
-run_inside_emulator_context :: proc {
-    run_inside_emulator_context_c,
-    run_inside_emulator_context_odin,
+run_inside_emulator_context :: #force_inline proc "contextless" (func: proc "c" ()) {
+    if emulator_is_hw_rendered() {
+        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
+        func()
+        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
+    } else {
+        func()
+    }
 }

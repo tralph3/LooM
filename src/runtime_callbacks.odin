@@ -9,6 +9,8 @@ import gl "vendor:OpenGL"
 video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch: u32) {
     if data == nil { return }
 
+    emulator_assert_emu_context()
+
     GLOBAL_STATE.emulator_state.actual_width = width
     GLOBAL_STATE.emulator_state.actual_height = height
 

@@ -55,6 +55,12 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
         return .FAILURE
     }
 
+    GLOBAL_STATE.event_offset = sdl.RegisterEvents(len(Event))
+    if GLOBAL_STATE.event_offset == 0 {
+        log.error("Failed registering user events: {}", sdl.GetError())
+        return .FAILURE
+    }
+
     scene_init()
 
     return .CONTINUE
@@ -66,10 +72,6 @@ last_time: u64
 app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     context = GLOBAL_STATE.ctx
     defer free_all(GLOBAL_STATE.ctx.temp_allocator)
-
-    if GLOBAL_STATE.should_exit {
-        return .SUCCESS
-    }
 
     if !GLOBAL_STATE.emulator_state.fast_forward {
         wait_until_next_frame(last_time)
@@ -106,7 +108,7 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
 
     #partial switch event.type {
     case .QUIT:
-        GLOBAL_STATE.should_exit = true
+        return .SUCCESS
     case .MOUSE_WHEEL, .MOUSE_BUTTON_DOWN, .MOUSE_BUTTON_UP, .MOUSE_MOTION:
         input_handle_mouse(event)
     case .GAMEPAD_ADDED, .GAMEPAD_REMOVED:
@@ -120,6 +122,9 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
         input_update_core_keyboard_state(event)
     case .WINDOW_RESIZED:
         GLOBAL_STATE.video_state.window_size = { event.window.data1, event.window.data2 }
+    case event_to_sdl_event(.SaveState):
+        core_save_state()
+        scene_change(.RUNNING)
     }
 
     return .CONTINUE

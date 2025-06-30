@@ -184,5 +184,5 @@ video_init_emulator_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback
         return c.uintptr_t(GLOBAL_STATE.video_state.fbo.framebuffer)
     }
 
-    GLOBAL_STATE.emulator_state.hardware_render_callback = render_cb
+    GLOBAL_STATE.emulator_state.hw_render_cb = render_cb
 }

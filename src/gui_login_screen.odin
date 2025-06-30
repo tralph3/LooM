@@ -2,6 +2,7 @@ package main
 
 import cl "clay"
 import "core:log"
+import sdl "vendor:sdl3"
 
 UI_COLOR_BACKGROUND :: cl.Color { 0x18, 0x18, 0x18, 0xFF }
 UI_COLOR_SECONDARY_BACKGROUND :: cl.Color { 37, 44, 55, 0xFF }
