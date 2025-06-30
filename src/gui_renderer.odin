@@ -152,6 +152,11 @@ gui_renderer_unload_fonts :: proc () {
 gui_renderer_deinit :: proc () {
     gl.DeleteBuffers(1, &GLOBAL_STATE.gui_renderer_state.vbo)
     gl.DeleteVertexArrays(1, &GLOBAL_STATE.gui_renderer_state.vao)
+    gui_renderer_unload_fonts()
+
+    for _, &tex_id in GLOBAL_STATE.gui_renderer_state.text_texture_cache {
+        gl.DeleteTextures(1, &tex_id.id)
+    }
 
     delete(GLOBAL_STATE.gui_renderer_state.text_texture_cache)
     GLOBAL_STATE.gui_renderer_state.text_texture_cache = nil
