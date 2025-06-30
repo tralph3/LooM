@@ -115,6 +115,7 @@ input_handle_mouse :: proc (event: ^sdl.Event) {
     }
 }
 
+// Resets input state for things that should be active a single frame
 input_reset :: proc () {
     GLOBAL_STATE.input_state.mouse.wheel_movement = {}
     GLOBAL_STATE.input_state.mouse.clicked = false
