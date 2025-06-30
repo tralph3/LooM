@@ -6,6 +6,20 @@ import "core:log"
 import "core:mem"
 import "core:fmt"
 
+CoreOptionValue :: struct {
+    value: cstring,
+    label: cstring,
+}
+
+CoreOption :: struct {
+    display: cstring,
+    info: cstring,
+    values: [dynamic]CoreOptionValue,
+    current_value: cstring,
+    default_value: cstring,
+    visible: bool,
+}
+
 clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring {
     tmp := string(cstr)
 

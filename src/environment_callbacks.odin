@@ -210,7 +210,7 @@ env_callback_set_pixel_format :: proc (data: rawptr) -> bool { // DONE
         return false
     }
 
-    GLOBAL_STATE.video_state.pixel_format = format
+    GLOBAL_STATE.emulator_state.pixel_format = format
     return true
 }
 
@@ -307,7 +307,7 @@ env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO: add other a
     render_cb := (^lr.RetroHwRenderCallback)(data)
     #partial switch render_cb.context_type {
     case .OPENGL_CORE, .OPENGL:
-        video_init_opengl_context(render_cb)
+        video_init_emulator_opengl_context(render_cb)
         return true
     }
 
@@ -1169,8 +1169,7 @@ env_callback_set_serialization_quirks :: proc (data: rawptr) -> bool { // TODO
  * @returns \c true if the environment call is available
  * and the frontend supports shared hardware contexts.
  */
-env_callback_set_hw_shared_context :: proc (data: rawptr) -> bool { // TODO: ~do as needed to support shared contexts~ on second thought... just ignore it, give it its own context
-    GLOBAL_STATE.video_state.shared_context = true
+env_callback_set_hw_shared_context :: proc (data: rawptr) -> bool { // DONE: This is just ignored. I want nothing to do with shared context.
     return true
 }
 

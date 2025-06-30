@@ -5,7 +5,8 @@ import sdl "vendor:sdl3"
 import "core:math/ease"
 import "core:log"
 
-gui_game_entry_button_layout :: proc (entry: ^GameEntry) {
+@(private="file")
+game_entry_button :: proc (entry: ^GameEntry) {
     if cl.UI()({
         layout = {
             sizing = {
@@ -69,7 +70,7 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         backgroundColor = { 0, 0, 0, 255 },
     }) {
         if cl.UI()({
-            id = cl.ID("Bottom Container"),
+            id = cl.ID("Game List"),
             layout = {
                 sizing = {
                     width = cl.SizingGrow({}),
@@ -93,7 +94,7 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             backgroundColor = UI_COLOR_BACKGROUND,
         }) {
             for &entry in GLOBAL_STATE.game_entries {
-                gui_game_entry_button_layout(&entry)
+                game_entry_button(&entry)
             }
         }
     }

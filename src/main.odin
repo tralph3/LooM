@@ -33,7 +33,7 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
     context = GLOBAL_STATE.ctx
 
     config_init()
-    game_entries_generate()
+    game_entries_load()
 
     if !video_init() {
         log.error("Failed initializing video")
@@ -57,37 +57,12 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
 
     scene_init()
 
-    //core_load_game("./cores/fceumm_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
-    //core_load_game("./cores/mesen_libretro.so", "./roms/Legend of Zelda, The (U) (PRG1) [!].nes")
-    //core_load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Castlevania IV (USA).sfc")
-    //core_load_game("./cores/bsnes_libretro.so", "./roms/Super Castlevania IV (USA).sfc")
-    //core_load_game("./cores/bsnes_libretro.so", "./roms/Donkey Kong Country (USA).sfc")
-    //core_load_game("./cores/bsnes_libretro_debug.so", "./roms/Super Mario World 2 - Yoshi's Island (USA) (Rev-A).sfc")
-    //core_load_game("./cores/bsnes_libretro_debug.so", "./roms/Final Fantasy III (USA) (Rev 1).sfc")
-    //core_load_game("./cores/desmume_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
-    //core_load_game("./cores/desmume_libretro_debug.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
-    //core_load_game("./cores/melondsds_libretro.so", "./roms/Mario Kart DS (USA) (En,Fr,De,Es,It).nds")
-    //core_load_game("./cores/mupen64plus_next_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
-    //core_load_game("./cores/mupen64plus_next_libretro.so", "./roms/Doshin the Giant (J) [64DD].n64")
-    //core_load_game("./cores/mupen64plus_next_libretro_debug.so", "./roms/Super Mario 64 (U) [!].z64")
-    //core_load_game("./cores/parallel_n64_libretro.so", "./roms/Super Mario 64 (U) [!].z64")
-    //core_load_game("./cores/parallel_n64_libretro_debug.so", "./roms/Super Mario 64 (U) [!].z64")
-    //core_load_game("./cores/gambatte_libretro.so", "./roms/Donkey Kong Country (UE).gbc")
-    //core_load_game("./cores/mednafen_psx_hw_libretro.so", "./roms/Silent Hill (USA).cue")
-    //core_load_game("./cores/mednafen_psx_hw_libretro_debug.so", "./roms/Silent Hill (USA).cue")
-    //core_load_game("./cores/mednafen_psx_libretro_debug.so", "./roms/Silent Hill (USA).cue")
-    //core_load_game("./cores/mednafen_psx_libretro.so", "./roms/Silent Hill (USA).cue")
-    //core_load_game("./cores/swanstation_libretro.so", "./roms/Silent Hill (USA).cue")
-    //core_load_game("./cores/swanstation_libretro.so", "./roms/Final Fantasy VII (Spain) (Disc 1) (Rev 1).cue")
-    //core_load_game("./cores/swanstation_libretro.so", "./roms/padtest.cue")
-    //core_load_game("./cores/azahar_libretro.so", "./roms/Tetris Ultimate (USA) (En,Fr,Es,Pt).3ds")
-    //core_load_game("./cores/dosbox_pure_libretro.so", "/home/tralph3/Downloads/tomb3dem.zip")
-    //core_load_game("./cores/pcsx2_libretro.so", "./roms/SAN_ANDREAS.ISO")
-
     return .CONTINUE
 }
 
+@(private="file")
 last_time: u64
+
 app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     context = GLOBAL_STATE.ctx
     defer free_all(GLOBAL_STATE.ctx.temp_allocator)
@@ -119,7 +94,7 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
 
     sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
 
-    frame_counter += 1
+    GLOBAL_STATE.frame_counter += 1
 
     input_reset()
 

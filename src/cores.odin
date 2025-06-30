@@ -5,31 +5,7 @@ import sdl "vendor:sdl3"
 import cb "circular_buffer"
 import "core:log"
 import "core:strings"
-
-CoreOptionValue :: struct {
-    value: cstring,
-    label: cstring,
-}
-
-CoreOption :: struct {
-    display: cstring,
-    info: cstring,
-    values: [dynamic]CoreOptionValue,
-    current_value: cstring,
-    default_value: cstring,
-    visible: bool,
-}
-
-EmulatorState :: struct {
-    core: lr.LibretroCore,
-    av_info: lr.SystemAvInfo,
-    performance_level: uint,
-    options: map[cstring]CoreOption,
-    options_updated: bool,
-    hardware_render_callback: ^lr.RetroHwRenderCallback,
-    fast_forward: bool,
-    keyboard_callback: lr.KeyboardCallbackFunc,
-}
+import "core:os/os2"
 
 core_load :: proc (core_path: string) -> (core: lr.LibretroCore, ok: bool) {
     callbacks := lr.Callbacks {

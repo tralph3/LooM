@@ -20,18 +20,11 @@ FBO :: struct {
 VideoState :: struct #no_copy {
     window: ^sdl.Window,
     window_size: [2]i32,
-    pixel_format: lr.RetroPixelFormat,
-    fonts: [dynamic]^ttf.Font,
 
     fbo: FBO,
 
     main_context: sdl.GLContext,
     emu_context: sdl.GLContext,
-
-    actual_width: u32,
-    actual_height: u32,
-
-    shared_context: bool,
 }
 
 video_init :: proc () -> (ok: bool) {
@@ -58,8 +51,6 @@ video_init :: proc () -> (ok: bool) {
         log.errorf("Failed initializing text: {}", sdl.GetError())
         return false
     }
-
-    video_load_font("./assets/Ubuntu.ttf", 38)
 
     GLOBAL_STATE.video_state.window = sdl.CreateWindow("Libretro Frontend", 800, 600, { .RESIZABLE, .OPENGL })
     if GLOBAL_STATE.video_state.window == nil {
@@ -94,27 +85,11 @@ video_init :: proc () -> (ok: bool) {
 }
 
 video_deinit :: proc () {
-    for font in GLOBAL_STATE.video_state.fonts {
-        ttf.CloseFont(font)
-    }
-    delete(GLOBAL_STATE.video_state.fonts)
-    GLOBAL_STATE.video_state.fonts = nil
-
     video_destroy_emulator_framebuffer()
     sdl.DestroyWindow(GLOBAL_STATE.video_state.window)
 
     ttf.Quit()
     sdl.Quit()
-}
-
-video_load_font :: proc (path: cstring, size: f32) {
-    font := ttf.OpenFont(path, size)
-    if font == nil {
-        log.errorf("Failed loading font '{}': {}", path, sdl.GetError())
-        return
-    }
-
-    append(&GLOBAL_STATE.video_state.fonts, font)
 }
 
 video_destroy_emulator_framebuffer :: proc () {
@@ -188,7 +163,7 @@ video_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
     GLOBAL_STATE.video_state.fbo = fbo
 }
 
-video_init_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
+video_init_emulator_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))

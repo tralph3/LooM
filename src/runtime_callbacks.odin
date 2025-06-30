@@ -9,8 +9,8 @@ import gl "vendor:OpenGL"
 video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch: u32) {
     if data == nil { return }
 
-    GLOBAL_STATE.video_state.actual_width = width
-    GLOBAL_STATE.video_state.actual_height = height
+    GLOBAL_STATE.emulator_state.actual_width = width
+    GLOBAL_STATE.emulator_state.actual_height = height
 
     if int((uintptr)(data)) == lr.RETRO_HW_FRAME_BUFFER_VALID {
         // hardware rendering, nothing to do
@@ -23,7 +23,7 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
         type: u32
         bbp: u32
 
-        switch GLOBAL_STATE.video_state.pixel_format {
+        switch GLOBAL_STATE.emulator_state.pixel_format {
         case .RGB565:
             format = gl.RGB
             type = gl.UNSIGNED_SHORT_5_6_5

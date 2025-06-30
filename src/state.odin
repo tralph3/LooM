@@ -7,6 +7,7 @@ import "base:runtime"
 GLOBAL_STATE := struct #no_copy {
     current_user: string,
     gui_state: GuiState,
+    gui_renderer_state: GuiRendererState,
     video_state: VideoState,
     audio_state: AudioState,
     input_state: InputState,
@@ -20,6 +21,7 @@ GLOBAL_STATE := struct #no_copy {
     current_scene_id: SceneID,
 
     should_exit: bool,
+    frame_counter: u64,
 
     ctx: runtime.Context,
 } {

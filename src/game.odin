@@ -12,7 +12,7 @@ GameEntry :: struct {
     path: string,
 }
 
-game_entries_generate :: proc (allocator:=context.allocator) {
+game_entries_load :: proc (allocator:=context.allocator) {
     // log.info("Generating game entries...")
 
     // core_path_cstr := strings.clone_to_cstring(GLOBAL_STATE.config.cores_path, allocator=allocator)
