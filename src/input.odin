@@ -46,7 +46,7 @@ input_close_gamepads :: proc () {
         sdl.CloseGamepad(player.gamepad)
         player.gamepad = nil
     }
-    input_configure_core()
+    emulator_update_plugged_controllers()
 }
 
 input_open_gamepads :: proc () -> (ok:bool) {
@@ -72,7 +72,7 @@ input_open_gamepads :: proc () -> (ok:bool) {
         GLOBAL_STATE.input_state.players[i].gamepad = gamepad
     }
 
-    input_configure_core()
+    emulator_update_plugged_controllers()
 
     return
 }
@@ -143,67 +143,42 @@ input_set_rumble :: proc "c" (port: uint, effect: lr.RetroRumbleEffect, strength
     return true
 }
 
-input_configure_core :: proc () {
-    if !GLOBAL_STATE.emulator_state.core.loaded { return }
-
-    for player, i in GLOBAL_STATE.input_state.players {
-        if player.gamepad == nil {
-            GLOBAL_STATE.emulator_state.core.api.set_controller_port_device(i32(i), .None)
-        } else {
-            GLOBAL_STATE.emulator_state.core.api.set_controller_port_device(i32(i), .Joypad)
-        }
-    }
-}
-
 input_update_core_keyboard_state :: proc (event: ^sdl.Event) {
     if GLOBAL_STATE.emulator_state.keyboard_callback == nil { return }
 
-    modifiers := input_get_modifiers_bitmap()
+    modifiers := input_get_modifiers_bitmap(event.key.mod)
 
     is_down := event.type == .KEY_DOWN ? true : false
-    retro_keycode: lr.RetroKey
+    // TODO: not all keys are properly handled by this
+    retro_keycode := lr.RetroKey(event.key.key)
+    // TODO: map utf32
     utf32: u32
-    #partial switch event.key.scancode {
-    case .A..=.Z:
-        retro_keycode = auto_cast (i32(event.key.scancode) + (i32(lr.RetroKey.A) - i32(sdl.Scancode.A)))
-        utf32 = 0x61 + u32(event.key.scancode) - u32(sdl.Scancode.A)
-    case .SPACE:
-        retro_keycode = .Space
-        utf32 = 0x20
-    case .BACKSPACE:
-        retro_keycode = .Backspace
-        utf32 = 0x08
-    case .RETURN:
-        retro_keycode = .Return
-        utf32 = 0x0D
-    }
 
     GLOBAL_STATE.emulator_state.keyboard_callback(is_down, retro_keycode, utf32, modifiers)
 }
 
-input_get_modifiers_bitmap :: proc () -> u16 {
+input_get_modifiers_bitmap :: proc (mod: sdl.Keymod) -> u16 {
     modifiers: u16 = 0
-    keyboard_state := sdl.GetKeyboardState(nil)
 
-    if keyboard_state[sdl.Scancode.LSHIFT] || keyboard_state[sdl.Scancode.RSHIFT] {
+    if sdl.KMOD_SHIFT & mod != sdl.KMOD_NONE {
         modifiers |= u16(lr.RetroMod.Shift)
     }
-    if keyboard_state[sdl.Scancode.LCTRL] || keyboard_state[sdl.Scancode.RCTRL] {
+    if sdl.KMOD_CTRL & mod != sdl.KMOD_NONE {
         modifiers |= u16(lr.RetroMod.Ctrl)
     }
-    if keyboard_state[sdl.Scancode.LALT] || keyboard_state[sdl.Scancode.RALT] {
+    if sdl.KMOD_ALT & mod != sdl.KMOD_NONE {
         modifiers |= u16(lr.RetroMod.Alt)
     }
-    if keyboard_state[sdl.Scancode.LGUI] || keyboard_state[sdl.Scancode.RGUI] {
+    if sdl.KMOD_GUI & mod != sdl.KMOD_NONE {
         modifiers |= u16(lr.RetroMod.Meta)
     }
-    if keyboard_state[sdl.Scancode.NUMLOCKCLEAR] {
+    if sdl.KMOD_NUM & mod != sdl.KMOD_NONE {
         modifiers |= u16(lr.RetroMod.NumLock)
     }
-    if keyboard_state[sdl.Scancode.CAPSLOCK] {
+    if sdl.KMOD_CAPS & mod != sdl.KMOD_NONE {
         modifiers |= u16(lr.RetroMod.CapsLock)
     }
-    if keyboard_state[sdl.Scancode.SCROLLLOCK] {
+    if sdl.KMOD_SCROLL & mod != sdl.KMOD_NONE {
         modifiers |= u16(lr.RetroMod.ScrolLock)
     }
 

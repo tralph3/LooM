@@ -46,7 +46,7 @@ core_load_game_by_core :: proc (core: ^lr.LibretroCore, rom_path: string) -> (ok
     }
 
     audio_update_sample_rate()
-    input_configure_core()
+    emulator_update_plugged_controllers()
 
     return true
 }
@@ -77,7 +77,7 @@ core_unload :: proc (core: ^lr.LibretroCore) {
 // You only need to free the returned array, the strings themselves
 // are views into the core's memory
 core_get_valid_extensions :: proc (core: ^lr.LibretroCore, allocator:=context.allocator) -> []string {
-    if core == nil || !core.loaded { return {} }
+    if core == nil { return {} }
     return strings.split(string(core.system_info.valid_extensions), "|", allocator=allocator)
 }
 
@@ -85,45 +85,4 @@ core_hard_reset :: proc () {
     // this should unload the core completely and re-run the same
     // game, useful for applying core options that require full
     // restarts
-}
-
-core_reset_game :: proc () {
-    run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.reset)
-    cb.clear(&GLOBAL_STATE.audio_state.buffer)
-}
-
-core_save_state :: proc () {
-    size := GLOBAL_STATE.emulator_state.core.api.serialize_size()
-    buffer := make([]byte, size)
-    defer delete(buffer)
-
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
-    if !GLOBAL_STATE.emulator_state.core.api.serialize(raw_data(buffer), len(buffer)) {
-        log.error("Failed saving save state")
-        return
-    }
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
-
-    f, err := os2.open("./savestate", { .Write, .Create })
-    if err != nil {
-        log.errorf("Failed opening savestate: {}", err)
-    }
-    defer os2.close(f)
-
-    _, err2 := os2.write(f, buffer)
-    if err != nil {
-        log.errorf("Failed writing savestate: {}", err2)
-    }
-}
-
-core_load_state :: proc () {
-    buffer, _ := os2.read_entire_file_from_path("./savestate", allocator=context.allocator)
-    defer delete(buffer)
-
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
-    if !GLOBAL_STATE.emulator_state.core.api.unserialize(raw_data(buffer), len(buffer)) {
-        log.error("Failed loading save state")
-        return
-    }
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
 }

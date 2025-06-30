@@ -123,7 +123,10 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
     case .WINDOW_RESIZED:
         GLOBAL_STATE.video_state.window_size = { event.window.data1, event.window.data2 }
     case event_to_sdl_event(.SaveState):
-        core_save_state()
+        emulator_save_state()
+        scene_change(.RUNNING)
+    case event_to_sdl_event(.LoadState):
+        emulator_load_state()
         scene_change(.RUNNING)
     }
 

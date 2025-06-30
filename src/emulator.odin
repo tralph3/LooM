@@ -2,6 +2,9 @@ package main
 
 import lr "libretro"
 import sdl "vendor:sdl3"
+import cb "circular_buffer"
+import "core:os/os2"
+import "core:log"
 
 EmulatorState :: struct {
     core: lr.LibretroCore,
@@ -19,7 +22,6 @@ EmulatorState :: struct {
     loaded: bool,
 }
 
-
 emulator_is_hw_rendered :: proc "contextless" () -> bool {
     return GLOBAL_STATE.emulator_state.hw_render_cb != nil
 }
@@ -33,5 +35,58 @@ emulator_assert_emu_context :: proc "contextless" () {
         assert_contextless(sdl.GL_GetCurrentContext() == GLOBAL_STATE.video_state.emu_context)
     } else {
         assert_contextless(sdl.GL_GetCurrentContext() == GLOBAL_STATE.video_state.main_context)
+    }
+}
+
+emulator_reset_game :: proc () {
+    run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.reset)
+    cb.clear(&GLOBAL_STATE.audio_state.buffer)
+}
+
+emulator_save_state :: proc () {
+    size := GLOBAL_STATE.emulator_state.core.api.serialize_size()
+    buffer := make([]byte, size)
+    defer delete(buffer)
+
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
+    if !GLOBAL_STATE.emulator_state.core.api.serialize(raw_data(buffer), len(buffer)) {
+        log.error("Failed saving save state")
+        return
+    }
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
+
+    f, err := os2.open("./savestate", { .Write, .Create })
+    if err != nil {
+        log.errorf("Failed opening savestate: {}", err)
+    }
+    defer os2.close(f)
+
+    _, err2 := os2.write(f, buffer)
+    if err != nil {
+        log.errorf("Failed writing savestate: {}", err2)
+    }
+}
+
+emulator_load_state :: proc () {
+    buffer, _ := os2.read_entire_file_from_path("./savestate", allocator=context.allocator)
+    defer delete(buffer)
+
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
+    if !GLOBAL_STATE.emulator_state.core.api.unserialize(raw_data(buffer), len(buffer)) {
+        log.error("Failed loading save state")
+        return
+    }
+    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
+}
+
+emulator_update_plugged_controllers :: proc () {
+    if !GLOBAL_STATE.emulator_state.loaded { return }
+
+    for player, i in GLOBAL_STATE.input_state.players {
+        if player.gamepad == nil {
+            GLOBAL_STATE.emulator_state.core.api.set_controller_port_device(i32(i), .None)
+        } else {
+            GLOBAL_STATE.emulator_state.core.api.set_controller_port_device(i32(i), .Joypad)
+        }
     }
 }

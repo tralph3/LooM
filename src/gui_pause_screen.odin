@@ -206,8 +206,7 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     event_push(.SaveState)
                 })
                 gui_pause_button_layout("Load State", proc () {
-                    core_load_state()
-                    scene_change(.RUNNING)
+                    event_push(.LoadState)
                 })
                 gui_pause_button_layout("Controller", proc () {
                     log.info("Controller config!")
@@ -219,7 +218,7 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     log.info("Game manual!")
                 })
                 gui_pause_button_layout("Reset", proc () {
-                    core_reset_game()
+                    emulator_reset_game()
                     scene_change(.RUNNING)
                 })
                 gui_pause_button_layout("Hard Reset", proc () {

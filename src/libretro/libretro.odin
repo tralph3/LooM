@@ -16,7 +16,6 @@ AudioSampleCallback :: proc "c" (i16, i16)
 AudioSampleBatchCallback :: proc "c" (^i16, i32) -> i32
 
 LibretroCore :: struct {
-    loaded: bool,
     api: LibretroCoreAPI,
     system_info: SystemInfo,
 }
@@ -59,15 +58,12 @@ load_core :: proc (core_path: string, callbacks: ^Callbacks) -> (LibretroCore, b
     initialize_core(&core, callbacks)
     core.api.get_system_info(&core.system_info)
 
-    core.loaded = true
-
     return core, true
 }
 
 unload_core :: proc (core: ^LibretroCore) {
     core.api.unload_game()
     core.api.deinit()
-    core.loaded = false
     dynlib.unload_library(core.api.__handle)
 }
 
