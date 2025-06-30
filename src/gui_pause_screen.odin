@@ -202,11 +202,11 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     scene_change(.RUNNING)
                 })
                 gui_pause_button_layout("Save State", proc () {
-                    log.info("Saved state!")
+                    core_save_state()
                     scene_change(.RUNNING)
                 })
                 gui_pause_button_layout("Load State", proc () {
-                    log.info("Saved state!")
+                    core_load_state()
                     scene_change(.RUNNING)
                 })
                 gui_pause_button_layout("Controller", proc () {

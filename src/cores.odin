@@ -118,3 +118,37 @@ core_reset_game :: proc () {
     }
     cb.clear(&GLOBAL_STATE.audio_state.buffer)
 }
+
+core_save_state :: proc () {
+    size := GLOBAL_STATE.emulator_state.core.api.serialize_size()
+    buffer := make([]byte, size)
+    defer delete(buffer)
+
+    log.infof("Need {} for save", size)
+
+    if !GLOBAL_STATE.emulator_state.core.api.serialize(raw_data(buffer), len(buffer)) {
+        log.error("Failed saving save state")
+        return
+    }
+
+    f, err := os2.open("./savestate", { .Write, .Create })
+    if err != nil {
+        log.errorf("Failed opening savestate: {}", err)
+    }
+    defer os2.close(f)
+
+    _, err2 := os2.write(f, buffer)
+    if err != nil {
+        log.errorf("Failed writing savestate: {}", err2)
+    }
+}
+
+core_load_state :: proc () {
+    buffer, _ := os2.read_entire_file_from_path("./savestate", allocator=context.allocator)
+    defer delete(buffer)
+
+    if !GLOBAL_STATE.emulator_state.core.api.unserialize(raw_data(buffer), len(buffer)) {
+        log.error("Failed loading save state")
+        return
+    }
+}
