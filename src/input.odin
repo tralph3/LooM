@@ -24,7 +24,9 @@ InputMouseState :: struct #no_copy {
 InputState :: struct #no_copy {
     players: [INPUT_MAX_PLAYERS]InputPlayerState,
     // there's no keyboard input per player
-    keyboard: [len(lr.RetroKey)]bool,
+    // TODO: there's many wasted bytes here... not critical, but i
+    // don't like it
+    keyboard: #sparse [lr.RetroKey]i16,
     mouse: InputMouseState,
 }
 

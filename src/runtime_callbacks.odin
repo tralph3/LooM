@@ -118,6 +118,9 @@ input_state_callback :: proc "c" (port: u32, device: lr.RetroDevice, index: u32,
                 return player.analog[5]
             }
         }
+    case .Keyboard:
+        id := (lr.RetroKey)(id)
+        return GLOBAL_STATE.input_state.keyboard[id]
     }
 
     return 0
