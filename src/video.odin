@@ -86,6 +86,10 @@ video_init :: proc () -> (ok: bool) {
 
 video_deinit :: proc () {
     video_destroy_emulator_framebuffer()
+
+    sdl.GL_DestroyContext(GLOBAL_STATE.video_state.emu_context)
+    sdl.GL_DestroyContext(GLOBAL_STATE.video_state.main_context)
+
     sdl.DestroyWindow(GLOBAL_STATE.video_state.window)
 
     ttf.Quit()
