@@ -17,7 +17,6 @@ AudioSampleBatchCallback :: proc "c" (^i16, i32) -> i32
 
 LibretroCore :: struct {
     loaded: bool,
-    loaded_game: bool,
     api: LibretroCoreAPI,
     system_info: SystemInfo,
 }
@@ -66,12 +65,9 @@ load_core :: proc (core_path: string, callbacks: ^Callbacks) -> (LibretroCore, b
 }
 
 unload_core :: proc (core: ^LibretroCore) {
-    if core.loaded_game {
-        core.api.unload_game()
-    }
+    core.api.unload_game()
     core.api.deinit()
     core.loaded = false
-    core.loaded_game = false
     dynlib.unload_library(core.api.__handle)
 }
 
@@ -124,8 +120,6 @@ load_rom :: proc (core: ^LibretroCore, rom_path: string) -> (ok: bool) {
         log.errorf("Failed loading rom '%s'", rom_path)
         return false
     }
-
-    core.loaded_game = true
 
     log.infof("Successfully loaded rom '%s'", rom_path)
 
