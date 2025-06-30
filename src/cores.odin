@@ -63,8 +63,7 @@ core_unload_game :: proc () {
         }
         core_unload(&GLOBAL_STATE.emulator_state.core)
         cb.clear(&GLOBAL_STATE.audio_state.buffer)
-        GLOBAL_STATE.emulator_state.performance_level = 0
-        GLOBAL_STATE.emulator_state.hardware_render_callback = nil
+        GLOBAL_STATE.emulator_state = {}
     }
 }
 
