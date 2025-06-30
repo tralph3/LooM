@@ -13,7 +13,7 @@ UI_COLOR_MAIN_TEXT :: cl.Color { 244, 244, 249, 0xFF }
 UI_USER_TILE_SIZE :: 180
 UI_USER_TILE_GAP :: UI_SPACING_16
 
-gui_layout_login_user_tile :: proc (username: string) {
+gui_layout_login_user_tile :: proc (username: string) -> (clicked: bool) {
     if cl.UI()({
         backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
         layout = {
@@ -32,15 +32,15 @@ gui_layout_login_user_tile :: proc (username: string) {
         } : {}),
         cornerRadius = cl.CornerRadiusAll(10),
     }) {
-        if gui_is_clicked() {
-            user_login(username)
-        }
-
         cl.TextDynamic(username, cl.TextConfig({
             textColor = UI_COLOR_MAIN_TEXT,
             fontSize = UI_FONTSIZE_24,
         }))
+
+        clicked = gui_is_clicked()
     }
+
+    return
 }
 
 gui_layout_login_add_user :: proc () {
@@ -106,8 +106,11 @@ gui_layout_login_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         }) {
             usernames := []string{"test", "tralph3"}
             for username in usernames {
-                gui_layout_login_user_tile(username)
+                if gui_layout_login_user_tile(username) {
+                    user_login(username)
+                }
             }
+
             gui_layout_login_add_user()
         }
     }

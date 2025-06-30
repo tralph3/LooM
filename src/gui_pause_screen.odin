@@ -12,7 +12,7 @@ UI_PAUSE_BUTTON_TEXT_CONFIG := cl.TextElementConfig {
     textAlignment = .Center,
 }
 
-gui_pause_button_layout :: proc (label: string, callback: proc ()) {
+gui_pause_button_layout :: proc (label: string) -> (clicked: bool) {
     if cl.UI()({
         layout = {
             sizing = {
@@ -37,102 +37,11 @@ gui_pause_button_layout :: proc (label: string, callback: proc ()) {
     }) {
         cl.TextDynamic(label, &UI_PAUSE_BUTTON_TEXT_CONFIG)
 
-        if gui_is_clicked() {
-            callback()
-        }
+        clicked = gui_is_clicked()
     }
+
+    return
 }
-
-// gui_quick_access_button_layout :: proc (label: string, cb: proc ()) {
-//     if cl.UI()({
-//         layout = {
-//             sizing = {
-//                 width = cl.SizingGrow({}),
-//                 height = cl.SizingGrow({}),
-//             },
-//             padding = cl.PaddingAll(24),
-//         },
-//         cornerRadius = cl.CornerRadiusAll(10),
-//         backgroundColor = UI_COLOR_BACKGROUND,
-//         border = cl.Hovered() ? {
-//             color = UI_COLOR_ACCENT,
-//             width = cl.BorderOutside(10),
-//         } : {},
-//     }) {
-//         cl.TextDynamic(label, cl.TextConfig({
-//             textColor = UI_COLOR_MAIN_TEXT,
-//             fontSize = 24,
-//         }))
-
-//         if gui_is_clicked() {
-//             cb()
-//         }
-//     }
-// }
-
-// gui_core_option_layout :: proc (option: ^CoreOption) {
-//     if cl.UI()({
-//         layout = {
-//             sizing = {
-//                 width = cl.SizingGrow({}),
-//                 height = cl.SizingGrow({}),
-//             },
-//             layoutDirection = .LeftToRight,
-//             padding = cl.PaddingAll(24),
-//         },
-//         cornerRadius = cl.CornerRadiusAll(10),
-//         backgroundColor = UI_COLOR_BACKGROUND,
-//         border = cl.Hovered() ? {
-//             color = UI_COLOR_ACCENT,
-//             width = cl.BorderOutside(10),
-//         } : {},
-//     }) {
-//         if cl.UI()({
-//             layout = {
-//                 sizing = {
-//                     width = cl.SizingFit({}),
-//                     height = cl.SizingFit({}),
-//                 },
-//                 layoutDirection = .TopToBottom,
-//             },
-//         }) {
-//             cl.TextDynamic(string(option.display), cl.TextConfig({
-//                 textColor = UI_COLOR_MAIN_TEXT,
-//                 fontSize = 24,
-//             }))
-
-//             cl.TextDynamic(string(option.info), cl.TextConfig({
-//                 textColor = UI_COLOR_MAIN_TEXT,
-//                 fontSize = 16,
-//             }))
-//         }
-
-//         if cl.UI()({
-//             layout = {
-//                 sizing = {
-//                     width = cl.SizingGrow({}),
-//                     height = cl.SizingGrow({}),
-//                 },
-//             },
-//         }) {}
-
-//         if cl.UI()({
-//             layout = {
-//                 sizing = {
-//                     width = cl.SizingFit({}),
-//                     height = cl.SizingFit({}),
-//                 },
-//                 layoutDirection = .TopToBottom,
-//             },
-//         }) {
-//             cl.TextDynamic(string(option.current_value), cl.TextConfig({
-//                 textColor = UI_COLOR_MAIN_TEXT,
-//                 fontSize = 24,
-//                 textAlignment = .Right,
-//             }))
-//         }
-//     }
-// }
 
 gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
     cl.BeginLayout()
@@ -199,36 +108,42 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             }) {
                 cl.Text("PAUSED", &UI_PAUSE_BUTTON_TEXT_CONFIG)
 
-                gui_pause_button_layout("Resume", proc () {
+                if gui_pause_button_layout("Resume") {
                     scene_change(.RUNNING)
-                })
-                gui_pause_button_layout("Save State", proc () {
+                }
+                if gui_pause_button_layout("Save State") {
                     event_push(.SaveState)
-                })
-                gui_pause_button_layout("Load State", proc () {
+                }
+                if gui_pause_button_layout("Load State") {
                     event_push(.LoadState)
-                })
-                gui_pause_button_layout("Controller", proc () {
+                }
+                if gui_pause_button_layout("Controller") {
                     log.info("Controller config!")
-                })
-                gui_pause_button_layout("Shaders", proc () {
+                }
+                if gui_pause_button_layout("Emulator Options") {
+                    log.info("EMU!")
+                }
+                if gui_pause_button_layout("LOOM Options") {
+                    log.info("LOOM!")
+                }
+                if gui_pause_button_layout("Shaders") {
                     log.info("Shader menu!")
-                })
-                gui_pause_button_layout("Manual", proc () {
+                }
+                if gui_pause_button_layout("Manual") {
                     log.info("Game manual!")
-                })
-                gui_pause_button_layout("Reset", proc () {
+                }
+                if gui_pause_button_layout("Reset") {
                     emulator_reset_game()
                     scene_change(.RUNNING)
-                })
-                gui_pause_button_layout("Hard Reset", proc () {
+                }
+                if gui_pause_button_layout("Hard Reset") {
                     core_hard_reset()
                     scene_change(.RUNNING)
-                })
-                gui_pause_button_layout("Close", proc () {
+                }
+                if gui_pause_button_layout("Close") {
                     core_unload_game()
                     scene_change(.MENU)
-                })
+                }
             }
         }
     }

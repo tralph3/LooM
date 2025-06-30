@@ -6,7 +6,7 @@ import "core:math/ease"
 import "core:log"
 
 @(private="file")
-game_entry_button :: proc (entry: ^GameEntry) {
+game_entry_button :: proc (entry: ^GameEntry) -> (clicked: bool) {
     if cl.UI()({
         layout = {
             sizing = {
@@ -43,12 +43,10 @@ game_entry_button :: proc (entry: ^GameEntry) {
             }))
         }
 
-        if gui_is_clicked() {
-            if core_load_game(entry.core, entry.path) {
-                scene_change(.RUNNING)
-            }
-        }
+        clicked = gui_is_clicked()
     }
+
+    return
 }
 
 gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
@@ -94,7 +92,11 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             backgroundColor = UI_COLOR_BACKGROUND,
         }) {
             for &entry in GLOBAL_STATE.game_entries {
-                game_entry_button(&entry)
+                if game_entry_button(&entry) {
+                    if core_load_game(entry.core, entry.path) {
+                        scene_change(.RUNNING)
+                    }
+                }
             }
         }
     }
