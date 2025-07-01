@@ -27,7 +27,7 @@ gui_layout_running_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     height = cl.SizingGrow({}),
                 },
             },
-            aspectRatio = { f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_width) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_height) },
+            aspectRatio = { emulator_get_aspect_ratio() },
             custom = { rawptr(uintptr(CustomRenderType.EmulatorFramebuffer)) },
         }) { }
     }
