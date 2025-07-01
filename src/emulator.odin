@@ -28,34 +28,24 @@ emulator_is_hw_rendered :: proc "contextless" () -> bool {
     return GLOBAL_STATE.emulator_state.hw_render_cb != nil
 }
 
-// Asserts that the emulator OpenGL context is being used when this
-// function is called. If the emulator doesn't use OpenGL, the it
-// asserts the main context is in use.
-@(disabled=ODIN_DISABLE_ASSERT)
-emulator_assert_emu_context :: proc "contextless" () {
-    if emulator_is_hw_rendered() {
-        assert_contextless(sdl.GL_GetCurrentContext() == GLOBAL_STATE.video_state.emu_context)
-    } else {
-        assert_contextless(sdl.GL_GetCurrentContext() == GLOBAL_STATE.video_state.main_context)
-    }
-}
-
 emulator_reset_game :: proc () {
-    run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.reset)
+    video_run_inside_emu_context(GLOBAL_STATE.emulator_state.core.api.reset)
     audio_clear_buffer()
 }
 
 emulator_save_state :: proc () {
+    video_enable_emu_gl_context()
+    defer video_disable_emu_gl_context()
+
     size := GLOBAL_STATE.emulator_state.core.api.serialize_size()
     buffer := make([]byte, size)
     defer delete(buffer)
 
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
     if !GLOBAL_STATE.emulator_state.core.api.serialize(raw_data(buffer), len(buffer)) {
         log.error("Failed saving save state")
         return
     }
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
+
 
     f, err := os2.open("./savestate", { .Write, .Create })
     if err != nil {
@@ -70,15 +60,16 @@ emulator_save_state :: proc () {
 }
 
 emulator_load_state :: proc () {
+    video_enable_emu_gl_context()
+    defer video_disable_emu_gl_context()
+
     buffer, _ := os2.read_entire_file_from_path("./savestate", allocator=context.allocator)
     defer delete(buffer)
 
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
     if !GLOBAL_STATE.emulator_state.core.api.unserialize(raw_data(buffer), len(buffer)) {
         log.error("Failed loading save state")
         return
     }
-    sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
 }
 
 emulator_update_plugged_controllers :: proc () {

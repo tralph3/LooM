@@ -308,7 +308,7 @@ env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO: add other a
     render_cb := (^lr.RetroHwRenderCallback)(data)
     #partial switch render_cb.context_type {
     case .OPENGL_CORE, .OPENGL:
-        video_init_emulator_opengl_context(render_cb)
+        video_init_emu_opengl_context(render_cb)
         return true
     }
 
@@ -797,7 +797,7 @@ env_callback_set_system_av_info :: proc (data: rawptr) -> bool { // TODO: revise
 
     GLOBAL_STATE.emulator_state.av_info = (^lr.SystemAvInfo)(data)^
 
-    video_init_emulator_framebuffer()
+    video_init_emu_framebuffer()
     audio_update_sample_rate()
     return true
 }

@@ -16,7 +16,8 @@ FBO :: struct {
     depth_stencil: u32,
 }
 
-VideoState :: struct #no_copy {
+@(private="file")
+VIDEO_STATE := struct #no_copy {
     window: ^sdl.Window,
     window_size: [2]i32,
 
@@ -24,7 +25,7 @@ VideoState :: struct #no_copy {
 
     main_context: sdl.GLContext,
     emu_context: sdl.GLContext,
-}
+} {}
 
 video_init :: proc () -> (ok: bool) {
     when ODIN_OS == .Linux {
@@ -51,8 +52,8 @@ video_init :: proc () -> (ok: bool) {
         return false
     }
 
-    GLOBAL_STATE.video_state.window = sdl.CreateWindow("Libretro Frontend", 800, 600, { .RESIZABLE, .OPENGL })
-    if GLOBAL_STATE.video_state.window == nil {
+    VIDEO_STATE.window = sdl.CreateWindow("Libretro Frontend", 800, 600, { .RESIZABLE, .OPENGL })
+    if VIDEO_STATE.window == nil {
         log.errorf("Failed creating window: {}", sdl.GetError())
         return false
     }
@@ -62,8 +63,8 @@ video_init :: proc () -> (ok: bool) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
     sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 0)
 
-    GLOBAL_STATE.video_state.main_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
-    if GLOBAL_STATE.video_state.main_context == nil {
+    VIDEO_STATE.main_context = sdl.GL_CreateContext(VIDEO_STATE.window)
+    if VIDEO_STATE.main_context == nil {
         log.errorf("Failed creating OpenGL context: {}", sdl.GetError())
         return false
     }
@@ -75,7 +76,7 @@ video_init :: proc () -> (ok: bool) {
     gl.GetIntegerv(gl.MINOR_VERSION, &minor)
     gl.load_up_to(int(major), int(minor), sdl.gl_set_proc_address)
 
-    if !sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context) {
+    if !sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.main_context) {
         log.errorf("Failed making OpenGL context current: {}", sdl.GetError())
         return false
     }
@@ -84,29 +85,29 @@ video_init :: proc () -> (ok: bool) {
 }
 
 video_deinit :: proc () {
-    video_destroy_emulator_framebuffer()
+    video_destroy_emu_framebuffer()
 
-    sdl.GL_DestroyContext(GLOBAL_STATE.video_state.emu_context)
-    sdl.GL_DestroyContext(GLOBAL_STATE.video_state.main_context)
+    sdl.GL_DestroyContext(VIDEO_STATE.emu_context)
+    sdl.GL_DestroyContext(VIDEO_STATE.main_context)
 
-    sdl.DestroyWindow(GLOBAL_STATE.video_state.window)
+    sdl.DestroyWindow(VIDEO_STATE.window)
 
     ttf.Quit()
     sdl.Quit()
 }
 
-video_destroy_emulator_framebuffer :: proc () {
-    fbo := GLOBAL_STATE.video_state.fbo
+video_destroy_emu_framebuffer :: proc () {
+    fbo := VIDEO_STATE.fbo
     if fbo.framebuffer   != 0 { gl.DeleteFramebuffers(1,  &fbo.framebuffer)   }
     if fbo.depth_stencil != 0 { gl.DeleteRenderbuffers(1, &fbo.depth_stencil) }
     if fbo.texture       != 0 { gl.DeleteTextures(1,      &fbo.texture)       }
 }
 
-video_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
+video_init_emu_framebuffer :: proc (depth := false, stencil := false) {
     width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
     height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
 
-    video_destroy_emulator_framebuffer()
+    video_destroy_emu_framebuffer()
 
     aspect := GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio
     if aspect == 0.0 {
@@ -153,25 +154,94 @@ video_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
         log.errorf("Incomplete framebuffer: {}", framebuffer_status)
     }
 
-    GLOBAL_STATE.video_state.fbo = fbo
+    VIDEO_STATE.fbo = fbo
 }
 
-video_init_emulator_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
+video_init_emu_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, i32(sdl.GL_CONTEXT_PROFILE_COMPATIBILITY))
     sdl.GL_SetAttribute(sdl.GL_SHARE_WITH_CURRENT_CONTEXT, 1)
 
-    GLOBAL_STATE.video_state.emu_context = sdl.GL_CreateContext(GLOBAL_STATE.video_state.window)
-    if GLOBAL_STATE.video_state.emu_context == nil {
+    VIDEO_STATE.emu_context = sdl.GL_CreateContext(VIDEO_STATE.window)
+    if VIDEO_STATE.emu_context == nil {
         log.errorf("Failed creating OpenGL context: {}", sdl.GetError())
         return
     }
 
     render_cb.get_proc_address = sdl.GL_GetProcAddress
     render_cb.get_current_framebuffer = proc "c" () -> c.uintptr_t {
-        return c.uintptr_t(GLOBAL_STATE.video_state.fbo.framebuffer)
+        return c.uintptr_t(VIDEO_STATE.fbo.framebuffer)
     }
 
     GLOBAL_STATE.emulator_state.hw_render_cb = render_cb
+}
+
+video_handle_window_resize :: proc (event: ^sdl.Event) {
+    VIDEO_STATE.window_size = { event.window.data1, event.window.data2 }
+}
+
+video_upload_pixels_to_fbo :: #force_inline proc "contextless" (pixels: rawptr, width, height, pitch: u32) {
+    gl.BindTexture(gl.TEXTURE_2D, VIDEO_STATE.fbo.texture)
+    defer gl.BindTexture(gl.TEXTURE_2D, 0)
+
+    format: u32
+    type: u32
+    bbp: u32
+
+    switch GLOBAL_STATE.emulator_state.pixel_format {
+    case .RGB565:
+        format = gl.RGB
+        type = gl.UNSIGNED_SHORT_5_6_5
+        bbp = 2
+    case .XRGB1555:
+        format = gl.BGRA
+        type = gl.UNSIGNED_SHORT_5_5_5_1
+        bbp = 2
+    case .XRGB8888:
+        format = gl.BGRA
+        type = gl.UNSIGNED_INT_8_8_8_8_REV
+        bbp = 4
+    }
+
+    gl.PixelStorei(gl.UNPACK_ROW_LENGTH, i32(pitch / bbp))
+    defer gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
+
+    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB8, i32(width), i32(height), 0, format, type, pixels)
+}
+
+video_get_fbo_texture_id :: #force_inline proc "contextless" () -> u32 {
+    return VIDEO_STATE.fbo.texture
+}
+
+video_get_window_dimensions :: #force_inline proc "contextless" () -> [2]i32 {
+    return VIDEO_STATE.window_size
+}
+
+video_run_inside_emu_context :: #force_inline proc "contextless" (func: proc "c" ()) {
+    if emulator_is_hw_rendered() {
+        sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.emu_context)
+        func()
+        sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.main_context)
+    } else {
+        func()
+    }
+}
+
+video_enable_emu_gl_context :: #force_inline proc "contextless" () {
+    if emulator_is_hw_rendered() {
+        sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.emu_context)
+    }
+}
+
+video_disable_emu_gl_context :: #force_inline proc "contextless" () {
+    sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.main_context)
+}
+
+video_swap_window :: #force_inline proc "contextless" () {
+    sdl.GL_SwapWindow(VIDEO_STATE.window)
+}
+
+video_destroy_emu_context :: #force_inline proc "contextless" () {
+    sdl.GL_DestroyContext(VIDEO_STATE.emu_context)
 }

@@ -92,8 +92,8 @@ input_handle_key_pressed :: proc (event: ^sdl.Event) {
         //     gui_focus_down()
     case .ESCAPE:
         scene_change(.PAUSE)
-        // case .M:
-        //     gui_load_framebuffer_shader(crt_mattias_shader_source)
+    // case .M:
+    //     gui_renderer_set_framebuffer_shader(crt_mattias_shader_source)
     }
 
     when ODIN_DEBUG {

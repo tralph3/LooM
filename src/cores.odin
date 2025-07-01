@@ -36,13 +36,13 @@ core_load_game_by_core :: proc (core: ^lr.LibretroCore, rom_path: string) -> (ok
     core.api.get_system_av_info(&GLOBAL_STATE.emulator_state.av_info)
 
     if emulator_is_hw_rendered() {
-        video_init_emulator_framebuffer(
+        video_init_emu_framebuffer(
             depth=GLOBAL_STATE.emulator_state.hw_render_cb.depth,
             stencil=GLOBAL_STATE.emulator_state.hw_render_cb.stencil,
         )
-        run_inside_emulator_context(GLOBAL_STATE.emulator_state.hw_render_cb.context_reset)
+        video_run_inside_emu_context(GLOBAL_STATE.emulator_state.hw_render_cb.context_reset)
     } else {
-        video_init_emulator_framebuffer()
+        video_init_emu_framebuffer()
     }
 
     audio_update_sample_rate()
@@ -61,8 +61,8 @@ core_unload_game :: proc () {
     if !GLOBAL_STATE.emulator_state.loaded { return }
 
     if emulator_is_hw_rendered() {
-        run_inside_emulator_context(GLOBAL_STATE.emulator_state.hw_render_cb.context_destroy)
-        sdl.GL_DestroyContext(GLOBAL_STATE.video_state.emu_context)
+        video_run_inside_emu_context(GLOBAL_STATE.emulator_state.hw_render_cb.context_destroy)
+        video_destroy_emu_context()
     }
     core_unload(&GLOBAL_STATE.emulator_state.core)
     audio_clear_buffer()

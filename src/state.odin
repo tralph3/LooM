@@ -8,7 +8,6 @@ GLOBAL_STATE := struct #no_copy {
     current_user: string,
     gui_state: GuiState,
     gui_renderer_state: GuiRendererState,
-    video_state: VideoState,
     input_state: InputState,
     emulator_state: EmulatorState,
     user_state: UserState,

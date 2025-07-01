@@ -91,7 +91,7 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
 
     scene.render()
 
-    sdl.GL_SwapWindow(GLOBAL_STATE.video_state.window)
+    video_swap_window()
 
     GLOBAL_STATE.frame_counter += 1
 
@@ -118,7 +118,7 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
     case .KEY_UP:
         input_update_emulator_keyboard_state(event)
     case .WINDOW_RESIZED:
-        GLOBAL_STATE.video_state.window_size = { event.window.data1, event.window.data2 }
+        video_handle_window_resize(event)
     case event_to_sdl_event(.SaveState):
         emulator_save_state()
         scene_change(.RUNNING)

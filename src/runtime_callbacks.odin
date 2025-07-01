@@ -6,10 +6,8 @@ import "core:c"
 import "core:log"
 import gl "vendor:OpenGL"
 
-video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch: u32) {
+video_refresh_callback :: proc "c" (data: rawptr, width, height, pitch: u32) {
     if data == nil { return }
-
-    emulator_assert_emu_context()
 
     GLOBAL_STATE.emulator_state.actual_width = width
     GLOBAL_STATE.emulator_state.actual_height = height
@@ -18,32 +16,7 @@ video_refresh_callback :: proc "c" (data: rawptr, width: u32, height: u32, pitch
         // hardware rendering, nothing to do
     } else {
         // software rendering
-        gl.BindTexture(gl.TEXTURE_2D, GLOBAL_STATE.video_state.fbo.texture)
-        defer gl.BindTexture(gl.TEXTURE_2D, 0)
-
-        format: u32
-        type: u32
-        bbp: u32
-
-        switch GLOBAL_STATE.emulator_state.pixel_format {
-        case .RGB565:
-            format = gl.RGB
-            type = gl.UNSIGNED_SHORT_5_6_5
-            bbp = 2
-        case .XRGB1555:
-            format = gl.BGRA
-            type = gl.UNSIGNED_SHORT_5_5_5_1
-            bbp = 2
-        case .XRGB8888:
-            format = gl.BGRA
-            type = gl.UNSIGNED_INT_8_8_8_8_REV
-            bbp = 4
-        }
-
-        gl.PixelStorei(gl.UNPACK_ROW_LENGTH, i32(pitch / bbp))
-        defer gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
-
-        gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB8, i32(width), i32(height), 0, format, type, data)
+        video_upload_pixels_to_fbo(data, width, height, pitch)
     }
 }
 

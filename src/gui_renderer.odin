@@ -184,11 +184,12 @@ gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextEle
 }
 
 gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)) {
-    window_w := f32(GLOBAL_STATE.video_state.window_size.x)
-    window_h := f32(GLOBAL_STATE.video_state.window_size.y)
+    window_size := video_get_window_dimensions()
+    window_wf := f32(window_size.x)
+    window_hf := f32(window_size.y)
 
     gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
-    gl.Viewport(0, 0, GLOBAL_STATE.video_state.window_size.x, GLOBAL_STATE.video_state.window_size.y)
+    gl.Viewport(0, 0, window_size.x, window_size.y)
     gl.ClearColor(0, 0, 0, 1)
     gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -198,15 +199,15 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
         rect: sdl.FRect = { math.round(bounding_box.x), math.round(bounding_box.y), math.round(bounding_box.width), math.round(bounding_box.height) }
 
         // flip y coord because OpenGL is ass
-        rect.y = window_h - rect.y - rect.h
+        rect.y = window_hf - rect.y - rect.h
 
         switch rcmd.commandType {
         case .Rectangle, .Border: {
             vertices: [12]c.float = {
-                rect.x / window_w, (rect.y + rect.h) / window_h, 0,
-                rect.x / window_w, rect.y / window_h, 0,
-                (rect.x + rect.w) / window_w, rect.y / window_h, 0,
-                (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
+                rect.x / window_wf, (rect.y + rect.h) / window_hf, 0,
+                rect.x / window_wf, rect.y / window_hf, 0,
+                (rect.x + rect.w) / window_wf, rect.y / window_hf, 0,
+                (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
             }
 
             gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
@@ -217,7 +218,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.UseProgram(GLOBAL_STATE.gui_renderer_state.rectangle_shader)
 
             gl.Uniform4f(RECTANGLE_SHADER_LOCS.rect, rect.x, rect.y, rect.w, rect.h)
-            gl.Uniform2f(RECTANGLE_SHADER_LOCS.screenSize, window_w, window_h)
+            gl.Uniform2f(RECTANGLE_SHADER_LOCS.screenSize, window_wf, window_hf)
 
             if rcmd.commandType == .Rectangle {
                 config: ^cl.RectangleRenderData = &rcmd.renderData.rectangle
@@ -303,10 +304,10 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             font_texture.last_access = sdl.GetTicksNS()
 
             vertices: [12]c.float = {
-                rect.x / window_w, (rect.y + rect.h) / window_h, 0,
-                rect.x / window_w, rect.y / window_h, 0,
-                (rect.x + rect.w) / window_w, rect.y / window_h, 0,
-                (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
+                rect.x / window_wf, (rect.y + rect.h) / window_hf, 0,
+                rect.x / window_wf, rect.y / window_hf, 0,
+                (rect.x + rect.w) / window_wf, rect.y / window_hf, 0,
+                (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
             }
 
             gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
@@ -333,10 +334,10 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             texture_id := (^u32)(rcmd.renderData.image.imageData)^
 
             vertices: [12]c.float = {
-                rect.x / window_w, (rect.y + rect.h) / window_h, 0,
-                rect.x / window_w, rect.y / window_h, 0,
-                (rect.x + rect.w) / window_w, rect.y / window_h, 0,
-                (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
+                rect.x / window_wf, (rect.y + rect.h) / window_hf, 0,
+                rect.x / window_wf, rect.y / window_hf, 0,
+                (rect.x + rect.w) / window_wf, rect.y / window_hf, 0,
+                (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
             }
 
             gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
@@ -357,10 +358,10 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             switch type {
             case .EmulatorFramebuffer: {
                 vertices: [12]c.float = {
-                    rect.x / window_w, (rect.y + rect.h) / window_h, 0,
-                    rect.x / window_w, rect.y / window_h, 0,
-                    (rect.x + rect.w) / window_w, rect.y / window_h, 0,
-                    (rect.x + rect.w) / window_w, (rect.y + rect.h) / window_h, 0,
+                    rect.x / window_wf, (rect.y + rect.h) / window_hf, 0,
+                    rect.x / window_wf, rect.y / window_hf, 0,
+                    (rect.x + rect.w) / window_wf, rect.y / window_hf, 0,
+                    (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
                 }
 
                 gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
@@ -369,7 +370,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
                 gl.EnableVertexAttribArray(0)
                 gl.ActiveTexture(gl.TEXTURE0)
-                gl.BindTexture(gl.TEXTURE_2D, GLOBAL_STATE.video_state.fbo.texture)
+                gl.BindTexture(gl.TEXTURE_2D, video_get_fbo_texture_id())
 
                 gl.UseProgram(GLOBAL_STATE.gui_renderer_state.framebuffer_shader)
                 gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.tex, 0)

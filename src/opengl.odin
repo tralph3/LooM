@@ -125,13 +125,3 @@ get_program_log :: proc(program: u32) -> string {
 
     return strings.clone("")
 }
-
-run_inside_emulator_context :: #force_inline proc "contextless" (func: proc "c" ()) {
-    if emulator_is_hw_rendered() {
-        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.emu_context)
-        func()
-        sdl.GL_MakeCurrent(GLOBAL_STATE.video_state.window, GLOBAL_STATE.video_state.main_context)
-    } else {
-        func()
-    }
-}
