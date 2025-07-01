@@ -84,7 +84,7 @@ emulator_update_plugged_controllers :: proc () {
     }
 }
 
-emulator_get_aspect_ratio :: #force_inline proc "contextless" () -> f32 {
+emulator_get_aspect_ratio :: proc "contextless" () -> f32 {
     return f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_width) /
         f32(GLOBAL_STATE.emulator_state.av_info.geometry.base_height)
 }

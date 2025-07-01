@@ -181,7 +181,7 @@ video_handle_window_resize :: proc (event: ^sdl.Event) {
     VIDEO_STATE.window_size = { event.window.data1, event.window.data2 }
 }
 
-video_upload_pixels_to_fbo :: #force_inline proc "contextless" (pixels: rawptr, width, height, pitch: u32) {
+video_upload_pixels_to_fbo :: proc "contextless" (pixels: rawptr, width, height, pitch: u32) {
     gl.BindTexture(gl.TEXTURE_2D, VIDEO_STATE.fbo.texture)
     defer gl.BindTexture(gl.TEXTURE_2D, 0)
 
@@ -210,15 +210,15 @@ video_upload_pixels_to_fbo :: #force_inline proc "contextless" (pixels: rawptr, 
     gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGB8, i32(width), i32(height), 0, format, type, pixels)
 }
 
-video_get_fbo_texture_id :: #force_inline proc "contextless" () -> u32 {
+video_get_fbo_texture_id :: proc "contextless" () -> u32 {
     return VIDEO_STATE.fbo.texture
 }
 
-video_get_window_dimensions :: #force_inline proc "contextless" () -> [2]i32 {
+video_get_window_dimensions :: proc "contextless" () -> [2]i32 {
     return VIDEO_STATE.window_size
 }
 
-video_run_inside_emu_context :: #force_inline proc "contextless" (func: proc "c" ()) {
+video_run_inside_emu_context :: proc "contextless" (func: proc "c" ()) {
     if emulator_is_hw_rendered() {
         sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.emu_context)
         func()
@@ -228,20 +228,20 @@ video_run_inside_emu_context :: #force_inline proc "contextless" (func: proc "c"
     }
 }
 
-video_enable_emu_gl_context :: #force_inline proc "contextless" () {
+video_enable_emu_gl_context :: proc "contextless" () {
     if emulator_is_hw_rendered() {
         sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.emu_context)
     }
 }
 
-video_disable_emu_gl_context :: #force_inline proc "contextless" () {
+video_disable_emu_gl_context :: proc "contextless" () {
     sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.main_context)
 }
 
-video_swap_window :: #force_inline proc "contextless" () {
+video_swap_window :: proc "contextless" () {
     sdl.GL_SwapWindow(VIDEO_STATE.window)
 }
 
-video_destroy_emu_context :: #force_inline proc "contextless" () {
+video_destroy_emu_context :: proc "contextless" () {
     sdl.GL_DestroyContext(VIDEO_STATE.emu_context)
 }
