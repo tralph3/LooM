@@ -4,4 +4,5 @@ cores/
 roms/
 system/
 saves/
-libretro.h
+**/*.o
+**/*.h
