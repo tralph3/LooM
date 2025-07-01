@@ -40,6 +40,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .GetInputBitmasks: return env_callback_get_input_bitmasks(data)
         case .GetRumbleInterface: return env_callback_get_rumble_interface(data)
         case .SetKeyboardCallback: return env_callback_set_keyboard_callback(data)
+        case .SetSupportNoGame: return env_callback_set_support_no_game(data)
         case: log.warnf("Callback not supported: '{}'", command)
     }
 
@@ -434,8 +435,11 @@ env_callback_get_variable_update :: proc (data: rawptr) -> bool { // DONE
  * @returns \c true if the environment call is available.
  * @see retro_load_game
  */
-env_callback_set_support_no_game :: proc (data: rawptr) -> bool { // TODO
-    return false
+env_callback_set_support_no_game :: proc (data: rawptr) -> bool { // DONE
+    if data == nil { return false }
+
+    GLOBAL_STATE.emulator_state.support_no_game = (^bool)(data)^
+    return true
 }
 
 /**
@@ -452,6 +456,9 @@ env_callback_set_support_no_game :: proc (data: rawptr) -> bool { // TODO
  * @returns \c true if the environment call is available.
  */
 env_callback_get_libretro_path :: proc (data: rawptr) -> bool { // TODO
+    // This should be the absolute path to the _core_, not the
+    // currently working directory
+    // (^cstring)(data)^ = "" return true
     return false
 }
 

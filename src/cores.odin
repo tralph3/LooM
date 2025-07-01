@@ -27,7 +27,7 @@ core_load_game :: proc {
 }
 
 core_load_game_by_core :: proc (core: ^lr.LibretroCore, rom_path: string) -> (ok: bool) {
-    lr.load_rom(core, rom_path) or_return
+    lr.load_rom(core, rom_path, GLOBAL_STATE.emulator_state.support_no_game) or_return
 
     GLOBAL_STATE.emulator_state.core = core^
 

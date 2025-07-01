@@ -19,6 +19,8 @@ EmulatorState :: struct {
     actual_height: u32,
     pixel_format: lr.RetroPixelFormat,
 
+    support_no_game: bool,
+
     loaded: bool,
 }
 

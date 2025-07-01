@@ -79,7 +79,19 @@ initialize_core :: proc (core: ^LibretroCore, callbacks: ^Callbacks) {
     core.api.set_audio_sample_batch(callbacks.audio_sample_batch)
 }
 
-load_rom :: proc (core: ^LibretroCore, rom_path: string) -> (ok: bool) {
+load_rom :: proc (core: ^LibretroCore, rom_path: string, support_no_game := false) -> (ok: bool) {
+    if support_no_game && rom_path == "" {
+        log.info("Loading core with no content")
+
+        ok_load_game := core.api.load_game(nil)
+        if !ok_load_game {
+            log.errorf("Failed loading core with no content")
+            return false
+        }
+
+        return true
+    }
+
     log.infof("Loading rom '%s'", rom_path)
 
     sys_info: SystemInfo
