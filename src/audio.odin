@@ -12,8 +12,6 @@ AUDIO_BUFFER_SIZE_BYTES :: 1024 * 64
 AUDIO_BUFFER_UNDERRUN_LIMIT :: 1024 * 12
 AUDIO_BUFFER_OVERFLOW_LIMIT :: 1024 * 52
 
-COPY_BUFFER: [AUDIO_BUFFER_SIZE_BYTES]byte
-
 AudioState :: struct #no_copy {
     buffer: cb.CircularBuffer(AUDIO_BUFFER_SIZE_BYTES),
     stream: ^sdl.AudioStream,
@@ -34,8 +32,7 @@ audio_buffer_pop_batch :: proc "c" (userdata: rawptr, stream: ^sdl.AudioStream, 
         return
     }
 
-    count := cb.pop(&GLOBAL_STATE.audio_state.buffer, raw_data(COPY_BUFFER[:]), u64(additional_amount))
-    sdl.PutAudioStreamData(stream, raw_data(COPY_BUFFER[:]), i32(count))
+    cb.pop_to_audio_stream(&GLOBAL_STATE.audio_state.buffer, GLOBAL_STATE.audio_state.stream, u64(additional_amount))
 }
 
 audio_init :: proc "c" () -> (ok: bool) {

@@ -5,6 +5,7 @@ import "core:mem"
 import "core:fmt"
 import "core:testing"
 import "core:log"
+import sdl "vendor:sdl3"
 
 CircularBuffer :: struct($Num: u64) where Num > 0 {
     read: u64,
@@ -63,6 +64,31 @@ pop :: proc (b: ^$T/CircularBuffer($N), dest: rawptr, data_length: u64) -> u64 {
         b.read += left_to_read
     } else {
         mem.copy_non_overlapping(dest, &b.data[b.read], int(length))
+        b.read += length
+    }
+
+    b.size -= length
+    return length
+}
+
+pop_to_audio_stream :: proc (b: ^$T/CircularBuffer($N), stream: ^sdl.AudioStream, data_length: u64) -> (length: u64) {
+    length = data_length
+    if length > b.size {
+        length = b.size
+    }
+
+    capacity := u64(len(b.data))
+    bytes_to_eob := capacity - b.read
+    if bytes_to_eob < length {
+        if bytes_to_eob > 0 {
+            sdl.PutAudioStreamData(stream, &b.data[b.read], i32(bytes_to_eob))
+        }
+        b.read = 0
+        left_to_read := length - bytes_to_eob
+        sdl.PutAudioStreamData(stream, &b.data[b.read], i32(left_to_read))
+        b.read += left_to_read
+    } else {
+        sdl.PutAudioStreamData(stream, &b.data[b.read], i32(length))
         b.read += length
     }
 
