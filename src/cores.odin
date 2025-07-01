@@ -65,7 +65,7 @@ core_unload_game :: proc () {
         sdl.GL_DestroyContext(GLOBAL_STATE.video_state.emu_context)
     }
     core_unload(&GLOBAL_STATE.emulator_state.core)
-    cb.clear(&GLOBAL_STATE.audio_state.buffer)
+    audio_clear_buffer()
     GLOBAL_STATE.emulator_state = {}
 }
 

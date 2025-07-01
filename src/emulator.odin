@@ -42,7 +42,7 @@ emulator_assert_emu_context :: proc "contextless" () {
 
 emulator_reset_game :: proc () {
     run_inside_emulator_context(GLOBAL_STATE.emulator_state.core.api.reset)
-    cb.clear(&GLOBAL_STATE.audio_state.buffer)
+    audio_clear_buffer()
 }
 
 emulator_save_state :: proc () {

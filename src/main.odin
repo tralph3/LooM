@@ -81,10 +81,7 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
 
     gui_update()
 
-    buffered_bytes := int(GLOBAL_STATE.audio_state.buffer.size)
-    buffer_capacity := len(GLOBAL_STATE.audio_state.buffer.data)
-
-    should_run_frame := buffered_bytes < AUDIO_BUFFER_OVERFLOW_LIMIT
+    should_run_frame := audio_is_over_overflow_limit()
 
     scene := scene_get(GLOBAL_STATE.current_scene_id)
 
