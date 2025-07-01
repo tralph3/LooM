@@ -163,7 +163,8 @@ env_callback_shutdown :: proc (data: rawptr) -> bool { // TODO
 */
 env_callback_set_performance_level :: proc (data: rawptr) -> bool { // TODO: Get performance level of device and compare the two
     if data == nil { return false }
-    GLOBAL_STATE.emulator_state.performance_level = (^uint)(data)^
+
+    emulator_set_performance_level((^uint)(data)^)
     return true
 }
 
@@ -211,7 +212,7 @@ env_callback_set_pixel_format :: proc (data: rawptr) -> bool { // DONE
         return false
     }
 
-    GLOBAL_STATE.emulator_state.pixel_format = format
+    video_set_pixel_format(format)
     return true
 }
 
@@ -249,7 +250,7 @@ env_callback_set_input_descriptors :: proc (data: rawptr) -> bool { // TODO
 env_callback_set_keyboard_callback :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    GLOBAL_STATE.emulator_state.keyboard_callback = (^lr.RetroKeyboardCallback)(data).callback
+    emulator_set_keyboard_callback((^lr.RetroKeyboardCallback)(data).callback)
     return true
 }
 
@@ -338,9 +339,10 @@ env_callback_get_variable :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return true }
 
     var := (^lr.RetroVariable)(data)
-    var.value = GLOBAL_STATE.emulator_state.options[var.key].current_value
+    opt := emulator_get_options()
+    var.value = opt.options[var.key].current_value
 
-    core_options_set_dirty(false)
+    core_options_set_dirty(opt, false)
     return true
 }
 
@@ -392,8 +394,14 @@ env_callback_get_variable :: proc (data: rawptr) -> bool { // DONE
  * @see RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE
  * @see RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2
  */
-env_callback_set_variables :: proc (data: rawptr) -> bool { // TODO
-    core_options_set_variables(auto_cast data)
+env_callback_set_variables :: proc (data: rawptr) -> bool { // DONE
+    if data == nil {
+        emulator_clear_options()
+    } else {
+        opt := core_options_parse_set_variables(auto_cast data)
+        emulator_set_options(opt)
+    }
+
     return true
 }
 
@@ -416,7 +424,8 @@ env_callback_set_variables :: proc (data: rawptr) -> bool { // TODO
 env_callback_get_variable_update :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    (^bool)(data)^ = GLOBAL_STATE.emulator_state.options_updated
+    opt := emulator_get_options()
+    (^bool)(data)^ = opt.dirty
     return true
 }
 
@@ -438,7 +447,7 @@ env_callback_get_variable_update :: proc (data: rawptr) -> bool { // DONE
 env_callback_set_support_no_game :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    GLOBAL_STATE.emulator_state.support_no_game = (^bool)(data)^
+    emulator_set_support_no_game((^bool)(data)^)
     return true
 }
 
@@ -795,10 +804,9 @@ env_callback_get_save_directory :: proc (data: rawptr) -> bool { // TODO
 env_callback_set_system_av_info :: proc (data: rawptr) -> bool { // TODO: revise when more video backends are supported
     if data == nil { return false }
 
-    GLOBAL_STATE.emulator_state.av_info = (^lr.SystemAvInfo)(data)^
+    av_info := (^lr.SystemAvInfo)(data)
+    emulator_update_av_info(av_info)
 
-    video_init_emu_framebuffer()
-    audio_update_sample_rate()
     return true
 }
 
@@ -1000,11 +1008,9 @@ env_callback_set_memory_maps :: proc (data: rawptr) -> bool { // TODO
 env_callback_set_geometry :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    geo := (^lr.GameGeometry)(data)^
+    geo := (^lr.GameGeometry)(data)
     // ignore max_width and max_height
-    GLOBAL_STATE.emulator_state.av_info.geometry.base_width = geo.base_width
-    GLOBAL_STATE.emulator_state.av_info.geometry.base_height = geo.base_height
-    GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio = geo.aspect_ratio
+    emulator_update_geometry(geo)
     return true
 }
 
@@ -1270,7 +1276,7 @@ env_callback_get_midi_interface :: proc (data: rawptr) -> bool { // TODO
 env_callback_get_fastforwarding :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    (^bool)(data)^ = GLOBAL_STATE.emulator_state.fast_forward
+    (^bool)(data)^ = emulator_is_fast_forwarding()
     return true
 }
 
@@ -1472,7 +1478,8 @@ env_callback_set_core_options_display :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return true }
 
     opt_display := (^lr.RetroCoreOptionDisplay)(data)
-    core_option_set_visibility(opt_display.key, opt_display.visible)
+    opt := emulator_get_options()
+    core_option_set_visibility(opt, opt_display.key, opt_display.visible)
     return true
 }
 
@@ -1866,9 +1873,10 @@ env_callback_get_game_info_ext :: proc (data: rawptr) -> bool { // TODO
  */
 env_callback_set_core_options_v2 :: proc (data: rawptr) -> bool { // TODO: Support categories
     if data == nil {
-        core_options_free()
+        emulator_clear_options()
     } else {
-        core_options_set_v2((^lr.RetroCoreOptionsV2)(data))
+        opt := core_options_parse_v2((^lr.RetroCoreOptionsV2)(data))
+        emulator_set_options(opt)
     }
 
     return true
@@ -1891,9 +1899,10 @@ env_callback_set_core_options_v2 :: proc (data: rawptr) -> bool { // TODO: Suppo
  */
 env_callback_set_core_options_v2_intl :: proc (data: rawptr) -> bool { // TODO: use local language when appropriate
     if data == nil {
-        core_options_free()
+        emulator_clear_options()
     } else {
-        core_options_set_v2_intl((^lr.RetroCoreOptionsV2Intl)(data))
+        opt := core_options_parse_v2_intl((^lr.RetroCoreOptionsV2Intl)(data))
+        emulator_set_options(opt)
     }
 
     return true

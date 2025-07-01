@@ -23,6 +23,8 @@ VIDEO_STATE := struct #no_copy {
 
     fbo: FBO,
 
+    pixel_format: lr.RetroPixelFormat,
+
     main_context: sdl.GLContext,
     emu_context: sdl.GLContext,
 } {}
@@ -104,15 +106,12 @@ video_destroy_emu_framebuffer :: proc () {
 }
 
 video_init_emu_framebuffer :: proc (depth := false, stencil := false) {
-    width := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width)
-    height := i32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height)
+    width := emulator_get_texture_size().x
+    height := emulator_get_texture_size().y
 
     video_destroy_emu_framebuffer()
 
-    aspect := GLOBAL_STATE.emulator_state.av_info.geometry.aspect_ratio
-    if aspect == 0.0 {
-        aspect = 4.0 / 3.0
-    }
+    aspect: f32 = 4.0 / 3.0
     if width == 0 && height == 0 {
         width = 640
         height = i32(f32(width) / aspect)
@@ -174,7 +173,7 @@ video_init_emu_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
         return c.uintptr_t(VIDEO_STATE.fbo.framebuffer)
     }
 
-    GLOBAL_STATE.emulator_state.hw_render_cb = render_cb
+    emulator_set_hw_render_callback(render_cb^)
 }
 
 video_handle_window_resize :: proc (event: ^sdl.Event) {
@@ -189,7 +188,7 @@ video_upload_pixels_to_fbo :: proc "contextless" (pixels: rawptr, width, height,
     type: u32
     bbp: u32
 
-    switch GLOBAL_STATE.emulator_state.pixel_format {
+    switch VIDEO_STATE.pixel_format {
     case .RGB565:
         format = gl.RGB
         type = gl.UNSIGNED_SHORT_5_6_5
@@ -244,4 +243,8 @@ video_swap_window :: proc "contextless" () {
 
 video_destroy_emu_context :: proc "contextless" () {
     sdl.GL_DestroyContext(VIDEO_STATE.emu_context)
+}
+
+video_set_pixel_format :: proc "contextless" (format: lr.RetroPixelFormat) {
+    VIDEO_STATE.pixel_format = format
 }

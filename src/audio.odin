@@ -59,13 +59,13 @@ audio_init :: proc "c" () -> (ok: bool) {
     return true
 }
 
-audio_update_sample_rate :: proc () {
+audio_update_sample_rate :: proc (new_sample_rate: i32) {
     dst_spec: sdl.AudioSpec
     src_spec: sdl.AudioSpec
     sdl.GetAudioStreamFormat(AUDIO_STATE.stream, &src_spec, &dst_spec)
 
-    dst_spec.freq = i32(GLOBAL_STATE.emulator_state.av_info.timing.sample_rate)
-    src_spec.freq = i32(GLOBAL_STATE.emulator_state.av_info.timing.sample_rate)
+    dst_spec.freq = new_sample_rate
+    src_spec.freq = new_sample_rate
     sdl.SetAudioStreamFormat(AUDIO_STATE.stream, &src_spec, &dst_spec)
 }
 

@@ -165,13 +165,14 @@ input_update_emulator_keyboard_state :: proc (event: ^sdl.Event) {
         INPUT_STATE.keyboard[retro_keycode] = is_down ? 1 : 0
     }
 
-    if GLOBAL_STATE.emulator_state.keyboard_callback == nil { return }
+    kb_cb := emulator_get_keyboard_callback()
+    if kb_cb == nil { return }
 
     modifiers := input_get_modifiers_bitmap(event.key.mod)
     // TODO: map utf32
     utf32: u32
 
-    GLOBAL_STATE.emulator_state.keyboard_callback(is_down, retro_keycode, utf32, modifiers)
+    kb_cb(is_down, retro_keycode, utf32, modifiers)
 }
 
 input_get_modifiers_bitmap :: proc (mod: sdl.Keymod) -> u16 {

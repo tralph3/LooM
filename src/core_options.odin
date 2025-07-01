@@ -6,6 +6,12 @@ import "core:log"
 import "core:mem"
 import "core:fmt"
 
+CoreOptions :: struct {
+    options: map[cstring]CoreOption,
+    // denotes if the options have been modified since their last read
+    dirty: bool,
+}
+
 CoreOptionValue :: struct {
     value: cstring,
     label: cstring,
@@ -29,12 +35,12 @@ clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring
     return cstring(clone)
 }
 
-core_options_set_v2_intl :: proc (options: ^lr.RetroCoreOptionsV2Intl) {
-    core_options_set_v2(options.us) // TODO: support internatinal options
+core_options_parse_v2_intl :: proc (options: ^lr.RetroCoreOptionsV2Intl, allocator:=context.allocator) -> (result: CoreOptions) {
+    return core_options_parse_v2(options.us, allocator=allocator) // TODO: support internatinal options
 }
 
-core_options_set_v2 :: proc (options: ^lr.RetroCoreOptionsV2) {
-    GLOBAL_STATE.emulator_state.options = make(type_of(GLOBAL_STATE.emulator_state.options))
+core_options_parse_v2 :: proc (options: ^lr.RetroCoreOptionsV2, allocator:=context.allocator) -> (result: CoreOptions) {
+    result.options = make(type_of(result.options), allocator=allocator)
 
     for i in 0..<lr.RETRO_NUM_CORE_OPTION_VALUES_MAX {
         definition := options.definitions[i]
@@ -62,11 +68,15 @@ core_options_set_v2 :: proc (options: ^lr.RetroCoreOptionsV2) {
         }
 
         key := clone_cstring(definition.key)
-        GLOBAL_STATE.emulator_state.options[key] = option
+        result.options[key] = option
     }
+
+    return result
 }
 
-core_options_set_variables :: proc (options: [^]lr.RetroVariable) {
+core_options_parse_set_variables :: proc (options: [^]lr.RetroVariable, allocator:=context.allocator) -> (result: CoreOptions) {
+    result.options = make(type_of(result.options), allocator=allocator)
+
     option_loop: for i in 0..<lr.RETRO_NUM_CORE_OPTION_VALUES_MAX {
         option := options[i]
 
@@ -111,12 +121,14 @@ core_options_set_variables :: proc (options: [^]lr.RetroVariable) {
         }
 
         key := clone_cstring(option.key)
-        GLOBAL_STATE.emulator_state.options[key] = core_option
+        result.options[key] = core_option
     }
+
+    return result
 }
 
-core_options_free :: proc () {
-    for key, option in GLOBAL_STATE.emulator_state.options {
+core_options_free :: proc (options: ^CoreOptions) {
+    for key, option in options.options {
         delete(key)
         delete(option.display)
         delete(option.info)
@@ -131,33 +143,32 @@ core_options_free :: proc () {
         delete(option.values)
     }
 
-    delete(GLOBAL_STATE.emulator_state.options)
-    GLOBAL_STATE.emulator_state.options = nil
+    delete(options.options)
 }
 
-core_option_get_values :: proc (key: cstring) -> (vals: []CoreOptionValue, ok: bool) {
-    option := (&GLOBAL_STATE.emulator_state.options[key]) or_return
+core_option_get_values :: proc (options: ^CoreOptions, key: cstring) -> (vals: []CoreOptionValue, ok: bool) {
+    option := (&options.options[key]) or_return
     return option.values[:], true
 }
 
-core_option_get :: proc (key: cstring) -> (val: cstring, ok: bool) {
-    option := (&GLOBAL_STATE.emulator_state.options[key]) or_return
+core_option_get :: proc (options: ^CoreOptions, key: cstring) -> (val: cstring, ok: bool) {
+    option := (&options.options[key]) or_return
     return option.current_value, true
 }
 
-core_option_set :: proc (key: cstring, val: cstring) -> (ok: bool) {
-    option := (&GLOBAL_STATE.emulator_state.options[key]) or_return
+core_option_set :: proc (options: ^CoreOptions, key: cstring, val: cstring) -> (ok: bool) {
+    option := (&options.options[key]) or_return
     delete(option.current_value)
 
     option.current_value = clone_cstring(val)
 
-    core_options_set_dirty(true)
+    core_options_set_dirty(options, true)
 
     return true
 }
 
-core_options_print_all :: proc () {
-    for key, option in GLOBAL_STATE.emulator_state.options {
+core_options_print_all :: proc (options: ^CoreOptions) {
+    for key, option in options.options {
         fmt.println(key, " '", option.display, "'", " = ", option.current_value, sep="")
         for value in option.values {
             fmt.print(value.value, "|", sep="")
@@ -167,17 +178,13 @@ core_options_print_all :: proc () {
     }
 }
 
-core_option_set_visibility :: proc (key: cstring, visible: bool) -> (ok: bool) {
-    option := (&GLOBAL_STATE.emulator_state.options[key]) or_return
+core_option_set_visibility :: proc (options: ^CoreOptions, key: cstring, visible: bool) -> (ok: bool) {
+    option := (&options.options[key]) or_return
     option.visible = visible
 
     return true
 }
 
-core_options_set_dirty :: proc (status: bool) {
-    GLOBAL_STATE.emulator_state.options_updated = status
-}
-
-core_options_get_dirty :: proc () -> bool {
-    return GLOBAL_STATE.emulator_state.options_updated
+core_options_set_dirty :: proc (options: ^CoreOptions, status: bool) {
+    options.dirty = status
 }

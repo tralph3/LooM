@@ -93,7 +93,7 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         }) {
             for &entry in GLOBAL_STATE.game_entries {
                 if game_entry_button(&entry) {
-                    if core_load_game(entry.core, entry.path) {
+                    if emulator_init(&entry) {
                         scene_change(.RUNNING)
                     }
                 }

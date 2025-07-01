@@ -6,7 +6,6 @@ import "base:runtime"
 
 GLOBAL_STATE := struct #no_copy {
     current_user: string,
-    emulator_state: EmulatorState,
 
     game_entries: [dynamic]GameEntry,
 

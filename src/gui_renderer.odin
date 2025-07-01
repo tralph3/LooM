@@ -376,30 +376,37 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 gl.UseProgram(GUI_RENDERER_STATE.framebuffer_shader)
                 gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.tex, 0)
 
-                if emulator_is_hw_rendered() &&
-                    GLOBAL_STATE.emulator_state.hw_render_cb.bottom_left_origin
-                {
+                if emulator_framebuffer_is_bottom_left_origin() {
                     gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.flipY, 0)
-
                 } else {
                     gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.flipY, 1)
                 }
 
+                texture_size := emulator_get_texture_size()
+                image_size := emulator_get_image_size()
+
+                normalized_image_size: [2]f32 = {
+                    f32(image_size.x) / f32(texture_size.x),
+                    f32(image_size.y) / f32(texture_size.y),
+                }
                 if emulator_is_hw_rendered() {
-                    gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion,
-                                 0, 0,
-                                 f32(GLOBAL_STATE.emulator_state.actual_width) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.max_width),
-                                 f32(GLOBAL_STATE.emulator_state.actual_height) / f32(GLOBAL_STATE.emulator_state.av_info.geometry.max_height))
+                    gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion, 0, 0, normalized_image_size.x, normalized_image_size.y)
                 } else {
                     gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion, 0, 0, 1, 1)
                 }
 
-                if FRAMEBUFFER_SHADER_LOCS.frameCount != -1 { gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.frameCount, GUI_RENDERER_STATE.frame_counter) }
-                if FRAMEBUFFER_SHADER_LOCS.outputSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.outputSize, rect.w, rect.h) }
-                if FRAMEBUFFER_SHADER_LOCS.texSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.texSize,
-                                                                        f32(GLOBAL_STATE.emulator_state.actual_width), f32(GLOBAL_STATE.emulator_state.actual_height)) }
-                if FRAMEBUFFER_SHADER_LOCS.inputSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.inputSize,
-                                                                          f32(GLOBAL_STATE.emulator_state.actual_width), f32(GLOBAL_STATE.emulator_state.actual_height)) }
+                if FRAMEBUFFER_SHADER_LOCS.frameCount != -1 {
+                    gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.frameCount, GUI_RENDERER_STATE.frame_counter)
+                }
+                if FRAMEBUFFER_SHADER_LOCS.outputSize != -1 {
+                    gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.outputSize, rect.w, rect.h)
+                }
+                if FRAMEBUFFER_SHADER_LOCS.texSize != -1 {
+                    gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.texSize, f32(image_size.x), f32(image_size.y))
+                }
+                if FRAMEBUFFER_SHADER_LOCS.inputSize != -1 {
+                    gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.inputSize, f32(image_size.x), f32(image_size.y))
+                }
 
                 gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
             }}

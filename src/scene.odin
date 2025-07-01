@@ -53,7 +53,7 @@ SCENES := [SceneID]Scene{
         },
         .RUNNING = {
             update = proc () {
-                video_run_inside_emu_context(GLOBAL_STATE.emulator_state.core.api.run)
+                emulator_run_one_frame()
             },
             render = proc () {
                 layout := gui_layout_running_screen()

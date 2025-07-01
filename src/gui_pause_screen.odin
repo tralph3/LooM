@@ -134,7 +134,7 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     scene_change(.RUNNING)
                 }
                 if gui_pause_button_layout("Close") {
-                    core_unload_game()
+                    emulator_close()
                     scene_change(.MENU)
                 }
             }

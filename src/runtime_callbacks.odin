@@ -9,8 +9,7 @@ import gl "vendor:OpenGL"
 video_refresh_callback :: proc "c" (data: rawptr, width, height, pitch: u32) {
     if data == nil { return }
 
-    GLOBAL_STATE.emulator_state.actual_width = width
-    GLOBAL_STATE.emulator_state.actual_height = height
+    emulator_set_image_size(width, height)
 
     if int((uintptr)(data)) == lr.RETRO_HW_FRAME_BUFFER_VALID {
         // hardware rendering, nothing to do

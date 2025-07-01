@@ -14,9 +14,7 @@ import "core:c"
 import cb "circular_buffer"
 
 wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
-    fps := GLOBAL_STATE.emulator_state.av_info.timing.fps > 0 \
-        ? GLOBAL_STATE.emulator_state.av_info.timing.fps \
-        : 60
+    fps := emulator_get_fps()
 
     frame_duration_ns := u64((1.0 / fps) * 1_000_000_000.0)
     elapsed_ns := sdl.GetTicksNS() - last_time_ns
@@ -73,19 +71,14 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     context = state_get_context()
     defer free_all(GLOBAL_STATE.ctx.temp_allocator)
 
-    if !GLOBAL_STATE.emulator_state.fast_forward {
-        wait_until_next_frame(last_time)
-    }
+    wait_until_next_frame(last_time)
 
     last_time = sdl.GetTicksNS()
 
     gui_update()
 
-    should_run_frame := audio_is_over_overflow_limit()
-
     scene := scene_get(GLOBAL_STATE.current_scene_id)
-
-    if GLOBAL_STATE.current_scene_id != .RUNNING || should_run_frame || GLOBAL_STATE.emulator_state.fast_forward {
+    if GLOBAL_STATE.current_scene_id != .RUNNING || audio_is_over_overflow_limit() {
         scene.update()
     }
 
@@ -135,7 +128,7 @@ app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     context = state_get_context()
 
     game_entries_unload()
-    core_unload_game()
+    emulator_close()
     input_deinit()
     audio_deinit()
     gui_deinit()
