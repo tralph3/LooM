@@ -13,8 +13,7 @@ import gl "vendor:OpenGL"
 FBO :: struct {
     framebuffer: u32,
     texture: u32,
-    depth: u32,
-    stencil: u32,
+    depth_stencil: u32,
 }
 
 VideoState :: struct #no_copy {
@@ -98,10 +97,9 @@ video_deinit :: proc () {
 
 video_destroy_emulator_framebuffer :: proc () {
     fbo := GLOBAL_STATE.video_state.fbo
-    if fbo.framebuffer  != 0 { gl.DeleteFramebuffers(1,  &fbo.framebuffer) }
-    if fbo.depth        != 0 { gl.DeleteRenderbuffers(1, &fbo.depth)       }
-    if fbo.stencil      != 0 { gl.DeleteRenderbuffers(1, &fbo.stencil)     }
-    if fbo.texture      != 0 { gl.DeleteTextures(1,      &fbo.texture)     }
+    if fbo.framebuffer   != 0 { gl.DeleteFramebuffers(1,  &fbo.framebuffer)   }
+    if fbo.depth_stencil != 0 { gl.DeleteRenderbuffers(1, &fbo.depth_stencil) }
+    if fbo.texture       != 0 { gl.DeleteTextures(1,      &fbo.texture)       }
 }
 
 video_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
@@ -141,22 +139,13 @@ video_init_emulator_framebuffer :: proc (depth := false, stencil := false) {
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
     gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fbo.texture, 0)
 
-    if depth {
-        gl.GenRenderbuffers(1, &fbo.depth)
-        gl.BindRenderbuffer(gl.RENDERBUFFER, fbo.depth)
+    if depth || stencil {
+        gl.GenRenderbuffers(1, &fbo.depth_stencil)
+        gl.BindRenderbuffer(gl.RENDERBUFFER, fbo.depth_stencil)
         defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
 
-        gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, width, height)
-        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, fbo.depth)
-    }
-
-    if stencil {
-        gl.GenRenderbuffers(1, &fbo.stencil)
-        gl.BindRenderbuffer(gl.RENDERBUFFER, fbo.stencil)
-        defer gl.BindRenderbuffer(gl.RENDERBUFFER, 0)
-
-        gl.RenderbufferStorage(gl.RENDERBUFFER, gl.STENCIL_INDEX8, width, height)
-        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.STENCIL_ATTACHMENT, gl.RENDERBUFFER, fbo.stencil)
+        gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, width, height)
+        gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, fbo.depth_stencil)
     }
 
     framebuffer_status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
