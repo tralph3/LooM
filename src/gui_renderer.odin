@@ -9,15 +9,8 @@ import "core:log"
 import "core:c"
 import "core:strings"
 
-FontPaths :: [FontID]struct { path: cstring, size: f32 } {
-        .Default = { "./assets/fonts/Ubuntu.ttf", 32 },
-}
-
-FontID :: enum u16 {
-    Default = 0,
-}
-
-GuiRendererState :: struct #no_copy {
+@(private="file")
+GUI_RENDERER_STATE := struct #no_copy {
     vbo: u32,
     vao: u32,
     rectangle_shader: u32,
@@ -28,6 +21,14 @@ GuiRendererState :: struct #no_copy {
     fonts: [FontID]^ttf.Font,
 
     text_texture_cache: map[TextTextureCacheKey]CachedTextTexture
+} {}
+
+FontPaths :: [FontID]struct { path: cstring, size: f32 } {
+        .Default = { "./assets/fonts/Ubuntu.ttf", 32 },
+}
+
+FontID :: enum u16 {
+    Default = 0,
 }
 
 vertex_rectangle_shader_src: cstring = #load("./shaders/rectangle.vert")
@@ -103,19 +104,19 @@ gui_renderer_set_framebuffer_shader :: proc (shader_src: cstring) {
         return
     }
 
-    gl.DeleteProgram(GLOBAL_STATE.gui_renderer_state.framebuffer_shader)
-    GLOBAL_STATE.gui_renderer_state.framebuffer_shader = prog_id
+    gl.DeleteProgram(GUI_RENDERER_STATE.framebuffer_shader)
+    GUI_RENDERER_STATE.framebuffer_shader = prog_id
 }
 
 gui_renderer_init :: proc () -> (ok: bool) {
     gl.Enable(gl.BLEND)
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-    gl.GenBuffers(1, &GLOBAL_STATE.gui_renderer_state.vbo)
-    gl.GenVertexArrays(1, &GLOBAL_STATE.gui_renderer_state.vao)
+    gl.GenBuffers(1, &GUI_RENDERER_STATE.vbo)
+    gl.GenVertexArrays(1, &GUI_RENDERER_STATE.vao)
 
     {
-        using GLOBAL_STATE.gui_renderer_state
+        using GUI_RENDERER_STATE
         rectangle_shader = load_shader(
             vertex_rectangle_shader_src, fragment_rectangle_shader_src, &RECTANGLE_SHADER_LOCS) or_return
         text_shader = load_shader(
@@ -137,7 +138,7 @@ gui_renderer_load_fonts :: proc () -> (ok: bool) {
             return false
         }
 
-        GLOBAL_STATE.gui_renderer_state.fonts[id] = font
+        GUI_RENDERER_STATE.fonts[id] = font
     }
 
     return true
@@ -145,28 +146,28 @@ gui_renderer_load_fonts :: proc () -> (ok: bool) {
 
 gui_renderer_unload_fonts :: proc () {
     for font_info, id in FontPaths {
-        ttf.CloseFont(GLOBAL_STATE.gui_renderer_state.fonts[id])
+        ttf.CloseFont(GUI_RENDERER_STATE.fonts[id])
     }
 }
 
 gui_renderer_deinit :: proc () {
-    gl.DeleteBuffers(1, &GLOBAL_STATE.gui_renderer_state.vbo)
-    gl.DeleteVertexArrays(1, &GLOBAL_STATE.gui_renderer_state.vao)
+    gl.DeleteBuffers(1, &GUI_RENDERER_STATE.vbo)
+    gl.DeleteVertexArrays(1, &GUI_RENDERER_STATE.vao)
     gui_renderer_unload_fonts()
 
-    for _, &tex_id in GLOBAL_STATE.gui_renderer_state.text_texture_cache {
+    for _, &tex_id in GUI_RENDERER_STATE.text_texture_cache {
         gl.DeleteTextures(1, &tex_id.id)
     }
 
-    delete(GLOBAL_STATE.gui_renderer_state.text_texture_cache)
-    GLOBAL_STATE.gui_renderer_state.text_texture_cache = nil
+    delete(GUI_RENDERER_STATE.text_texture_cache)
+    GUI_RENDERER_STATE.text_texture_cache = nil
 }
 
 gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextElementConfig, user_data: rawptr) -> cl.Dimensions {
     context = GLOBAL_STATE.ctx
     assert(text.length > 0)
 
-    font := GLOBAL_STATE.gui_renderer_state.fonts[FontID(config.fontId)]
+    font := GUI_RENDERER_STATE.fonts[FontID(config.fontId)]
 
     if !ttf.SetFontSize(font, f32(config.fontSize)) {
         log.errorf("CLAY: Measure text error: Failed setting font size: {}", sdl.GetError())
@@ -210,12 +211,12 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
             }
 
-            gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
-            gl.BindBuffer(gl.ARRAY_BUFFER, GLOBAL_STATE.gui_renderer_state.vbo)
+            gl.BindVertexArray(GUI_RENDERER_STATE.vao)
+            gl.BindBuffer(gl.ARRAY_BUFFER, GUI_RENDERER_STATE.vbo)
             gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
             gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
             gl.EnableVertexAttribArray(0)
-            gl.UseProgram(GLOBAL_STATE.gui_renderer_state.rectangle_shader)
+            gl.UseProgram(GUI_RENDERER_STATE.rectangle_shader)
 
             gl.Uniform4f(RECTANGLE_SHADER_LOCS.rect, rect.x, rect.y, rect.w, rect.h)
             gl.Uniform2f(RECTANGLE_SHADER_LOCS.screenSize, window_wf, window_hf)
@@ -265,11 +266,11 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             config: ^cl.TextRenderData = &rcmd.renderData.text
             str := strings.string_from_ptr(config.stringContents.chars, int(config.stringContents.length))
 
-            font_texture, cached := &GLOBAL_STATE.gui_renderer_state.text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
+            font_texture, cached := &GUI_RENDERER_STATE.text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
             if !cached {
                 cached_texture: CachedTextTexture
 
-                font: ^ttf.Font = GLOBAL_STATE.gui_renderer_state.fonts[FontID(config.fontId)]
+                font: ^ttf.Font = GUI_RENDERER_STATE.fonts[FontID(config.fontId)]
                 if !ttf.SetFontSize(font, f32(config.fontSize)) {
                     log.errorf("Failed setting font size: {}", sdl.GetError())
                     continue
@@ -297,8 +298,8 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
                 sdl.DestroySurface(surface)
 
-                GLOBAL_STATE.gui_renderer_state.text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }] = cached_texture
-                font_texture = &GLOBAL_STATE.gui_renderer_state.text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
+                GUI_RENDERER_STATE.text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }] = cached_texture
+                font_texture = &GUI_RENDERER_STATE.text_texture_cache[{ config.fontId, config.fontSize, str, config.textColor }]
             }
 
             font_texture.last_access = sdl.GetTicksNS()
@@ -310,15 +311,15 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
             }
 
-            gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
-            gl.BindBuffer(gl.ARRAY_BUFFER, GLOBAL_STATE.gui_renderer_state.vbo)
+            gl.BindVertexArray(GUI_RENDERER_STATE.vao)
+            gl.BindBuffer(gl.ARRAY_BUFFER, GUI_RENDERER_STATE.vbo)
             gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
             gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
             gl.EnableVertexAttribArray(0)
             gl.ActiveTexture(gl.TEXTURE0)
             gl.BindTexture(gl.TEXTURE_2D, font_texture.id)
 
-            gl.UseProgram(GLOBAL_STATE.gui_renderer_state.text_shader)
+            gl.UseProgram(GUI_RENDERER_STATE.text_shader)
             gl.Uniform1i(TEXT_SHADER_LOCS.tex, 0)
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
@@ -340,15 +341,15 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
             }
 
-            gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
-            gl.BindBuffer(gl.ARRAY_BUFFER, GLOBAL_STATE.gui_renderer_state.vbo)
+            gl.BindVertexArray(GUI_RENDERER_STATE.vao)
+            gl.BindBuffer(gl.ARRAY_BUFFER, GUI_RENDERER_STATE.vbo)
             gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
             gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
             gl.EnableVertexAttribArray(0)
             gl.ActiveTexture(gl.TEXTURE0)
             gl.BindTexture(gl.TEXTURE_2D, texture_id)
 
-            gl.UseProgram(GLOBAL_STATE.gui_renderer_state.text_shader)
+            gl.UseProgram(GUI_RENDERER_STATE.text_shader)
             gl.Uniform1i(TEXT_SHADER_LOCS.tex, 0)
 
             gl.DrawArrays(gl.TRIANGLE_FAN, 0, 4)
@@ -364,15 +365,15 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                     (rect.x + rect.w) / window_wf, (rect.y + rect.h) / window_hf, 0,
                 }
 
-                gl.BindVertexArray(GLOBAL_STATE.gui_renderer_state.vao)
-                gl.BindBuffer(gl.ARRAY_BUFFER, GLOBAL_STATE.gui_renderer_state.vbo)
+                gl.BindVertexArray(GUI_RENDERER_STATE.vao)
+                gl.BindBuffer(gl.ARRAY_BUFFER, GUI_RENDERER_STATE.vbo)
                 gl.BufferData(gl.ARRAY_BUFFER, size_of(vertices), raw_data(vertices[:]), gl.DYNAMIC_DRAW)
                 gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(c.float), uintptr(0))
                 gl.EnableVertexAttribArray(0)
                 gl.ActiveTexture(gl.TEXTURE0)
                 gl.BindTexture(gl.TEXTURE_2D, video_get_fbo_texture_id())
 
-                gl.UseProgram(GLOBAL_STATE.gui_renderer_state.framebuffer_shader)
+                gl.UseProgram(GUI_RENDERER_STATE.framebuffer_shader)
                 gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.tex, 0)
 
                 if emulator_is_hw_rendered() &&
@@ -393,7 +394,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                     gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion, 0, 0, 1, 1)
                 }
 
-                if FRAMEBUFFER_SHADER_LOCS.frameCount != -1 { gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.frameCount, GLOBAL_STATE.gui_renderer_state.frame_counter) }
+                if FRAMEBUFFER_SHADER_LOCS.frameCount != -1 { gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.frameCount, GUI_RENDERER_STATE.frame_counter) }
                 if FRAMEBUFFER_SHADER_LOCS.outputSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.outputSize, rect.w, rect.h) }
                 if FRAMEBUFFER_SHADER_LOCS.texSize != -1 { gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.texSize,
                                                                         f32(GLOBAL_STATE.emulator_state.actual_width), f32(GLOBAL_STATE.emulator_state.actual_height)) }
@@ -418,7 +419,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
     keys_to_remove: [dynamic]TextTextureCacheKey
     defer delete(keys_to_remove)
 
-    text_texture_cache := &GLOBAL_STATE.gui_renderer_state.text_texture_cache
+    text_texture_cache := &GUI_RENDERER_STATE.text_texture_cache
 
     current_time_ns := sdl.GetTicksNS()
     for k, texture in text_texture_cache {
