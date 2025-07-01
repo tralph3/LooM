@@ -30,7 +30,7 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
 }
 
 app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.AppResult {
-    context = GLOBAL_STATE.ctx
+    context = state_get_context()
 
     config_init()
     game_entries_load()
@@ -70,7 +70,7 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
 last_time: u64
 
 app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
-    context = GLOBAL_STATE.ctx
+    context = state_get_context()
     defer free_all(GLOBAL_STATE.ctx.temp_allocator)
 
     if !GLOBAL_STATE.emulator_state.fast_forward {
@@ -135,7 +135,7 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
 
 
 app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
-    context = GLOBAL_STATE.ctx
+    context = state_get_context()
 
     game_entries_unload()
     core_unload_game()

@@ -28,3 +28,7 @@ GLOBAL_STATE := struct #no_copy {
 } {
     current_scene_id = .LOGIN,
 }
+
+state_get_context :: proc () -> runtime.Context {
+    return GLOBAL_STATE.ctx
+}

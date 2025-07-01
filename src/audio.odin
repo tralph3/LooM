@@ -18,14 +18,14 @@ AudioState :: struct #no_copy {
 }
 
 audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
-    context = GLOBAL_STATE.ctx
+    context = state_get_context()
     bytes_pushed := cb.push(&GLOBAL_STATE.audio_state.buffer, src, u64(frames * BYTES_PER_FRAME))
 
     return i32(bytes_pushed / BYTES_PER_FRAME)
 }
 
 audio_buffer_pop_batch :: proc "c" (userdata: rawptr, stream: ^sdl.AudioStream, additional_amount, total_amount: c.int) {
-    context = GLOBAL_STATE.ctx
+    context = state_get_context()
 
     buffered_bytes := int(GLOBAL_STATE.audio_state.buffer.size)
     if buffered_bytes < AUDIO_BUFFER_UNDERRUN_LIMIT {
@@ -36,7 +36,7 @@ audio_buffer_pop_batch :: proc "c" (userdata: rawptr, stream: ^sdl.AudioStream, 
 }
 
 audio_init :: proc "c" () -> (ok: bool) {
-    context = GLOBAL_STATE.ctx
+    context = state_get_context()
 
     GLOBAL_STATE.audio_state.stream = sdl.OpenAudioDeviceStream(
         sdl.AUDIO_DEVICE_DEFAULT_PLAYBACK,
