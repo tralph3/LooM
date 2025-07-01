@@ -35,6 +35,8 @@ EMULATOR_STATE := struct {
 
     support_no_game: bool,
 
+    current_game: ^GameEntry,
+
     loaded: bool,
 } {}
 
@@ -56,6 +58,7 @@ emulator_init :: proc (game_entry: ^GameEntry) -> (ok: bool) {
 
     EMULATOR_STATE.core = core
     EMULATOR_STATE.loaded = true
+    EMULATOR_STATE.current_game = game_entry
 
     av_info: lr.SystemAvInfo
     core.api.get_system_av_info(&av_info)
@@ -85,11 +88,17 @@ emulator_close :: proc () {
     }
 
     if emulator_is_hw_rendered() {
-        video_run_inside_emu_context(EMULATOR_STATE.hw_render_cb.context_destroy)
+        video_enable_emu_gl_context()
+
+        EMULATOR_STATE.hw_render_cb.context_destroy()
+        lr.unload_core(&EMULATOR_STATE.core)
+
+        video_disable_emu_gl_context()
         video_destroy_emu_context()
+    } else {
+        lr.unload_core(&EMULATOR_STATE.core)
     }
 
-    lr.unload_core(&EMULATOR_STATE.core)
     audio_clear_buffer()
 
     core_options_free(&EMULATOR_STATE.options)
@@ -104,6 +113,12 @@ emulator_is_hw_rendered :: proc "contextless" () -> bool {
 emulator_reset_game :: proc () {
     video_run_inside_emu_context(EMULATOR_STATE.core.api.reset)
     audio_clear_buffer()
+}
+
+emulator_hard_reset_game :: proc () {
+    entry := EMULATOR_STATE.current_game
+    emulator_close()
+    emulator_init(entry)
 }
 
 emulator_save_state :: proc () {

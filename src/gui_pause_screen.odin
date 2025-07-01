@@ -130,7 +130,7 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     scene_change(.RUNNING)
                 }
                 if gui_pause_button_layout("Hard Reset") {
-                    core_hard_reset()
+                    emulator_hard_reset_game()
                     scene_change(.RUNNING)
                 }
                 if gui_pause_button_layout("Close") {
