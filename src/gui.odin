@@ -47,9 +47,10 @@ gui_deinit :: proc () {
 }
 
 gui_update :: proc () {
-    cl.UpdateScrollContainers(true, GLOBAL_STATE.input_state.mouse.wheel_movement * 5, 0.016)
+    mouse_state := input_get_mouse_state()
+    cl.UpdateScrollContainers(true, mouse_state.wheel * 5, 0.016)
 
-    cl.SetPointerState(GLOBAL_STATE.input_state.mouse.position, GLOBAL_STATE.input_state.mouse.down)
+    cl.SetPointerState(mouse_state.position, mouse_state.down)
 
     window_size := video_get_window_dimensions()
     cl.SetLayoutDimensions({ f32(window_size.x), f32(window_size.y) })
@@ -62,7 +63,7 @@ gui_error_handler :: proc "c" (error_data: cl.ErrorData) {
 }
 
 gui_is_clicked :: proc () -> bool {
-    return cl.Hovered() && GLOBAL_STATE.input_state.mouse.clicked
+    return cl.Hovered() && input_get_mouse_state().clicked
 }
 
 gui_is_focused :: proc () -> bool {

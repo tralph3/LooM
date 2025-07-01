@@ -7,6 +7,16 @@ import "core:log"
 import "core:slice"
 import "core:c"
 
+@(private="file")
+INPUT_STATE := struct #no_copy {
+    players: [INPUT_MAX_PLAYERS]InputPlayerState,
+    // there's no keyboard input per player
+    // TODO: there's many wasted bytes here... not critical, but i
+    // don't like it
+    keyboard: #sparse [lr.RetroKey]i16,
+    mouse: InputMouseState,
+} {}
+
 INPUT_MAX_PLAYERS :: 8
 
 InputPlayerState :: struct #no_copy {
@@ -16,19 +26,10 @@ InputPlayerState :: struct #no_copy {
 }
 
 InputMouseState :: struct #no_copy {
-    wheel_movement: [2]f32,
+    wheel: [2]f32,
     clicked: bool,
     down: bool,
     position: [2]f32,
-}
-
-InputState :: struct #no_copy {
-    players: [INPUT_MAX_PLAYERS]InputPlayerState,
-    // there's no keyboard input per player
-    // TODO: there's many wasted bytes here... not critical, but i
-    // don't like it
-    keyboard: #sparse [lr.RetroKey]i16,
-    mouse: InputMouseState,
 }
 
 input_init :: proc () -> (ok: bool) {
@@ -43,7 +44,7 @@ input_deinit :: proc () {
 }
 
 input_close_gamepads :: proc () {
-    for &player in GLOBAL_STATE.input_state.players {
+    for &player in INPUT_STATE.players {
         sdl.CloseGamepad(player.gamepad)
         player.gamepad = nil
     }
@@ -70,7 +71,7 @@ input_open_gamepads :: proc () -> (ok:bool) {
             ok = false
         }
 
-        GLOBAL_STATE.input_state.players[i].gamepad = gamepad
+        INPUT_STATE.players[i].gamepad = gamepad
     }
 
     emulator_update_plugged_controllers()
@@ -111,21 +112,21 @@ input_handle_mouse :: proc (event: ^sdl.Event) {
 
     #partial switch event.type {
     case .MOUSE_MOTION:
-        GLOBAL_STATE.input_state.mouse.position = { event.motion.x, event.motion.y }
+        INPUT_STATE.mouse.position = { event.motion.x, event.motion.y }
     case .MOUSE_BUTTON_DOWN:
-        GLOBAL_STATE.input_state.mouse.clicked = true
-        GLOBAL_STATE.input_state.mouse.down = true
+        INPUT_STATE.mouse.clicked = true
+        INPUT_STATE.mouse.down = true
     case .MOUSE_BUTTON_UP:
-        GLOBAL_STATE.input_state.mouse.down = false
+        INPUT_STATE.mouse.down = false
     case .MOUSE_WHEEL:
-        GLOBAL_STATE.input_state.mouse.wheel_movement = { event.wheel.x, event.wheel.y }
+        INPUT_STATE.mouse.wheel = { event.wheel.x, event.wheel.y }
     }
 }
 
 // Resets input state for things that should be active a single frame
 input_reset :: proc () {
-    GLOBAL_STATE.input_state.mouse.wheel_movement = {}
-    GLOBAL_STATE.input_state.mouse.clicked = false
+    INPUT_STATE.mouse.wheel = {}
+    INPUT_STATE.mouse.clicked = false
 }
 
 input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
@@ -139,7 +140,7 @@ input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
 input_set_rumble :: proc "c" (port: uint, effect: lr.RetroRumbleEffect, strength: u16) -> (did_rumble: bool) {
     if port >= INPUT_MAX_PLAYERS { return false }
 
-    gamepad := GLOBAL_STATE.input_state.players[port].gamepad
+    gamepad := INPUT_STATE.players[port].gamepad
 
     switch effect {
     case .Strong:
@@ -151,13 +152,17 @@ input_set_rumble :: proc "c" (port: uint, effect: lr.RetroRumbleEffect, strength
     return true
 }
 
+input_get_keyboard_key_state :: proc "contextless" (id: lr.RetroKey) -> i16 {
+    return INPUT_STATE.keyboard[id]
+}
+
 input_update_emulator_keyboard_state :: proc (event: ^sdl.Event) {
     // TODO: not all keys are properly handled by this
     retro_keycode := lr.RetroKey(event.key.key)
     is_down := event.type == .KEY_DOWN ? true : false
 
     if retro_keycode < max(lr.RetroKey) {
-        GLOBAL_STATE.input_state.keyboard[retro_keycode] = is_down ? 1 : 0
+        INPUT_STATE.keyboard[retro_keycode] = is_down ? 1 : 0
     }
 
     if GLOBAL_STATE.emulator_state.keyboard_callback == nil { return }
@@ -195,4 +200,12 @@ input_get_modifiers_bitmap :: proc (mod: sdl.Keymod) -> u16 {
     }
 
     return modifiers
+}
+
+input_get_player_input_state :: proc "contextless" (port: u32) -> ^InputPlayerState {
+    return &INPUT_STATE.players[port]
+}
+
+input_get_mouse_state :: proc "contextless" () -> InputMouseState {
+    return INPUT_STATE.mouse
 }

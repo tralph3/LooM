@@ -75,7 +75,9 @@ emulator_load_state :: proc () {
 emulator_update_plugged_controllers :: proc () {
     if !GLOBAL_STATE.emulator_state.loaded { return }
 
-    for player, i in GLOBAL_STATE.input_state.players {
+    for i in 0..<INPUT_MAX_PLAYERS {
+        player := input_get_player_input_state(u32(i))
+
         if player.gamepad == nil {
             GLOBAL_STATE.emulator_state.core.api.set_controller_port_device(i32(i), .None)
         } else {

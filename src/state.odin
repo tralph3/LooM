@@ -7,7 +7,6 @@ import "base:runtime"
 GLOBAL_STATE := struct #no_copy {
     current_user: string,
     gui_state: GuiState,
-    input_state: InputState,
     emulator_state: EmulatorState,
     user_state: UserState,
 

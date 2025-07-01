@@ -23,8 +23,10 @@ video_refresh_callback :: proc "c" (data: rawptr, width, height, pitch: u32) {
 input_poll_callback :: proc "c" () {
     state := sdl.GetKeyboardState(nil)
 
-    for &player in GLOBAL_STATE.input_state.players {
+    for port in 0..<INPUT_MAX_PLAYERS {
+        player := input_get_player_input_state(u32(port))
         gamepad := player.gamepad
+        if gamepad == nil { continue }
 
         player.joypad[.Left]   = i16(state[sdl.Scancode.LEFT]      || sdl.GetGamepadButton(gamepad, .DPAD_LEFT))
         player.joypad[.Right]  = i16(state[sdl.Scancode.RIGHT]     || sdl.GetGamepadButton(gamepad, .DPAD_RIGHT))
@@ -60,7 +62,7 @@ input_state_callback :: proc "c" (port: u32, device: lr.RetroDevice, index: u32,
     // the future the frontend won't break until explicitely supported
     device := lr.RetroDevice(u32(device) & lr.RETRO_DEVICE_MASK)
 
-    player := &GLOBAL_STATE.input_state.players[port]
+    player := input_get_player_input_state(port)
     #partial switch device {
     case .None:
         return 0
@@ -95,7 +97,7 @@ input_state_callback :: proc "c" (port: u32, device: lr.RetroDevice, index: u32,
         }
     case .Keyboard:
         id := (lr.RetroKey)(id)
-        return GLOBAL_STATE.input_state.keyboard[id]
+        return input_get_keyboard_key_state(id)
     }
 
     return 0
