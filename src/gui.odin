@@ -6,9 +6,10 @@ import "core:slice"
 import "core:log"
 import "core:strings"
 
-GuiState :: struct #no_copy {
+@(private="file")
+GUI_STATE := struct #no_copy {
     arena: cl.Arena,
-}
+} {}
 
 gui_init :: proc () -> (ok: bool) {
     // TODO: Temp fix. Clay runs out of elements with the debug view
@@ -22,10 +23,10 @@ gui_init :: proc () -> (ok: bool) {
         return false
     }
 
-    GLOBAL_STATE.gui_state.arena = cl.CreateArenaWithCapacityAndMemory(
+    GUI_STATE.arena = cl.CreateArenaWithCapacityAndMemory(
         uint(min_arena_size), raw_data(memory))
 
-    if cl.Initialize(GLOBAL_STATE.gui_state.arena, {}, { handler = gui_error_handler }) == nil {
+    if cl.Initialize(GUI_STATE.arena, {}, { handler = gui_error_handler }) == nil {
         log.error("Failed initializing Clay")
         return false
     }
@@ -41,7 +42,7 @@ gui_deinit :: proc () {
     gui_renderer_deinit()
     delete(
         slice.from_ptr(
-            GLOBAL_STATE.gui_state.arena.memory, int(GLOBAL_STATE.gui_state.arena.capacity)
+            GUI_STATE.arena.memory, int(GUI_STATE.arena.capacity)
         )
     )
 }
