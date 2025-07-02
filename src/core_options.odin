@@ -3,7 +3,6 @@ package main
 import lr "libretro"
 import "core:strings"
 import "core:log"
-import "core:mem"
 import "core:fmt"
 
 CoreOptions :: struct {
@@ -24,15 +23,6 @@ CoreOption :: struct {
     current_value: cstring,
     default_value: cstring,
     visible: bool,
-}
-
-clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring {
-    tmp := string(cstr)
-
-    clone := make([^]byte, len(tmp), allocator=allocator)
-    mem.copy_non_overlapping(clone, rawptr(cstr), len(tmp))
-
-    return cstring(clone)
 }
 
 core_options_parse_v2_intl :: proc (options: ^lr.RetroCoreOptionsV2Intl, allocator:=context.allocator) -> (result: CoreOptions) {

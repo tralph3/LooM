@@ -8,6 +8,7 @@ import "core:c/libc"
 import "base:runtime"
 import "core:log"
 import "core:strings"
+import "core:path/filepath"
 
 process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) -> bool {
     context = GLOBAL_STATE.ctx
@@ -41,6 +42,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .GetRumbleInterface: return env_callback_get_rumble_interface(data)
         case .SetKeyboardCallback: return env_callback_set_keyboard_callback(data)
         case .SetSupportNoGame: return env_callback_set_support_no_game(data)
+        case .GetLibretroPath: return env_callback_get_libretro_path(data)
         case: log.warnf("Callback not supported: '{}'", command)
     }
 
@@ -464,11 +466,14 @@ env_callback_set_support_no_game :: proc (data: rawptr) -> bool { // DONE
  * Behavior is undefined if \c data is <tt>NULL</tt>.
  * @returns \c true if the environment call is available.
  */
-env_callback_get_libretro_path :: proc (data: rawptr) -> bool { // TODO
-    // This should be the absolute path to the _core_, not the
-    // currently working directory
-    // (^cstring)(data)^ = "" return true
-    return false
+env_callback_get_libretro_path :: proc (data: rawptr) -> bool { // TODO: check what the lifetime of the string should be
+    if data == nil { return false }
+
+    path, _ := dir_path_with_trailing_slash_cstr(emulator_get_current_game_entry().core)
+    defer delete(path)
+    (^cstring)(data)^ = path
+
+    return true
 }
 
 /* Environment call 20 was an obsolete version of SET_AUDIO_CALLBACK.

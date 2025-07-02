@@ -41,6 +41,12 @@ EMULATOR_STATE := struct {
 } {}
 
 emulator_init :: proc (game_entry: ^GameEntry) -> (ok: bool) {
+    defer if !ok {
+        EMULATOR_STATE = {}
+    }
+
+    EMULATOR_STATE.current_game = game_entry
+
     callbacks := lr.Callbacks {
         environment = process_env_callback,
         video_refresh = video_refresh_callback,
@@ -58,7 +64,6 @@ emulator_init :: proc (game_entry: ^GameEntry) -> (ok: bool) {
 
     EMULATOR_STATE.core = core
     EMULATOR_STATE.loaded = true
-    EMULATOR_STATE.current_game = game_entry
 
     av_info: lr.SystemAvInfo
     core.api.get_system_av_info(&av_info)
@@ -258,4 +263,8 @@ emulator_framebuffer_is_bottom_left_origin :: proc "contextless" () -> bool {
     // if the core is not hardware rendered, then this struct should
     // be zeroed, which makes this value be false
     return EMULATOR_STATE.hw_render_cb.bottom_left_origin
+}
+
+emulator_get_current_game_entry :: proc "contextless" () -> ^GameEntry {
+    return EMULATOR_STATE.current_game
 }
