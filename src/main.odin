@@ -78,10 +78,9 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     gui_update()
 
     scene := scene_get(GLOBAL_STATE.current_scene_id)
-    if GLOBAL_STATE.current_scene_id != .RUNNING || audio_is_over_overflow_limit() {
+    if GLOBAL_STATE.current_scene_id != .RUNNING || audio_is_over_overflow_limit() || emulator_is_fast_forwarding() {
         scene.update()
     }
-
     scene.render()
 
     video_swap_window()

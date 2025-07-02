@@ -268,3 +268,13 @@ emulator_framebuffer_is_bottom_left_origin :: proc "contextless" () -> bool {
 emulator_get_current_game_entry :: proc "contextless" () -> ^GameEntry {
     return EMULATOR_STATE.current_game
 }
+
+emulator_enable_fast_forward :: proc (rate: f64) {
+    EMULATOR_STATE.target_fps = EMULATOR_STATE.emulator_fps * rate
+    EMULATOR_STATE.fast_forwarding = true
+}
+
+emulator_disable_fast_forward :: proc () {
+    EMULATOR_STATE.target_fps = EMULATOR_STATE.emulator_fps
+    EMULATOR_STATE.fast_forwarding = false
+}

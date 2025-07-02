@@ -78,6 +78,8 @@ video_init :: proc () -> (ok: bool) {
     gl.GetIntegerv(gl.MINOR_VERSION, &minor)
     gl.load_up_to(int(major), int(minor), sdl.gl_set_proc_address)
 
+    sdl.GL_SetSwapInterval(0)
+
     if !sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.main_context) {
         log.errorf("Failed making OpenGL context current: {}", sdl.GetError())
         return false
