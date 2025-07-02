@@ -20,7 +20,7 @@ game_entry_button :: proc (entry: ^GameEntry) -> (clicked: bool) {
         backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
         border = cl.Hovered() ? {
             color = UI_COLOR_ACCENT,
-            width = cl.BorderOutside(10),
+            width = cl.BorderOutside(5),
         } : {},
     }) {
         if cl.UI()({
