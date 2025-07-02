@@ -83,7 +83,7 @@ emulator_init :: proc (game_entry: ^GameEntry) -> (ok: bool) {
 
 emulator_close :: proc () {
     if !EMULATOR_STATE.loaded {
-        log.warn("Attempted to close from non-initialized emulator")
+        log.warn("Attempted to close a non-initialized emulator")
         return
     }
 
@@ -138,12 +138,14 @@ emulator_save_state :: proc () {
     f, err := os2.open("./savestate", { .Write, .Create })
     if err != nil {
         log.errorf("Failed opening savestate: {}", err)
+        return
     }
     defer os2.close(f)
 
     _, err2 := os2.write(f, buffer)
     if err != nil {
         log.errorf("Failed writing savestate: {}", err2)
+        return
     }
 }
 

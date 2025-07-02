@@ -52,7 +52,7 @@ gui_layout_login_add_user :: proc () {
             color = UI_COLOR_ACCENT,
             width = cl.BorderAll(5),
         } : {}),
-        cornerRadius = cl.CornerRadiusAll(UI_USER_TILE_SIZE / 2),
+        cornerRadius = cl.CornerRadiusAll(UI_USER_TILE_SIZE / 2.0),
     }) {
         cl.Text("+", cl.TextConfig({
             textColor = UI_COLOR_MAIN_TEXT,
