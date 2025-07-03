@@ -73,6 +73,7 @@ app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
 
     wait_until_next_frame(last_time)
 
+    GLOBAL_STATE.delta_time = f32(sdl.GetTicksNS() - last_time) / 1_000_000_000.0
     last_time = sdl.GetTicksNS()
 
     gui_update()

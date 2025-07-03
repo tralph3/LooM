@@ -14,6 +14,7 @@ GLOBAL_STATE := struct #no_copy {
     current_scene_id: SceneID,
 
     frame_counter: u64,
+    delta_time: f32,
 
     event_offset: u32,
 

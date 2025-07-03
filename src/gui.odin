@@ -48,13 +48,12 @@ gui_deinit :: proc () {
 }
 
 gui_update :: proc () {
-    mouse_state := input_get_mouse_state()
-    cl.UpdateScrollContainers(true, mouse_state.wheel * 5, 0.016)
-
-    cl.SetPointerState(mouse_state.position, mouse_state.down)
-
     window_size := video_get_window_dimensions()
+    mouse_state := input_get_mouse_state()
+
     cl.SetLayoutDimensions({ f32(window_size.x), f32(window_size.y) })
+    cl.SetPointerState(mouse_state.position, mouse_state.down)
+    cl.UpdateScrollContainers(true, mouse_state.wheel * 5, GLOBAL_STATE.delta_time)
 }
 
 @(private="file")
