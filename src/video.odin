@@ -10,12 +10,6 @@ import "core:log"
 import "core:c"
 import gl "vendor:OpenGL"
 
-FBO :: struct {
-    framebuffer: u32,
-    texture: u32,
-    depth_stencil: u32,
-}
-
 @(private="file")
 VIDEO_STATE := struct #no_copy {
     window: ^sdl.Window,
@@ -28,6 +22,14 @@ VIDEO_STATE := struct #no_copy {
     main_context: sdl.GLContext,
     emu_context: sdl.GLContext,
 } {}
+
+FBO :: struct {
+    framebuffer: u32,
+    texture: u32,
+    depth_stencil: u32,
+}
+
+INITIAL_SCREEN_SIZE :: [2]i32{ 800, 600 }
 
 video_init :: proc () -> (ok: bool) {
     when ODIN_OS == .Linux {
@@ -54,11 +56,14 @@ video_init :: proc () -> (ok: bool) {
         return false
     }
 
-    VIDEO_STATE.window = sdl.CreateWindow("Libretro Frontend", 800, 600, { .RESIZABLE, .OPENGL })
+    VIDEO_STATE.window = sdl.CreateWindow(
+        "Libretro Frontend", INITIAL_SCREEN_SIZE.x, INITIAL_SCREEN_SIZE.y, { .RESIZABLE, .OPENGL })
     if VIDEO_STATE.window == nil {
         log.errorf("Failed creating window: {}", sdl.GetError())
         return false
     }
+
+    VIDEO_STATE.window_size = INITIAL_SCREEN_SIZE
 
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 3)
     sdl.GL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3)
