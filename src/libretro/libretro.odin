@@ -47,12 +47,10 @@ LibretroCoreAPI :: struct {
 }
 
 
-load_core :: proc (core_path: string, callbacks: ^Callbacks) -> (LibretroCore, bool) {
-    core := LibretroCore {}
-    count, ok := dynlib.initialize_symbols(&core.api, core_path, "retro_")
-    if !ok {
+load_core :: proc (core_path: string, callbacks: ^Callbacks) -> (core: LibretroCore, ok: bool) {
+    if _, ok := dynlib.initialize_symbols(&core.api, core_path, "retro_"); !ok {
         log.error("Failed loading libretro core")
-        return core, false
+        return
     }
 
     initialize_core(&core, callbacks)

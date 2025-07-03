@@ -60,7 +60,11 @@ emulator_init :: proc (game_entry: ^GameEntry) -> (ok: bool) {
     rom_path := game_entry.path
 
     core := lr.load_core(core_path, &callbacks) or_return
-    lr.load_rom(&core, rom_path, EMULATOR_STATE.support_no_game) or_return
+    if !lr.load_rom(&core, rom_path, EMULATOR_STATE.support_no_game) {
+        lr.unload_core(&core)
+        core_options_free(&EMULATOR_STATE.options)
+        return
+    }
 
     EMULATOR_STATE.core = core
     EMULATOR_STATE.loaded = true
