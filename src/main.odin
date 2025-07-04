@@ -11,7 +11,6 @@ import "core:mem"
 import lr "libretro"
 import "core:time"
 import "core:c"
-import cb "circular_buffer"
 
 wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
     fps := emulator_get_fps()

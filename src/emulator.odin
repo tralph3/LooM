@@ -2,7 +2,6 @@ package main
 
 import lr "libretro"
 import sdl "vendor:sdl3"
-import cb "circular_buffer"
 import "core:os/os2"
 import "core:log"
 

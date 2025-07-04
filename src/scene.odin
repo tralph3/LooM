@@ -65,7 +65,7 @@ SCENES := [SceneID]Scene{
                 layout := gui_layout_running_screen()
                 gui_renderer_render_commands(&layout)
             },
-            allowed_transitons = { .PAUSE, .MENU },
+            allowed_transitons = { .PAUSE },
         },
 }
 
