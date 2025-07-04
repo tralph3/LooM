@@ -52,6 +52,12 @@ SCENES := [SceneID]Scene{
             allowed_transitons = { .RUNNING, .MENU },
         },
         .RUNNING = {
+            on_enter = proc () {
+                audio_resume()
+            },
+            on_exit = proc () {
+                audio_pause()
+            },
             update = proc () {
                 emulator_run_one_frame()
             },

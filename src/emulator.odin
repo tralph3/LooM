@@ -30,6 +30,7 @@ EMULATOR_STATE := struct {
     // can be modified for fast forwarding
     target_fps: f64,
     emulator_fps: f64,
+    sample_rate: i32,
 
     fast_forwarding: bool,
 
@@ -84,7 +85,6 @@ emulator_init :: proc (game_entry: ^GameEntry) -> (ok: bool) {
         video_init_emu_framebuffer()
     }
 
-    audio_update_sample_rate(i32(av_info.timing.sample_rate))
     emulator_update_plugged_controllers()
 
     return true
@@ -200,11 +200,12 @@ emulator_set_support_no_game :: proc "contextless" (support: bool) {
 emulator_update_av_info :: proc (av_info: ^lr.SystemAvInfo) {
     EMULATOR_STATE.target_fps = av_info.timing.fps
     EMULATOR_STATE.emulator_fps = av_info.timing.fps
+    EMULATOR_STATE.sample_rate = i32(av_info.timing.sample_rate)
 
     emulator_update_geometry(&av_info.geometry)
 
     video_init_emu_framebuffer()
-    audio_update_sample_rate(i32(av_info.timing.sample_rate))
+    audio_set_src_rample_rate(EMULATOR_STATE.sample_rate)
 }
 
 emulator_update_geometry :: proc "contextless" (geometry: ^lr.GameGeometry) {
@@ -281,4 +282,8 @@ emulator_enable_fast_forward :: proc (rate: f64) {
 emulator_disable_fast_forward :: proc () {
     EMULATOR_STATE.target_fps = EMULATOR_STATE.emulator_fps
     EMULATOR_STATE.fast_forwarding = false
+}
+
+emulator_get_audio_sample_rate :: proc "contextless" () -> i32 {
+    return EMULATOR_STATE.sample_rate
 }
