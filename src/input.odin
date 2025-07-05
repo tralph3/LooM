@@ -23,6 +23,7 @@ InputPlayerState :: struct #no_copy {
     joypad: [lr.RetroDeviceIdJoypad]i16,
     analog: [max(lr.RetroDeviceIdJoypad)]i16,
     gamepad: ^sdl.Gamepad,
+    rumble: [lr.RetroRumbleEffect]u16,
 }
 
 InputMouseState :: struct #no_copy {
@@ -93,8 +94,6 @@ input_handle_key_pressed :: proc (event: ^sdl.Event) {
         //     gui_focus_down()
     case .ESCAPE:
         scene_change(.PAUSE)
-    // case .M:
-    //     gui_renderer_set_framebuffer_shader(crt_mattias_shader_source)
     }
 
     when ODIN_DEBUG {
@@ -141,13 +140,12 @@ input_set_rumble :: proc "c" (port: uint, effect: lr.RetroRumbleEffect, strength
     if port >= INPUT_MAX_PLAYERS { return false }
 
     gamepad := INPUT_STATE.players[port].gamepad
+    INPUT_STATE.players[port].rumble[effect] = strength
 
-    switch effect {
-    case .Strong:
-        sdl.RumbleGamepad(gamepad, 0, strength, 5000) or_return
-    case .Weak:
-        sdl.RumbleGamepad(gamepad, strength, 0, 5000) or_return
-    }
+    weak_str := INPUT_STATE.players[port].rumble[.Weak]
+    strong_str := INPUT_STATE.players[port].rumble[.Strong]
+
+    sdl.RumbleGamepad(gamepad, weak_str, strong_str, 5000) or_return
 
     return true
 }
