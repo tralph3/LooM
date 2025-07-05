@@ -139,7 +139,9 @@ main :: proc () {
 
 		track: mem.Tracking_Allocator
 		mem.tracking_allocator_init(&track, context.allocator)
-		context.allocator = mem.tracking_allocator(&track)
+        compat: mem.Compat_Allocator
+        mem.compat_allocator_init(&compat, mem.tracking_allocator(&track))
+		context.allocator = mem.compat_allocator(&compat)
 
 		defer {
 			if len(track.allocation_map) > 0 {
@@ -151,6 +153,48 @@ main :: proc () {
 
 			mem.tracking_allocator_destroy(&track)
 		}
+
+        sdl.SetMemoryFunctions(
+            malloc_func = proc "c" (size: uint) -> rawptr {
+                context = state_get_context()
+
+                if res, err := mem.alloc_bytes_non_zeroed(int(size)); err != nil {
+                    log.errorf("Failed allocating memory: {}", err)
+                    return nil
+                } else {
+                    return raw_data(res)
+                }
+            },
+            calloc_func = proc "c" (nmemb: uint, size: uint) -> rawptr {
+                context = state_get_context()
+
+                if res, err := mem.alloc(int(nmemb * size)); err != nil {
+                    log.errorf("Failed allocating memory: {}", err)
+                    return nil
+                } else {
+                    return res
+                }
+            },
+            realloc_func = proc "c" (ptr: rawptr, size: uint) -> rawptr {
+                context = state_get_context()
+
+                if res, err := mem.resize_non_zeroed(ptr, -1, int(size)); err != nil {
+                    log.errorf("Failed allocating memory: {}", err)
+                    return nil
+                } else {
+                    return res
+                }
+            },
+            free_func = proc "c" (mem: rawptr) {
+                context = state_get_context()
+                free(mem)
+            },
+        )
+        err := sdl.GetError()
+        if err != "" {
+            log.fatalf("Failed setting memory functions: {}", err)
+            return
+        }
 	}
 
     GLOBAL_STATE.ctx = context
