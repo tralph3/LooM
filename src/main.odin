@@ -30,7 +30,7 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
     context = state_get_context()
 
     config_init()
-    game_entries_load()
+    rom_entries_load()
 
     if !video_init() {
         log.error("Failed initializing video")
@@ -124,7 +124,8 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
 app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     context = state_get_context()
 
-    game_entries_unload()
+    config_deinit()
+    rom_entries_unload()
     emulator_close()
     input_deinit()
     audio_deinit()

@@ -35,12 +35,12 @@ EMULATOR_STATE := struct {
 
     support_no_game: bool,
 
-    current_game: ^GameEntry,
+    current_game: ^RomEntry,
 
     loaded: bool,
 } {}
 
-emulator_init :: proc (game_entry: ^GameEntry) -> (ok: bool) {
+emulator_init :: proc (game_entry: ^RomEntry) -> (ok: bool) {
     defer if !ok {
         EMULATOR_STATE = {}
     }
@@ -269,7 +269,7 @@ emulator_framebuffer_is_bottom_left_origin :: proc "contextless" () -> bool {
     return EMULATOR_STATE.hw_render_cb.bottom_left_origin
 }
 
-emulator_get_current_game_entry :: proc "contextless" () -> ^GameEntry {
+emulator_get_current_game_entry :: proc "contextless" () -> ^RomEntry {
     return EMULATOR_STATE.current_game
 }
 

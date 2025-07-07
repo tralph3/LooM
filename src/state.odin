@@ -7,9 +7,7 @@ import "base:runtime"
 GLOBAL_STATE := struct #no_copy {
     current_user: string,
 
-    game_entries: [dynamic]GameEntry,
-
-    config: Config,
+    rom_entries: [dynamic]RomEntry,
 
     current_scene_id: SceneID,
 
