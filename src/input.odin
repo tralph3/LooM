@@ -15,6 +15,9 @@ INPUT_STATE := struct #no_copy {
     // don't like it
     keyboard: #sparse [lr.RetroKey]i16,
     mouse: InputMouseState,
+
+    ok_pressed: bool,
+    back_pressed: bool,
 } {}
 
 INPUT_MAX_PLAYERS :: 8
@@ -84,16 +87,18 @@ input_handle_key_pressed :: proc (event: ^sdl.Event) {
     if event.key.repeat { return }
 
     #partial switch event.key.scancode {
-        // case .LEFT:
-        //     gui_focus_left()
-        // case .RIGHT:
-        //     gui_focus_right()
-        // case .UP:
-        //     gui_focus_up()
-        // case .DOWN:
-        //     gui_focus_down()
+    case .LEFT:
+        gui_focus_left()
+    case .RIGHT:
+        gui_focus_right()
+    case .UP:
+        gui_focus_up()
+    case .DOWN:
+        gui_focus_down()
+    case .RETURN:
+        INPUT_STATE.ok_pressed = true
     case .ESCAPE:
-        scene_change(.PAUSE)
+        INPUT_STATE.back_pressed = true
     }
 
     when ODIN_DEBUG {
@@ -126,11 +131,25 @@ input_handle_mouse :: proc (event: ^sdl.Event) {
 input_reset :: proc () {
     INPUT_STATE.mouse.wheel = {}
     INPUT_STATE.mouse.clicked = false
+    INPUT_STATE.ok_pressed = false
+    INPUT_STATE.back_pressed = false
 }
 
 input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
     if event.type != .GAMEPAD_BUTTON_DOWN { return }
     #partial switch sdl.GamepadButton(event.gbutton.button) {
+    case .DPAD_LEFT:
+        gui_focus_left()
+    case .DPAD_RIGHT:
+        gui_focus_right()
+    case .DPAD_UP:
+        gui_focus_up()
+    case .DPAD_DOWN:
+        gui_focus_down()
+    case .SOUTH:
+        INPUT_STATE.ok_pressed = true
+    case .EAST:
+        INPUT_STATE.back_pressed = true
     case .GUIDE, .TOUCHPAD:
         scene_change(.PAUSE)
     }
@@ -207,4 +226,12 @@ input_get_player_input_state :: proc "contextless" (port: u32) -> ^InputPlayerSt
 
 input_get_mouse_state :: proc "contextless" () -> InputMouseState {
     return INPUT_STATE.mouse
+}
+
+input_is_ok_pressed :: proc "contextless" () -> bool {
+    return INPUT_STATE.ok_pressed
+}
+
+input_is_back_pressed :: proc "contextless" () -> bool {
+    return INPUT_STATE.back_pressed
 }

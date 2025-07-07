@@ -2,7 +2,11 @@ package clay
 
 import "core:c"
 
-foreign import Clay "clay.a"
+when ODIN_OS == .Windows {
+     foreign import Clay "clay.lib"
+} else {
+    foreign import Clay "clay.a"
+}
 
 String :: struct {
 	isStaticallyAllocated: c.bool,

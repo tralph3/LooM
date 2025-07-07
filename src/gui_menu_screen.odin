@@ -6,8 +6,11 @@ import "core:math/ease"
 import "core:log"
 
 @(private="file")
-game_entry_button :: proc (entry: ^GameEntry) -> (clicked: bool) {
+game_entry_button :: proc (entry: ^RomEntry, idx: int) -> (clicked: bool) {
+    id := cl.ID("Rom Entry", u32(idx))
+
     if cl.UI()({
+        id = id,
         layout = {
             sizing = {
                 width = cl.SizingGrow({}),
@@ -18,11 +21,13 @@ game_entry_button :: proc (entry: ^GameEntry) -> (clicked: bool) {
         },
         cornerRadius = cl.CornerRadiusAll(10),
         backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
-        border = cl.Hovered() ? {
+        border = gui_is_focused(id) ? {
             color = UI_COLOR_ACCENT,
             width = cl.BorderOutside(5),
         } : {},
     }) {
+        gui_register_focus_element(id)
+
         if cl.UI()({
             layout = {
                 sizing = {
@@ -43,7 +48,7 @@ game_entry_button :: proc (entry: ^GameEntry) -> (clicked: bool) {
             }))
         }
 
-        clicked = gui_is_clicked()
+        clicked = gui_is_clicked(id)
     }
 
     return
@@ -91,8 +96,8 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             },
             backgroundColor = UI_COLOR_BACKGROUND,
         }) {
-            for &entry in GLOBAL_STATE.game_entries {
-                if game_entry_button(&entry) {
+            for &entry, i in GLOBAL_STATE.rom_entries {
+                if game_entry_button(&entry, i) {
                     if emulator_init(&entry) {
                         scene_change(.RUNNING)
                     }

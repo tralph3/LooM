@@ -26,7 +26,10 @@ SceneID :: enum {
 
 SCENES := [SceneID]Scene{
         .LOGIN = {
-            on_enter = proc () {},
+            on_enter = proc () {
+                id := gui_login_get_default_focus_element()
+                gui_set_default_focus_element(id)
+            },
             update = proc () {},
             render = proc () {
                 layout := gui_layout_login_screen()
@@ -54,9 +57,11 @@ SCENES := [SceneID]Scene{
         .RUNNING = {
             on_enter = proc () {
                 audio_resume()
+                _ = sdl.HideCursor()
             },
             on_exit = proc () {
                 audio_pause()
+                _ = sdl.ShowCursor()
             },
             update = proc () {
                 emulator_run_one_frame()

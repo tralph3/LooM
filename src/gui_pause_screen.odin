@@ -6,7 +6,10 @@ import "core:math/ease"
 import "core:log"
 
 gui_pause_button_layout :: proc (label: string) -> (clicked: bool) {
+    id := cl.ID(label)
+
     if cl.UI()({
+        id = id,
         layout = {
             sizing = {
                 width = cl.SizingGrow({}),
@@ -21,16 +24,18 @@ gui_pause_button_layout :: proc (label: string) -> (clicked: bool) {
                 right = UI_SPACING_32,
             },
         },
-        border = gui_is_focused() ? {
+        border = gui_is_focused(id) ? {
             color = UI_COLOR_ACCENT,
             width = cl.BorderOutside(10),
         } : {},
         cornerRadius = cl.CornerRadiusAll(5),
         backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
     }) {
+        gui_register_focus_element(id)
+
         cl.TextDynamic(label, &UI_PAUSE_BUTTON_TEXT_CONFIG)
 
-        clicked = gui_is_clicked()
+        clicked = gui_is_clicked(id)
     }
 
     return
