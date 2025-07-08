@@ -26,32 +26,29 @@ texture_load_from_image_path :: proc (path: string) -> (texture: Texture, err: p
     img := png.load(path) or_return
     defer png.destroy(img)
 
-    internal_format: i32
     format: u32
 
     switch img.channels {
     case 4:
-        internal_format = gl.RGBA8
         format = gl.RGBA
     case 3:
-        internal_format = gl.RGB8
         format = gl.RGB
     case 2:
-        internal_format = gl.RG8
         format = gl.RG
     case 1:
-        internal_format = gl.R8
         format = gl.RED
     }
 
+    gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
     gl.GenTextures(1, &texture.gl_id)
     gl.BindTexture(gl.TEXTURE_2D, texture.gl_id)
     gl.TexImage2D(
-        gl.TEXTURE_2D, 0, internal_format,
+        gl.TEXTURE_2D, 0, gl.RGBA8,
         i32(img.width), i32(img.height),
         0, format, gl.UNSIGNED_BYTE, raw_data(img.pixels.buf))
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.PixelStorei(gl.UNPACK_ALIGNMENT, 4)
 
     texture.ratio = f32(img.width) / f32(img.height)
     return
