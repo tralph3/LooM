@@ -131,6 +131,7 @@ app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
 
     config_deinit()
     rom_entries_unload()
+    textures_deinit()
     emulator_close()
     input_deinit()
     audio_deinit()

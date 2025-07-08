@@ -5,27 +5,88 @@ import "core:image/png"
 import fp "core:path/filepath"
 import "core:log"
 import "core:strings"
+import "core:slice"
+import sdl "vendor:sdl3"
+import "core:sync/chan"
+import "core:thread"
 
 Texture :: struct {
     gl_id: u32,
     ratio: f32,
 }
 
+@(private="file")
+TextureRequest :: struct {
+    name: string,
+}
+
+@(private="file")
+TextureResult :: struct {
+    name: string,
+    img: ^png.Image,
+}
+
 LOADED_TEXTURES: map[string]Texture
 DEFAULT_COVER_TEXTURE: Texture
 
+TEXTURE_REQUEST_CHAN: chan.Chan(TextureRequest, .Both)
+TEXTURE_RESULT_CHAN: chan.Chan(TextureResult, .Both)
+
 textures_init :: proc () -> (ok: bool) {
     err: png.Error
-    DEFAULT_COVER_TEXTURE, err = texture_load_from_image_path("./assets/img/nocover.png")
+    DEFAULT_COVER_TEXTURE, err = texture_load_from_path("./assets/img/nocover.png")
     if err != nil { return false }
+
+    if t := thread.create_and_start(rstrt, context, self_cleanup=true); t == nil {
+        log.error("Failed to create thread")
+        return false
+    }
+
+    TEXTURE_REQUEST_CHAN, err = chan.create(type_of(TEXTURE_REQUEST_CHAN), 30, context.allocator)
+    if err != nil {
+        log.errorf("Failed creating request channel: {}", err)
+        return false
+    }
+
+    TEXTURE_RESULT_CHAN, err = chan.create(type_of(TEXTURE_RESULT_CHAN), 30, context.allocator)
+    if err != nil {
+        log.errorf("Failed creating result channel: {}", err)
+        return false
+    }
 
     return true
 }
 
-texture_load_from_image_path :: proc (path: string) -> (texture: Texture, err: png.Error) {
+textures_deinit :: proc () {
+    chan.close(TEXTURE_REQUEST_CHAN)
+    chan.close(TEXTURE_RESULT_CHAN)
+
+    chan.destroy(TEXTURE_REQUEST_CHAN)
+    chan.destroy(TEXTURE_RESULT_CHAN)
+
+    for name, &tex in LOADED_TEXTURES {
+        delete(name)
+        gl.DeleteTextures(1, &tex.gl_id)
+    }
+
+    delete(LOADED_TEXTURES)
+}
+
+texture_load_from_path :: proc (path: string) -> (texture: Texture, err: png.Error) {
     img := png.load(path) or_return
     defer png.destroy(img)
 
+    return texture_load_from_image(img), nil
+}
+
+texture_load_from_bytes :: proc (bytes: []byte) -> (texture: Texture, err: png.Error) {
+    img := png.load(bytes) or_return
+    defer png.destroy(img)
+
+    return texture_load_from_image(img), nil
+}
+
+texture_load_from_image :: proc (img: ^png.Image) -> (texture: Texture) {
     format: u32
 
     switch img.channels {
@@ -50,30 +111,62 @@ texture_load_from_image_path :: proc (path: string) -> (texture: Texture, err: p
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
     gl.PixelStorei(gl.UNPACK_ALIGNMENT, 4)
 
-    texture.ratio = f32(img.width) / f32(img.height)
+    if img.height == 0 {
+        texture.ratio = 0
+    } else {
+        texture.ratio = f32(img.width) / f32(img.height)
+    }
+
     return
 }
 
-
 texture_get_or_load :: proc (name: string) -> (texture: Texture) {
+    for res in chan.try_recv(TEXTURE_RESULT_CHAN) {
+        defer delete(res.name)
+        defer png.destroy(res.img)
+
+        tex: Texture
+        if res.img == nil {
+            tex = DEFAULT_COVER_TEXTURE
+        } else {
+            tex = texture_load_from_image(res.img)
+        }
+
+        LOADED_TEXTURES[res.name] = tex
+    }
+
     if name in LOADED_TEXTURES {
         return LOADED_TEXTURES[name]
     }
 
-    name_ext := strings.concatenate({ name, ".png" })
-    delete(name_ext)
+    chan.send(TEXTURE_REQUEST_CHAN, TextureRequest{
+        name = strings.clone(name),
+    })
 
-    full_path := fp.join({ "./assets/img", name_ext })
-    defer delete(full_path)
+    LOADED_TEXTURES[strings.clone(name)] = DEFAULT_COVER_TEXTURE
 
-    err: png.Error
-    texture, err = texture_load_from_image_path(full_path)
-    if err != nil {
-        log.errorf("Failed loading image '{}': {}", full_path, err)
-        texture = DEFAULT_COVER_TEXTURE
+    return LOADED_TEXTURES[name]
+}
+
+rstrt :: proc () {
+    for res in chan.recv(TEXTURE_REQUEST_CHAN) {
+        name := res.name
+
+        name_ext := strings.concatenate({ name, ".png" })
+        delete(name_ext)
+
+        full_path := fp.join({ "./assets/img", name_ext })
+        defer delete(full_path)
+
+        tex_result := TextureResult{ name = name }
+
+        err: png.Error
+        tex_result.img, err = png.load(full_path)
+        if err != nil {
+            log.errorf("Failed loading image '{}': {}", full_path, err)
+            tex_result.img = nil
+        }
+
+        chan.send(TEXTURE_RESULT_CHAN, tex_result)
     }
-
-    LOADED_TEXTURES[name] = texture
-
-    return
 }

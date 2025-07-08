@@ -99,17 +99,15 @@ gui_layout_login_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             })
         }
 
-        for j in 0..<4 {
-            if cl.UI()({
-                layout = {
-                    childGap = UI_USER_TILE_GAP,
-                },
-            }) {
-                usernames := []string{"test", "tralph3", "Shadow", "Celes"}
-                for username, i in usernames {
-                    if gui_layout_login_user_tile(username, j * 10 + i) {
-                        user_login(username)
-                    }
+        if cl.UI()({
+            layout = {
+                childGap = UI_USER_TILE_GAP,
+            },
+        }) {
+            usernames := []string{"test", "tralph3", "Shadow", "Celes"}
+            for username, i in usernames {
+                if gui_layout_login_user_tile(username, i) {
+                    user_login(username)
                 }
             }
         }
