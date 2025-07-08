@@ -52,6 +52,11 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.A
         return .FAILURE
     }
 
+    if !textures_init() {
+        log.error("Failed initializing textures")
+        return .FAILURE
+    }
+
     GLOBAL_STATE.event_offset = sdl.RegisterEvents(len(Event))
     if GLOBAL_STATE.event_offset == 0 {
         log.error("Failed registering user events: {}", sdl.GetError())

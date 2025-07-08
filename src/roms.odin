@@ -51,9 +51,9 @@ rom_entries_load :: proc () -> (err: os2.Error) {
 
         roms_it: os2.Read_Directory_Iterator
         os2.read_directory_iterator_init(&roms_it, roms_fd)
-
         for rom in os2.read_directory_iterator(&roms_it) {
             append(&GLOBAL_STATE.rom_entries, RomEntry{
+                name = strings.clone(fp.stem(fp.base(rom.fullpath))),
                 path = strings.clone(rom.fullpath),
                 core = full_core_path,
             })

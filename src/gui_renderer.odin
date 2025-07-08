@@ -332,7 +332,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             gl.Disable(gl.SCISSOR_TEST)
         }
         case .Image: {
-            texture_id := (^u32)(rcmd.renderData.image.imageData)^
+            texture_id := u32(uintptr(rcmd.renderData.image.imageData))
 
             vertices: [12]c.float = {
                 rect.x / window_wf, (rect.y + rect.h) / window_hf, 0,
