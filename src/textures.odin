@@ -33,8 +33,9 @@ TextureResult :: struct {
 LOADED_TEXTURES: map[string]Texture
 DEFAULT_COVER_TEXTURE: Texture
 
-TEXTURE_REQUEST_CHAN: chan.Chan(TextureRequest, .Both)
 TEXTURE_RESULT_CHAN: chan.Chan(TextureResult, .Both)
+
+TEXTURE_THREAD_POOL: thread.Pool
 
 textures_init :: proc () -> (ok: bool) {
     image.register(kind = .JPEG, loader = jpeg_image_loader, destroyer = jpeg_image_destroyer)
@@ -46,16 +47,8 @@ textures_init :: proc () -> (ok: bool) {
         return false
     }
 
-    if t := thread.create_and_start(rstrt, context, self_cleanup=true); t == nil {
-        log.error("Failed to create thread")
-        return false
-    }
-
-    TEXTURE_REQUEST_CHAN, err = chan.create(type_of(TEXTURE_REQUEST_CHAN), 30, context.allocator)
-    if err != nil {
-        log.errorf("Failed creating request channel: {}", err)
-        return false
-    }
+    thread.pool_init(&TEXTURE_THREAD_POOL, context.allocator, 5)
+    thread.pool_start(&TEXTURE_THREAD_POOL)
 
     TEXTURE_RESULT_CHAN, err = chan.create(type_of(TEXTURE_RESULT_CHAN), 30, context.allocator)
     if err != nil {
@@ -67,11 +60,11 @@ textures_init :: proc () -> (ok: bool) {
 }
 
 textures_deinit :: proc () {
-    chan.close(TEXTURE_REQUEST_CHAN)
     chan.close(TEXTURE_RESULT_CHAN)
-
-    chan.destroy(TEXTURE_REQUEST_CHAN)
     chan.destroy(TEXTURE_RESULT_CHAN)
+
+    thread.pool_shutdown(&TEXTURE_THREAD_POOL)
+    thread.pool_destroy(&TEXTURE_THREAD_POOL)
 
     for name, &tex in LOADED_TEXTURES {
         delete(name)
@@ -148,36 +141,34 @@ texture_get_or_load :: proc (name: string) -> (texture: Texture) {
         return LOADED_TEXTURES[name]
     }
 
-    chan.send(TEXTURE_REQUEST_CHAN, TextureRequest{
-        name = strings.clone(name),
-    })
+    cloned_name := strings.clone(name)
+    thread.pool_add_task(
+            &TEXTURE_THREAD_POOL, context.allocator, texture_process_load_request, raw_data(cloned_name), len(cloned_name))
 
     LOADED_TEXTURES[strings.clone(name)] = DEFAULT_COVER_TEXTURE
 
     return LOADED_TEXTURES[name]
 }
 
-rstrt :: proc () {
-    for res in chan.recv(TEXTURE_REQUEST_CHAN) {
-        name := res.name
+texture_process_load_request :: proc (task: thread.Task) {
+    name := strings.string_from_ptr((^u8)(task.data), task.user_index)
 
-        name_ext := strings.concatenate({ name, ".png" })
-        defer delete(name_ext)
+    name_ext := strings.concatenate({ name, ".png" })
+    defer delete(name_ext)
 
-        full_path := fp.join({ "./assets/img", name_ext })
-        defer delete(full_path)
+    full_path := fp.join({ "./assets/img", name_ext })
+    defer delete(full_path)
 
-        tex_result := TextureResult{ name = name }
+    tex_result := TextureResult{ name = name }
 
-        err: image.Error
-        tex_result.img, err = image.load(full_path)
-        if err != nil {
-            log.errorf("Failed loading image '{}': {}", full_path, err)
-            tex_result.img = nil
-        }
-
-        chan.send(TEXTURE_RESULT_CHAN, tex_result)
+    err: image.Error
+    tex_result.img, err = image.load(full_path)
+    if err != nil {
+        log.errorf("Failed loading image '{}': {}", full_path, err)
+        tex_result.img = nil
     }
+
+    chan.send(TEXTURE_RESULT_CHAN, tex_result)
 }
 
 jpeg_image_loader :: proc (data: []byte, options: image.Options, allocator: mem.Allocator) -> (img: ^image.Image, err: image.Error) {
