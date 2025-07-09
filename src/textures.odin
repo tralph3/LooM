@@ -162,7 +162,7 @@ rstrt :: proc () {
         name := res.name
 
         name_ext := strings.concatenate({ name, ".png" })
-        delete(name_ext)
+        defer delete(name_ext)
 
         full_path := fp.join({ "./assets/img", name_ext })
         defer delete(full_path)
