@@ -23,7 +23,7 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
     }
 
     remaining_ns := frame_duration_ns - elapsed_ns
-    sdl.DelayPrecise(remaining_ns)
+    sdl.DelayPrecise(remaining_ns + audio_should_sleep_for())
 }
 
 app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.AppResult {

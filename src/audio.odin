@@ -1,5 +1,6 @@
 package main
 
+import cb "circular_buffer"
 import sdl "vendor:sdl3"
 import "core:c"
 import "core:log"
@@ -7,19 +8,32 @@ import "core:mem"
 
 @(private="file")
 AUDIO_STATE := struct #no_copy {
+    buffer: cb.CircularBuffer(AUDIO_BUFFER_SIZE_BYTES),
     stream: ^sdl.AudioStream,
 } {}
 
 BYTES_PER_FRAME :: 4
 
+AUDIO_BUFFER_SIZE_BYTES :: 1024 * 64
+AUDIO_BUFFER_UNDERRUN_LIMIT :: 1024 * 12
+AUDIO_BUFFER_OVERFLOW_LIMIT :: 1024 * 54
+
 audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
-    expected_frames := f32(emulator_get_audio_sample_rate()) / f32(emulator_get_fps())
-    diff := f32(frames) / expected_frames
-    sdl.SetAudioStreamFrequencyRatio(AUDIO_STATE.stream, diff)
+    context = state_get_context()
+    bytes_pushed := cb.push(&AUDIO_STATE.buffer, src, u64(frames * BYTES_PER_FRAME))
 
-    sdl.PutAudioStreamData(AUDIO_STATE.stream, src, frames * BYTES_PER_FRAME)
+    return i32(bytes_pushed / BYTES_PER_FRAME)
+}
 
-    return frames
+audio_buffer_pop_batch :: proc "c" (userdata: rawptr, stream: ^sdl.AudioStream, additional_amount, total_amount: c.int) {
+    context = state_get_context()
+
+    buffered_bytes := int(AUDIO_STATE.buffer.size)
+    if buffered_bytes < AUDIO_BUFFER_UNDERRUN_LIMIT {
+        return
+    }
+
+    cb.pop_to_audio_stream(&AUDIO_STATE.buffer, AUDIO_STATE.stream, u64(additional_amount))
 }
 
 audio_init :: proc "c" () -> (ok: bool) {
@@ -32,7 +46,7 @@ audio_init :: proc "c" () -> (ok: bool) {
             channels = 2,
             freq = 48000,
         },
-        nil,
+        audio_buffer_pop_batch,
         nil,
     )
     if AUDIO_STATE.stream == nil {
@@ -58,9 +72,33 @@ audio_deinit :: proc () {
 }
 
 audio_clear_buffer :: proc () {
-    if !sdl.ClearAudioStream(AUDIO_STATE.stream) {
-        log.errorf("Failed clearing audio stream: {}", sdl.GetError())
+    cb.clear(&AUDIO_STATE.buffer)
+}
+
+// Return the amount of nanoseconds the emulator should sleep for to
+// avoid filling the audio buffer.
+audio_should_sleep_for :: proc () -> (res: u64) {
+    if GLOBAL_STATE.current_scene_id != .RUNNING {
+        return 0
     }
+
+    buffered_bytes := AUDIO_STATE.buffer.size
+    if buffered_bytes <= AUDIO_BUFFER_OVERFLOW_LIMIT {
+        return 0
+    }
+
+    // we want to get back to the underrun limit so we don't sleep
+    // frequently
+    overflow_bytes := buffered_bytes - AUDIO_BUFFER_OVERFLOW_LIMIT
+
+    // 48000 samples/sec * 2 channels * 2 bytes = 192000 bytes/sec
+    // 192000 bytes/sec = 1_000_000_000 ns / 192000 = 5208.333... ns/byte
+    return overflow_bytes * 5208
+}
+
+audio_get_buffer_fill_rate :: proc () -> f32 {
+    buffered_bytes := AUDIO_STATE.buffer.size
+    return f32(buffered_bytes) / AUDIO_BUFFER_SIZE_BYTES
 }
 
 audio_resume :: proc () {
