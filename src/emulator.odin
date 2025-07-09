@@ -73,17 +73,6 @@ emulator_init :: proc (game_entry: ^RomEntry) -> (ok: bool) {
     core.api.get_system_av_info(&av_info)
 
     emulator_update_av_info(&av_info)
-
-    if emulator_is_hw_rendered() {
-        video_init_emu_framebuffer(
-            depth=EMULATOR_STATE.hw_render_cb.depth,
-            stencil=EMULATOR_STATE.hw_render_cb.stencil,
-        )
-        video_run_inside_emu_context(EMULATOR_STATE.hw_render_cb.context_reset)
-    } else {
-        video_init_emu_framebuffer()
-    }
-
     emulator_update_plugged_controllers()
 
     return true
@@ -141,7 +130,6 @@ emulator_save_state :: proc () {
         log.error("Failed saving save state")
         return
     }
-
 
     f, err := os2.open("./savestate", { .Write, .Create })
     if err != nil {
@@ -203,13 +191,27 @@ emulator_update_av_info :: proc (av_info: ^lr.SystemAvInfo) {
 
     emulator_update_geometry(&av_info.geometry)
 
-    video_init_emu_framebuffer()
+    if emulator_is_hw_rendered() {
+        video_init_emu_framebuffer(
+            depth=EMULATOR_STATE.hw_render_cb.depth,
+            stencil=EMULATOR_STATE.hw_render_cb.stencil,
+        )
+        video_run_inside_emu_context(EMULATOR_STATE.hw_render_cb.context_reset)
+    } else {
+        video_init_emu_framebuffer()
+    }
+
     audio_set_src_rample_rate(EMULATOR_STATE.sample_rate)
 }
 
 emulator_update_geometry :: proc "contextless" (geometry: ^lr.GameGeometry) {
     EMULATOR_STATE.base_size = { geometry.base_width, geometry.base_height }
-    EMULATOR_STATE.texture_size = { i32(geometry.max_width), i32(geometry.max_height) }
+
+    // the texture size should not ever change, so this is only done
+    // on initialization
+    if EMULATOR_STATE.texture_size == {} {
+        EMULATOR_STATE.texture_size = { i32(geometry.max_width), i32(geometry.max_height) }
+    }
 }
 
 emulator_get_fps :: proc "contextless" () -> f64 {
