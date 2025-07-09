@@ -100,6 +100,7 @@ gui_focus_up :: proc () {
     } else if GUI_STATE.focus_up != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_up
         gui_reset_focus_directions()
+        audio_play_sound_effect(.SelectNegative)
     }
 }
 
@@ -109,6 +110,7 @@ gui_focus_down :: proc () {
     } else if GUI_STATE.focus_down != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_down
         gui_reset_focus_directions()
+        audio_play_sound_effect(.SelectPositive)
     }
 }
 
@@ -118,6 +120,7 @@ gui_focus_left :: proc () {
     } else if GUI_STATE.focus_left != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_left
         gui_reset_focus_directions()
+        audio_play_sound_effect(.SelectNegative)
     }
 }
 
@@ -127,6 +130,7 @@ gui_focus_right :: proc () {
     } else if GUI_STATE.focus_right != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_right
         gui_reset_focus_directions()
+        audio_play_sound_effect(.SelectPositive)
     }
 }
 
@@ -136,6 +140,7 @@ gui_focus_default_element :: proc () {
         id = GUI_STATE.default_focus,
         boundingBox = bb,
     }
+    audio_play_sound_effect(.SelectPositive)
 }
 
 gui_reset_focus :: proc () {

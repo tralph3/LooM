@@ -5,11 +5,16 @@ import sdl "vendor:sdl3"
 import "core:c"
 import "core:log"
 import "core:mem"
+import "core:slice"
 
 @(private="file")
 AUDIO_STATE := struct #no_copy {
     buffer: cb.CircularBuffer(AUDIO_BUFFER_SIZE_BYTES),
     stream: ^sdl.AudioStream,
+    effects_streams: [10]^sdl.AudioStream,
+    stream_index: int,
+
+    sound_effects: [SoundEffectID][]byte
 } {}
 
 BYTES_PER_FRAME :: 4
@@ -17,6 +22,16 @@ BYTES_PER_FRAME :: 4
 AUDIO_BUFFER_SIZE_BYTES :: 1024 * 64
 AUDIO_BUFFER_UNDERRUN_LIMIT :: 1024 * 12
 AUDIO_BUFFER_OVERFLOW_LIMIT :: 1024 * 54
+
+SoundEffectID :: enum {
+    SelectPositive,
+    SelectNegative,
+}
+
+SoundEffectPaths :: [SoundEffectID]cstring {
+        .SelectPositive = "./assets/sounds/select_positive.wav",
+        .SelectNegative = "./assets/sounds/select_negative.wav",
+}
 
 audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
     context = state_get_context()
@@ -54,6 +69,35 @@ audio_init :: proc "c" () -> (ok: bool) {
         return false
     }
 
+    for &stream in AUDIO_STATE.effects_streams {
+        stream = sdl.OpenAudioDeviceStream(
+            sdl.AUDIO_DEVICE_DEFAULT_PLAYBACK,
+                &{
+                    format = .S16LE,
+                    channels = 2,
+                    freq = 48000,
+                },
+            nil,
+            nil,
+        )
+        if stream == nil {
+            log.errorf("Failed creating audio stream: {}", sdl.GetError())
+            return false
+        }
+        sdl.ResumeAudioStreamDevice(stream)
+    }
+
+    spec: sdl.AudioSpec
+    buf: [^]byte
+    length: u32
+    for path, id in SoundEffectPaths {
+        if !sdl.LoadWAV(path, &spec, &buf, &length) {
+            log.error("Failed loading sound effect '{}': {}", path, sdl.GetError())
+            return false
+        }
+        AUDIO_STATE.sound_effects[id] = slice.from_ptr(buf, int(length))
+    }
+
     return true
 }
 
@@ -69,6 +113,14 @@ audio_deinit :: proc () {
     // This also destroys the bound device because it was created with
     // OpenAudioDeviceStream
     sdl.DestroyAudioStream(AUDIO_STATE.stream)
+
+    for stream in AUDIO_STATE.effects_streams {
+        sdl.DestroyAudioStream(stream)
+    }
+
+    for effect in AUDIO_STATE.sound_effects {
+        sdl.free(raw_data(effect))
+    }
 }
 
 audio_clear_buffer :: proc () {
@@ -111,4 +163,18 @@ audio_pause :: proc () {
     if !sdl.PauseAudioStreamDevice(AUDIO_STATE.stream) {
         log.errorf("Failed pausing audio stream: {}", sdl.GetError())
     }
+}
+
+audio_play_sound_effect :: proc (effect_id: SoundEffectID) {
+    if AUDIO_STATE.stream_index >= len(AUDIO_STATE.effects_streams) {
+        AUDIO_STATE.stream_index = 0
+    }
+
+    effect := AUDIO_STATE.sound_effects[effect_id]
+    sdl.PutAudioStreamData(
+        AUDIO_STATE.effects_streams[AUDIO_STATE.stream_index],
+        raw_data(effect),
+        i32(len(effect)))
+
+    AUDIO_STATE.stream_index += 1
 }

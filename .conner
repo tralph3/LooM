@@ -1,15 +1,8 @@
 ;;; -*- lisp-data -*-
-((:name "Compile and run"
+((:name "Run release"
+        :command "odin run src -o:speed"
+        :type "compile")
+ (:name "Compile and run"
         :command ("mkdir -p build"
                   "odin run src -debug -out:build/debug")
-        :type "compile")
- (:name "Build debug"
-        :command "odin build main -debug -out:build/debug"
-        :type "compile")
- (:name "Test"
-        :command "odin test main -all-packages"
-        :type "compile")
- (:name "Debug"
-        :command ("odin build main -debug -out:build/debug"
-                  "gdb --tui ./build/debug")
-        :type "eat"))
+        :type "compile"))
