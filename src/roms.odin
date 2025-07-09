@@ -9,6 +9,7 @@ RomEntry :: struct {
     core: string,
     name: string,
     path: string,
+    category: string,
 }
 
 rom_entries_load :: proc () -> (err: os2.Error) {
@@ -42,6 +43,7 @@ rom_entries_load :: proc () -> (err: os2.Error) {
         defer delete(rel_core_path)
 
         full_core_path, _ := fp.abs(rel_core_path)
+        defer delete(full_core_path)
 
         roms_path := fp.join({ roms_dir_path, system.name })
         defer delete(roms_path)
@@ -55,7 +57,7 @@ rom_entries_load :: proc () -> (err: os2.Error) {
             append(&GLOBAL_STATE.rom_entries, RomEntry{
                 name = strings.clone(fp.stem(fp.base(rom.fullpath))),
                 path = strings.clone(rom.fullpath),
-                core = full_core_path,
+                core = strings.clone(full_core_path),
             })
         }
     }
@@ -64,5 +66,10 @@ rom_entries_load :: proc () -> (err: os2.Error) {
 }
 
 rom_entries_unload :: proc () {
+    for entry in GLOBAL_STATE.rom_entries {
+        delete(entry.core)
+        delete(entry.name)
+        delete(entry.path)
+    }
     delete(GLOBAL_STATE.rom_entries)
 }

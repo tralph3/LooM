@@ -8,6 +8,10 @@ import fp "core:path/filepath"
 
 GRID_ITEM_WIDTH :: 320
 
+gui_menu_get_default_focus_element :: proc () -> cl.ElementId {
+    return cl.ID("Rom Entry", 0)
+}
+
 @(private="file")
 game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
     id := cl.ID("Rom Entry", idx)
@@ -23,10 +27,14 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
         },
         backgroundColor = gui_is_focused(id) \
             ? UI_COLOR_ACCENT \
-            : {}
+            : {},
     }) {
         gui_register_focus_element(id)
         file_name := fp.base(string(entry.name))
+
+        if gui_is_focused(id) {
+            gui_scroll_container_to_focus(cl.ID("Game Grid"))
+        }
 
         if cl.UI()({
             id = cl.ID("Cover", idx),

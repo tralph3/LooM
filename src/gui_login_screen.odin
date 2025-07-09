@@ -12,7 +12,6 @@ gui_layout_login_user_tile :: proc (username: string, idx: int) -> (clicked: boo
     id := cl.ID("Login Tile", u32(idx))
     if cl.UI()({
         id = id,
-        backgroundColor = UI_COLOR_SECONDARY_BACKGROUND,
         layout = {
             sizing = {
                 width = cl.SizingFixed(UI_USER_TILE_SIZE),
@@ -23,10 +22,9 @@ gui_layout_login_user_tile :: proc (username: string, idx: int) -> (clicked: boo
                 y = .Center,
             },
         },
-        border = (gui_is_focused(id) ? {
-            color = UI_COLOR_ACCENT,
-            width = cl.BorderAll(5),
-        } : {}),
+        backgroundColor = gui_is_focused(id) \
+            ? UI_COLOR_ACCENT \
+            : {},
         cornerRadius = cl.CornerRadiusAll(10),
     }) {
         gui_register_focus_element(id)

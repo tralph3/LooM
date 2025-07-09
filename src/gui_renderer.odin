@@ -16,7 +16,6 @@ GUI_RENDERER_STATE := struct #no_copy {
     rectangle_shader: u32,
     text_shader: u32,
     framebuffer_shader: u32,
-    frame_counter: i32,
 
     fonts: [FontID]^ttf.Font,
 
@@ -389,6 +388,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                     f32(image_size.x) / f32(texture_size.x),
                     f32(image_size.y) / f32(texture_size.y),
                 }
+
                 if emulator_is_hw_rendered() {
                     gl.Uniform4f(FRAMEBUFFER_SHADER_LOCS.uvSubregion, 0, 0, normalized_image_size.x, normalized_image_size.y)
                 } else {
@@ -396,7 +396,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
                 }
 
                 if FRAMEBUFFER_SHADER_LOCS.frameCount != -1 {
-                    gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.frameCount, GUI_RENDERER_STATE.frame_counter)
+                    gl.Uniform1i(FRAMEBUFFER_SHADER_LOCS.frameCount, i32(GLOBAL_STATE.frame_counter))
                 }
                 if FRAMEBUFFER_SHADER_LOCS.outputSize != -1 {
                     gl.Uniform2f(FRAMEBUFFER_SHADER_LOCS.outputSize, rect.w, rect.h)

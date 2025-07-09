@@ -55,11 +55,7 @@ gui_init :: proc () -> (ok: bool) {
 
 gui_deinit :: proc () {
     gui_renderer_deinit()
-    delete(
-        slice.from_ptr(
-            GUI_STATE.arena.memory, int(GUI_STATE.arena.capacity)
-        )
-    )
+    delete(slice.from_ptr(GUI_STATE.arena.memory, int(GUI_STATE.arena.capacity)))
 }
 
 gui_update :: proc () {
@@ -69,6 +65,18 @@ gui_update :: proc () {
     cl.SetLayoutDimensions({ f32(window_size.x), f32(window_size.y) })
     cl.SetPointerState(mouse_state.position, mouse_state.down)
     cl.UpdateScrollContainers(true, mouse_state.wheel * 5, GLOBAL_STATE.delta_time)
+
+    gui_update_focus_elements_bounding_boxes()
+}
+
+@(private="file")
+gui_update_focus_elements_bounding_boxes :: proc "contextless" () {
+    GUI_STATE.focused_element.boundingBox = cl.GetElementData(GUI_STATE.focused_element.id).boundingBox
+
+    GUI_STATE.focus_up.boundingBox = cl.GetElementData(GUI_STATE.focus_up.id).boundingBox
+    GUI_STATE.focus_down.boundingBox = cl.GetElementData(GUI_STATE.focus_down.id).boundingBox
+    GUI_STATE.focus_left.boundingBox = cl.GetElementData(GUI_STATE.focus_left.id).boundingBox
+    GUI_STATE.focus_right.boundingBox = cl.GetElementData(GUI_STATE.focus_right.id).boundingBox
 }
 
 @(private="file")
@@ -128,6 +136,12 @@ gui_focus_default_element :: proc () {
         id = GUI_STATE.default_focus,
         boundingBox = bb,
     }
+}
+
+gui_reset_focus :: proc () {
+    gui_reset_focus_directions()
+    GUI_STATE.focused_element = {}
+    GUI_STATE.default_focus = {}
 }
 
 gui_reset_focus_directions :: proc () {
@@ -190,4 +204,18 @@ gui_register_focus_element :: proc (id: cl.ElementId) {
 
 gui_set_default_focus_element :: proc (id: cl.ElementId) {
     GUI_STATE.default_focus = id
+}
+
+gui_scroll_container_to_focus :: proc (scroll_container_id: cl.ElementId) {
+    scroll_container := cl.GetScrollContainerData(scroll_container_id)
+    if !scroll_container.found {
+        log.warnf("Scroll container not found: {}", scroll_container_id)
+        return
+    }
+
+    if GUI_STATE.focused_element.boundingBox.y + GUI_STATE.focused_element.boundingBox.height > scroll_container.scrollContainerDimensions.height {
+        scroll_container.scrollPosition.y -= GUI_STATE.focused_element.boundingBox.y + GUI_STATE.focused_element.boundingBox.height - scroll_container.scrollContainerDimensions.height
+    } else if GUI_STATE.focused_element.boundingBox.y < 0 {
+        scroll_container.scrollPosition.y -= GUI_STATE.focused_element.boundingBox.y
+    }
 }

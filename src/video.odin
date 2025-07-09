@@ -185,6 +185,8 @@ video_init_emu_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
 
 video_handle_window_resize :: proc (event: ^sdl.Event) {
     VIDEO_STATE.window_size = { event.window.data1, event.window.data2 }
+
+    gui_reset_focus_directions()
 }
 
 video_upload_pixels_to_fbo :: proc "contextless" (pixels: rawptr, width, height, pitch: u32) {

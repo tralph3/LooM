@@ -27,6 +27,7 @@ SceneID :: enum {
 SCENES := [SceneID]Scene{
         .LOGIN = {
             on_enter = proc () {
+                gui_reset_focus()
                 id := gui_login_get_default_focus_element()
                 gui_set_default_focus_element(id)
             },
@@ -38,6 +39,11 @@ SCENES := [SceneID]Scene{
             allowed_transitons = { .MENU },
         },
         .MENU = {
+            on_enter = proc () {
+                gui_reset_focus()
+                id := gui_menu_get_default_focus_element()
+                gui_set_default_focus_element(id)
+            },
             update = proc () {},
             render = proc () {
                 layout := gui_layout_menu_screen()
@@ -46,6 +52,11 @@ SCENES := [SceneID]Scene{
             allowed_transitons = { .RUNNING, .LOGIN },
         },
         .PAUSE = {
+            on_enter = proc () {
+                gui_reset_focus()
+                id := gui_pause_get_default_focus_element()
+                gui_set_default_focus_element(id)
+            },
             update = proc () {
             },
             render = proc () {
