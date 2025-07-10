@@ -27,6 +27,9 @@ InputPlayerState :: struct #no_copy {
     analog: [max(lr.RetroDeviceIdJoypad)]i16,
     gamepad: ^sdl.Gamepad,
     rumble: [lr.RetroRumbleEffect]u16,
+
+    // used for the header bar icons
+    active_this_frame: bool,
 }
 
 InputMouseState :: struct #no_copy {
@@ -134,10 +137,22 @@ input_reset :: proc () {
     INPUT_STATE.mouse.clicked = false
     INPUT_STATE.ok_pressed = false
     INPUT_STATE.back_pressed = false
+
+    for &player in INPUT_STATE.players {
+        player.active_this_frame = false
+    }
 }
 
 input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
     if event.type != .GAMEPAD_BUTTON_DOWN { return }
+
+    for &player in INPUT_STATE.players {
+        if sdl.GetGamepadID(player.gamepad) == event.gdevice.which {
+            player.active_this_frame = true
+            break
+        }
+    }
+
     #partial switch sdl.GamepadButton(event.gbutton.button) {
     case .DPAD_LEFT:
         gui_focus_left()
@@ -239,4 +254,8 @@ input_is_back_pressed :: proc "contextless" () -> bool {
 
 input_is_controller_connected :: proc "contextless" (port: u32) -> bool {
     return INPUT_STATE.players[port].gamepad != nil
+}
+
+input_is_controller_active_this_frame :: proc "contextless" (port: u32) -> bool {
+    return INPUT_STATE.players[port].active_this_frame
 }

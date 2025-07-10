@@ -25,9 +25,9 @@ widgets_spacer :: proc (direction: SpacerDirection) {
 
 widgets_controller_status :: proc () {
     for i in 0..<INPUT_MAX_PLAYERS {
-        controller_connected := texture_get_or_load("controller_connected")
-        controller_disconnected := texture_get_or_load("controller_disconnected")
-        texture := input_is_controller_connected(u32(i)) ? controller_connected : controller_disconnected
+        texture := input_is_controller_connected(u32(i)) \
+            ? texture_get_or_load("controller_connected") \
+            : texture_get_or_load("controller_disconnected")
 
         if cl.UI()({
             layout = {
@@ -38,6 +38,10 @@ widgets_controller_status :: proc () {
             },
             aspectRatio = { texture.width / texture.height },
             image = { rawptr(uintptr(texture.gl_id)) },
+            border = input_is_controller_active_this_frame(u32(i)) ? {
+                color = UI_COLOR_ACCENT,
+                width = cl.BorderAll(3),
+            } : {}
         }) {}
     }
 }
