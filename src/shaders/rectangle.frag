@@ -29,8 +29,6 @@ void main() {
     vec2 local = pixelCoord - rect.xy;
     vec2 size = rect.zw;
 
-    local.y = size.y - local.y;
-
     float dist = -1.0;
 
     // Rounded corners SDFs
