@@ -136,7 +136,7 @@ gui_renderer_load_fonts :: proc () -> (ok: bool) {
     for font_info, id in FontPaths {
         font := ttf.OpenFont(font_info.path, font_info.size)
         if font == nil {
-            log.info("Failed opening font '{}': {}", sdl.GetError())
+            log.infof("Failed opening font '{}': {}", sdl.GetError())
             return false
         }
 
