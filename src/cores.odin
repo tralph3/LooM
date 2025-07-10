@@ -9,6 +9,6 @@ import "core:os/os2"
 // You only need to free the returned array, the strings themselves
 // are views into the core's memory
 core_get_valid_extensions :: proc (core: ^lr.LibretroCore, allocator:=context.allocator) -> []string {
-    if core == nil { return {} }
+    if core == nil || core.system_info.valid_extensions == nil { return {} }
     return strings.split(string(core.system_info.valid_extensions), "|", allocator=allocator)
 }
