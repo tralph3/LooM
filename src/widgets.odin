@@ -40,7 +40,7 @@ widgets_controller_status :: proc () {
             image = { rawptr(uintptr(texture.gl_id)) },
             border = input_is_controller_active_this_frame(u32(i)) ? {
                 color = UI_COLOR_ACCENT,
-                width = cl.BorderAll(3),
+                width = { bottom = 3 },
             } : {}
         }) {}
     }
