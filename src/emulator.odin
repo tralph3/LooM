@@ -161,7 +161,11 @@ emulator_load_state :: proc () {
 emulator_update_plugged_controllers :: proc () {
     if !EMULATOR_STATE.loaded { return }
 
-    for i in 0..<INPUT_MAX_PLAYERS {
+    // to allow for keyboard input, we tell the emulator that there's
+    // always a controller on port 1
+    EMULATOR_STATE.core.api.set_controller_port_device(0, .Joypad)
+
+    for i in 1..<INPUT_MAX_PLAYERS {
         player := input_get_player_input_state(u32(i))
 
         if player.gamepad == nil {

@@ -25,7 +25,7 @@ input_poll_callback :: proc "c" () {
     for port in 0..<INPUT_MAX_PLAYERS {
         player := input_get_player_input_state(u32(port))
         gamepad := player.gamepad
-        if gamepad == nil { continue }
+        if gamepad == nil && port != 0 { continue }
 
         player.joypad[.Left]   = i16(state[sdl.Scancode.LEFT]      || sdl.GetGamepadButton(gamepad, .DPAD_LEFT))
         player.joypad[.Right]  = i16(state[sdl.Scancode.RIGHT]     || sdl.GetGamepadButton(gamepad, .DPAD_RIGHT))
