@@ -107,7 +107,7 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         },
         backgroundColor = { 0, 0, 0, 255 },
     }) {
-        widgets_header_bar()
+        widgets_header_bar(floating=false)
 
         grid_id := cl.ID("Game Grid")
         if cl.UI()({

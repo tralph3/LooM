@@ -51,7 +51,7 @@ widgets_loom_title :: proc () {
 }
 
 
-widgets_header_bar :: proc () {
+widgets_header_bar :: proc (floating := true) {
     if cl.UI()({
         id = cl.ID("Header Bar"),
         layout = {
@@ -67,13 +67,13 @@ widgets_header_bar :: proc () {
                 right = UI_SPACING_12,
             },
         },
-        floating = {
+        floating = floating ? {
 	        attachment = {
                 element = .LeftTop,
                 parent = .LeftTop,
             },
             attachTo = .Root,
-        },
+        } : {},
         backgroundColor = UI_COLOR_BACKGROUND,
         border = {
             color = UI_COLOR_SECONDARY_BACKGROUND,
