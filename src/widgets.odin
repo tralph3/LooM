@@ -13,7 +13,6 @@ widgets_spacer :: proc (direction: SpacerDirection) {
     is_horizontal := direction == .Horizontal || direction == .Both
 
     if cl.UI()({
-        id = cl.ID("Spacer"),
         layout = {
             sizing = {
                 width = is_horizontal ? cl.SizingGrow({}) : {},
