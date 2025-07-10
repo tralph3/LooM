@@ -213,14 +213,21 @@ gui_set_default_focus_element :: proc (id: cl.ElementId) {
 
 gui_scroll_container_to_focus :: proc (scroll_container_id: cl.ElementId) {
     scroll_container := cl.GetScrollContainerData(scroll_container_id)
-    if !scroll_container.found {
+    element_data := cl.GetElementData(scroll_container_id)
+    if !scroll_container.found || !element_data.found {
         log.warnf("Scroll container not found: {}", scroll_container_id)
         return
     }
 
-    if GUI_STATE.focused_element.boundingBox.y + GUI_STATE.focused_element.boundingBox.height > scroll_container.scrollContainerDimensions.height {
-        scroll_container.scrollPosition.y -= GUI_STATE.focused_element.boundingBox.y + GUI_STATE.focused_element.boundingBox.height - scroll_container.scrollContainerDimensions.height
-    } else if GUI_STATE.focused_element.boundingBox.y < 0 {
-        scroll_container.scrollPosition.y -= GUI_STATE.focused_element.boundingBox.y
+    focus_top := GUI_STATE.focused_element.boundingBox.y
+    focus_bottom := GUI_STATE.focused_element.boundingBox.y + GUI_STATE.focused_element.boundingBox.height
+
+    scroll_top := element_data.boundingBox.y
+    scroll_bottom := element_data.boundingBox.y + scroll_container.scrollContainerDimensions.height
+
+    if  focus_bottom > scroll_bottom {
+        scroll_container.scrollPosition.y -= focus_bottom - scroll_bottom
+    } else if focus_top < scroll_top {
+        scroll_container.scrollPosition.y -= focus_top - scroll_top
     }
 }
