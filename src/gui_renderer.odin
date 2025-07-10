@@ -19,15 +19,18 @@ GUI_RENDERER_STATE := struct #no_copy {
 
     fonts: [FontID]^ttf.Font,
 
+
     text_texture_cache: map[TextTextureCacheKey]CachedTextTexture
 } {}
 
 FontPaths :: [FontID]struct { path: cstring, size: f32 } {
         .Default = { "./assets/fonts/Ubuntu.ttf", 32 },
+        .Title = { "./assets/fonts/Gaegu.ttf", 32 },
 }
 
 FontID :: enum u16 {
-    Default = 0,
+    Default,
+    Title,
 }
 
 vertex_rectangle_shader_src: cstring = #load("./shaders/rectangle.vert")

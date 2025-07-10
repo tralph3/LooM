@@ -88,21 +88,20 @@ gui_layout_login_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             layoutDirection = .TopToBottom,
         },
     }) {
-        if cl.UI()({
+        widgets_header_bar()
 
-        }) {
-            cl.Text("Welcome!", &{
-                textColor = UI_COLOR_MAIN_TEXT,
-                fontSize = UI_FONTSIZE_72,
-            })
-        }
+        cl.Text("Welcome!", &{
+            fontId = auto_cast FontID.Title,
+            textColor = UI_COLOR_MAIN_TEXT,
+            fontSize = UI_FONTSIZE_72,
+        })
 
         if cl.UI()({
             layout = {
                 childGap = UI_USER_TILE_GAP,
             },
         }) {
-            usernames := []string{"test", "tralph3", "Shadow", "Celes"}
+            usernames := []string{"tralph3", "Shadow", "Celes"}
             for username, i in usernames {
                 if gui_layout_login_user_tile(username, i) {
                     user_login(username)

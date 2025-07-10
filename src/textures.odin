@@ -16,7 +16,8 @@ import "core:bytes"
 
 Texture :: struct {
     gl_id: u32,
-    ratio: f32,
+    width: f32,
+    height: f32,
 }
 
 @(private="file")
@@ -113,11 +114,8 @@ texture_load_from_image :: proc (img: ^image.Image) -> (texture: Texture) {
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
     gl.PixelStorei(gl.UNPACK_ALIGNMENT, 4)
 
-    if img.height == 0 {
-        texture.ratio = 0
-    } else {
-        texture.ratio = f32(img.width) / f32(img.height)
-    }
+    texture.width = max(f32(img.width), 1)
+    texture.height = max(f32(img.height), 1)
 
     return
 }

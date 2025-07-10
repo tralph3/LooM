@@ -99,6 +99,7 @@ input_handle_key_pressed :: proc (event: ^sdl.Event) {
         INPUT_STATE.ok_pressed = true
     case .ESCAPE:
         INPUT_STATE.back_pressed = true
+        scene_change(.PAUSE)
     }
 
     when ODIN_DEBUG {
@@ -234,4 +235,8 @@ input_is_ok_pressed :: proc "contextless" () -> bool {
 
 input_is_back_pressed :: proc "contextless" () -> bool {
     return INPUT_STATE.back_pressed
+}
+
+input_is_controller_connected :: proc "contextless" (port: u32) -> bool {
+    return INPUT_STATE.players[port].gamepad != nil
 }

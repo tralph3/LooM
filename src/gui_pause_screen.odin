@@ -93,6 +93,8 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             },
             backgroundColor = { 0, 0, 0, 170 },
         }) {
+            widgets_header_bar()
+
             if cl.UI()({
                 id = cl.ID("Pause Options Container"),
                 layout = {
@@ -123,8 +125,8 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                 if gui_pause_button_layout("Emulator Options") {
                     log.info("EMU!")
                 }
-                if gui_pause_button_layout("LOOM Options") {
-                    log.info("LOOM!")
+                if gui_pause_button_layout("LooM Options") {
+                    log.info("LooM!")
                 }
                 if gui_pause_button_layout("Shaders") {
                     log.info("Shader menu!")

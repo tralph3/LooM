@@ -6,7 +6,7 @@ import "core:math/ease"
 import "core:log"
 import fp "core:path/filepath"
 
-GRID_ITEM_WIDTH :: 320
+GRID_ITEM_WIDTH :: 180
 
 gui_menu_get_default_focus_element :: proc () -> cl.ElementId {
     return cl.ID("Rom Entry", 0)
@@ -45,7 +45,7 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
                 },
                 childAlignment = {
                     x = .Center,
-                    y = .Center,
+                    y = .Bottom,
                 },
                 padding = cl.PaddingAll(UI_SPACING_4),
             },
@@ -58,7 +58,7 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
                         height = cl.SizingGrow({}),
                     },
                 },
-                aspectRatio = { cover_texture.ratio },
+                aspectRatio = { cover_texture.width / cover_texture.height },
                 image = { rawptr(uintptr(cover_texture.gl_id)) },
             }) {}
         }
@@ -107,6 +107,8 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         },
         backgroundColor = { 0, 0, 0, 255 },
     }) {
+        widgets_header_bar()
+
         grid_id := cl.ID("Game Grid")
         if cl.UI()({
             id = grid_id,
