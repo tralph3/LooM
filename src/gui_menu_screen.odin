@@ -105,7 +105,7 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             },
             layoutDirection = .TopToBottom,
         },
-        backgroundColor = { 0, 0, 0, 255 },
+        backgroundColor = UI_COLOR_BACKGROUND,
     }) {
         widgets_header_bar(floating=false)
 
@@ -132,7 +132,6 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                 vertical = true,
                 childOffset = cl.GetScrollOffset(),
             },
-            backgroundColor = UI_COLOR_BACKGROUND,
         }) {
             grid_bb := cl.GetElementData(grid_id).boundingBox
             gap: int = UI_SPACING_12
