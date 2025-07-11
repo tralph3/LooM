@@ -62,7 +62,9 @@ load_core :: proc (core_path: string, callbacks: ^Callbacks) -> (core: LibretroC
 unload_core :: proc (core: ^LibretroCore) {
     core.api.unload_game()
     core.api.deinit()
-    dynlib.unload_library(core.api.__handle)
+    if !dynlib.unload_library(core.api.__handle) {
+        log.errorf("Failed unloading library: {}", dynlib.last_error())
+    }
 }
 
 initialize_core :: proc (core: ^LibretroCore, callbacks: ^Callbacks) {
