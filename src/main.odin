@@ -73,7 +73,7 @@ last_time: u64
 
 app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     context = state_get_context()
-    defer free_all(GLOBAL_STATE.ctx.temp_allocator)
+    defer free_all(context.temp_allocator)
 
     wait_until_next_frame(last_time)
 
@@ -137,6 +137,8 @@ app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     audio_deinit()
     gui_deinit()
     video_deinit()
+
+    free_all(context.temp_allocator)
 }
 
 main :: proc () {
@@ -146,12 +148,20 @@ main :: proc () {
 
 		track: mem.Tracking_Allocator
 		mem.tracking_allocator_init(&track, context.allocator)
+		defer mem.tracking_allocator_destroy(&track)
+
+        track_temp: mem.Tracking_Allocator
+        mem.tracking_allocator_init(&track_temp, context.temp_allocator)
+        defer mem.tracking_allocator_destroy(&track_temp)
+
         compat: mem.Compat_Allocator
         mem.compat_allocator_init(&compat, mem.tracking_allocator(&track))
-		context.allocator = mem.compat_allocator(&compat)
 
-		defer {
-			if len(track.allocation_map) > 0 {
+		context.allocator = mem.compat_allocator(&compat)
+        context.temp_allocator = mem.tracking_allocator(&track_temp)
+
+        print_leaked_allocations :: proc (track: ^mem.Tracking_Allocator) {
+            if len(track.allocation_map) > 0 {
 				log.errorf("=== %v allocations not freed ===\n", len(track.allocation_map))
                 total: int
 				for _, entry in track.allocation_map {
@@ -161,8 +171,11 @@ main :: proc () {
 
                 log.errorf("Total memory leaked: {} bytes", total)
 			}
+        }
 
-			mem.tracking_allocator_destroy(&track)
+		defer {
+            print_leaked_allocations(&track)
+            print_leaked_allocations(&track_temp)
 		}
 
         sdl.SetMemoryFunctions(
@@ -212,5 +225,5 @@ main :: proc () {
 
     argc := i32(len(runtime.args__))
     argv := raw_data(runtime.args__)
-    sdl.EnterAppMainCallbacks(argc, argv, app_init, app_iterate, app_event, app_quit);
+    sdl.EnterAppMainCallbacks(argc, argv, app_init, app_iterate, app_event, app_quit)
 }
