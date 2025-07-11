@@ -153,9 +153,13 @@ main :: proc () {
 		defer {
 			if len(track.allocation_map) > 0 {
 				log.errorf("=== %v allocations not freed ===\n", len(track.allocation_map))
+                total: int
 				for _, entry in track.allocation_map {
+                    total += entry.size
 					log.errorf("%v bytes @ %v", entry.size, entry.location)
 				}
+
+                log.errorf("Total memory leaked: {} bytes", total)
 			}
 
 			mem.tracking_allocator_destroy(&track)
