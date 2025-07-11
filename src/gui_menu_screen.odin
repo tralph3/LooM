@@ -161,9 +161,9 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                             break
                         }
 
-                        entry := entries[index]
-                        if game_entry_button(&entry, u32(index)) {
-                            if emulator_init(&entry) {
+                        entry := &entries[index]
+                        if game_entry_button(entry, u32(index)) {
+                            if emulator_init(entry) {
                                 scene_change(.RUNNING)
                             }
                         }
