@@ -1,6 +1,7 @@
 package main
 
 import lr "libretro"
+import fp "core:path/filepath"
 import "core:fmt"
 import "core:mem"
 import "core:c"
@@ -16,7 +17,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
     // remove the experimental bit
     command := lr.RetroEnvironment(u32(command) & ~u32(lr.RetroEnvironment.Experimental))
 
-    log.debugf("Processing env callback: '{}'", command)
+    //log.debugf("Processing env callback: '{}'", command)
 
     #partial switch command {
         case .GetCoreOptionsVersion: return env_callback_get_core_options_version(data)
@@ -188,10 +189,16 @@ env_callback_set_performance_level :: proc (data: rawptr) -> bool { // TODO: Get
  * This is now discouraged in favor of \c RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY.
  * @see RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY
  */
-env_callback_get_system_directory :: proc (data: rawptr) -> bool { // TODO
+env_callback_get_system_directory :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    (^cstring)(data)^ = "./system"
+    system_dir, err := dir_path_with_trailing_slash_cstr(config_get_system_dir_path())
+    if err != nil {
+        return false
+    }
+    defer delete(system_dir)
+
+    (^cstring)(data)^ = system_dir
     return true
 }
 
@@ -474,7 +481,8 @@ env_callback_set_support_no_game :: proc (data: rawptr) -> bool { // DONE
 env_callback_get_libretro_path :: proc (data: rawptr) -> bool { // TODO: check what the lifetime of the string should be
     if data == nil { return false }
 
-    path, _ := dir_path_with_trailing_slash_cstr(emulator_get_current_game_entry().core)
+    core_dir := fp.dir(emulator_get_current_game_entry().core, context.temp_allocator)
+    path, _ := dir_path_with_trailing_slash_cstr(core_dir)
     defer delete(path)
     (^cstring)(data)^ = path
 
@@ -767,10 +775,16 @@ env_callback_get_core_assets_directory :: proc (data: rawptr) -> bool { // TODO
  * @see retro_get_memory_data
  * @see RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY
  */
-env_callback_get_save_directory :: proc (data: rawptr) -> bool { // TODO
+env_callback_get_save_directory :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    (^cstring)(data)^ = "./saves"
+    saves_dir, err := dir_path_with_trailing_slash_cstr(config_get_saves_dir_path())
+    if err != nil {
+        return false
+    }
+    defer delete(saves_dir)
+
+    (^cstring)(data)^ = saves_dir
     return true
 }
 

@@ -12,6 +12,8 @@ import "core:mem"
 import lr "libretro"
 import "core:time"
 import "core:c"
+import "core:os/os2"
+import fp "core:path/filepath"
 
 // cross function defer
 DEINIT_PROCS: [dynamic]proc ()
@@ -46,6 +48,14 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
 
 app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> (res: sdl.AppResult) {
     context = state_get_context()
+
+    wd := fp.dir(string(argv[0]), context.temp_allocator)
+    os2.set_working_directory(wd)
+
+    // in debug the executable is generally in the build directory
+    when ODIN_DEBUG {
+        os2.set_working_directory("../")
+    }
 
     res = .FAILURE
 

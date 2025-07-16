@@ -29,7 +29,7 @@ rom_entries_load :: proc () -> (ok: bool) {
         core_conf := config_get_system_config(system.name)
         if core_conf == nil { continue }
 
-        cores_dir := config_get_core_dir_path()
+        cores_dir := config_get_cores_dir_path()
 
         ext: string
         when ODIN_OS == .Windows {
@@ -67,6 +67,7 @@ rom_entries_load :: proc () -> (ok: bool) {
                 name = strings.clone(fp.stem(fp.base(rom.fullpath))),
                 path = strings.clone(rom.fullpath),
                 core = strings.clone(full_core_path),
+                category = strings.clone(system.name),
             })
         }
     }
@@ -79,6 +80,7 @@ rom_entries_unload :: proc () {
         delete(entry.core)
         delete(entry.name)
         delete(entry.path)
+        delete(entry.category)
     }
     delete(GLOBAL_STATE.rom_entries)
 }

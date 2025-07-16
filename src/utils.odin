@@ -12,10 +12,7 @@ clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring
     return cstring(clone)
 }
 
-dir_path_with_trailing_slash_cstr :: proc (path: string) -> (res: cstring, err: mem.Allocator_Error) {
-    dir_path := fp.dir(path)
-    defer delete(dir_path)
-
+dir_path_with_trailing_slash_cstr :: proc (dir_path: string) -> (res: cstring, err: mem.Allocator_Error) {
     // it needs enough memory to store the path string plus the
     // forward slash plus the null terminator
     cstr_clone := mem.alloc(len(dir_path) + 2) or_return
