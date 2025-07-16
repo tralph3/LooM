@@ -67,6 +67,7 @@ SCENES := [SceneID]Scene{
         },
         .RUNNING = {
             on_enter = proc () {
+                gui_reset_focus()
                 audio_resume()
                 _ = sdl.HideCursor()
             },
@@ -111,10 +112,12 @@ scene_get :: proc (scene_id: SceneID) -> Scene {
     return SCENES[scene_id]
 }
 
-scene_init :: proc () {
+scene_init :: proc () -> (ok: bool) {
     initial_scene := scene_get(GLOBAL_STATE.current_scene_id)
 
     if initial_scene.on_enter != nil {
         initial_scene.on_enter()
     }
+
+    return true
 }

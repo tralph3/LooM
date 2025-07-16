@@ -6,3 +6,10 @@ system/
 saves/
 **/*.o
 **/*.h
+vulkan.odin
+vulkan
+src.bin
+database/
+savestate
+src/http
+usability.md

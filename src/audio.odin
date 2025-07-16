@@ -13,8 +13,6 @@ AUDIO_STATE := struct #no_copy {
     stream: ^sdl.AudioStream,
     effects_streams: [10]^sdl.AudioStream,
     stream_index: int,
-
-    sound_effects: [SoundEffectID][]byte
 } {}
 
 BYTES_PER_FRAME :: 4
@@ -22,16 +20,6 @@ BYTES_PER_FRAME :: 4
 AUDIO_BUFFER_SIZE_BYTES :: 1024 * 64
 AUDIO_BUFFER_UNDERRUN_LIMIT :: 1024 * 12
 AUDIO_BUFFER_OVERFLOW_LIMIT :: 1024 * 54
-
-SoundEffectID :: enum {
-    SelectPositive,
-    SelectNegative,
-}
-
-SoundEffectPaths :: [SoundEffectID]cstring {
-        .SelectPositive = "./assets/sounds/select_positive.wav",
-        .SelectNegative = "./assets/sounds/select_negative.wav",
-}
 
 audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
     context = state_get_context()
@@ -51,7 +39,7 @@ audio_buffer_pop_batch :: proc "c" (userdata: rawptr, stream: ^sdl.AudioStream, 
     cb.pop_to_audio_stream(&AUDIO_STATE.buffer, AUDIO_STATE.stream, u64(additional_amount))
 }
 
-audio_init :: proc "c" () -> (ok: bool) {
+audio_init :: proc () -> (ok: bool) {
     context = state_get_context()
 
     AUDIO_STATE.stream = sdl.OpenAudioDeviceStream(
@@ -87,17 +75,6 @@ audio_init :: proc "c" () -> (ok: bool) {
         sdl.ResumeAudioStreamDevice(stream)
     }
 
-    spec: sdl.AudioSpec
-    buf: [^]byte
-    length: u32
-    for path, id in SoundEffectPaths {
-        if !sdl.LoadWAV(path, &spec, &buf, &length) {
-            log.error("Failed loading sound effect '{}': {}", path, sdl.GetError())
-            return false
-        }
-        AUDIO_STATE.sound_effects[id] = slice.from_ptr(buf, int(length))
-    }
-
     return true
 }
 
@@ -118,9 +95,7 @@ audio_deinit :: proc () {
         sdl.DestroyAudioStream(stream)
     }
 
-    for effect in AUDIO_STATE.sound_effects {
-        sdl.free(raw_data(effect))
-    }
+
 }
 
 audio_clear_buffer :: proc () {
@@ -165,16 +140,16 @@ audio_pause :: proc () {
     }
 }
 
-audio_play_sound_effect :: proc (effect_id: SoundEffectID) {
+audio_play_sound :: proc (id: SoundID) {
     if AUDIO_STATE.stream_index >= len(AUDIO_STATE.effects_streams) {
         AUDIO_STATE.stream_index = 0
     }
 
-    effect := AUDIO_STATE.sound_effects[effect_id]
+    sound := assets_get_sound(id)
     sdl.PutAudioStreamData(
         AUDIO_STATE.effects_streams[AUDIO_STATE.stream_index],
-        raw_data(effect),
-        i32(len(effect)))
+        raw_data(sound),
+        i32(len(sound)))
 
     AUDIO_STATE.stream_index += 1
 }

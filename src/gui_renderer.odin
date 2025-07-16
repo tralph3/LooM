@@ -23,6 +23,16 @@ GUI_RENDERER_STATE := struct #no_copy {
     text_texture_cache: map[TextTextureCacheKey]CachedTextTexture
 } {}
 
+ShaderID :: enum {
+    SelectPositive,
+    SelectNegative,
+}
+
+SoundEffectPaths :: [SoundID]cstring {
+        .SelectPositive = "./assets/sounds/select_positive.wav",
+        .SelectNegative = "./assets/sounds/select_negative.wav",
+}
+
 FontPaths :: [FontID]struct { path: cstring, size: f32 } {
         .Default = { "./assets/fonts/Ubuntu.ttf", 32 },
         .Title = { "./assets/fonts/Gaegu.ttf", 32 },
@@ -41,6 +51,8 @@ fragment_text_shader_src: cstring = #load("./shaders/text.frag")
 
 vertex_framebuffer_shader_src: cstring = #load("./shaders/framebuffer.vert")
 fragment_framebuffer_shader_src: cstring = #load("./shaders/framebuffer.frag")
+
+crt_mattias_framebuffer_shader_src: cstring = #load("./shaders/crt-mattias.frag")
 
 @(private="file")
 RECTANGLE_SHADER_LOCS: struct {
@@ -100,7 +112,7 @@ CustomRenderData :: struct {
 }
 
 gui_renderer_set_framebuffer_shader :: proc (shader_src: cstring) {
-    prog_id, ok := load_shader(vertex_framebuffer_shader_src, shader_src, &FRAMEBUFFER_SHADER_LOCS)
+    prog_id, ok := gl_load_shader(vertex_framebuffer_shader_src, shader_src, &FRAMEBUFFER_SHADER_LOCS)
     if !ok {
         log.error("Framebuffer shader loading failed. Aborting.")
         return
@@ -119,11 +131,11 @@ gui_renderer_init :: proc () -> (ok: bool) {
 
     {
         using GUI_RENDERER_STATE
-        rectangle_shader = load_shader(
+        rectangle_shader = gl_load_shader(
             vertex_rectangle_shader_src, fragment_rectangle_shader_src, &RECTANGLE_SHADER_LOCS) or_return
-        text_shader = load_shader(
+        text_shader = gl_load_shader(
             vertex_text_shader_src, fragment_text_shader_src, &TEXT_SHADER_LOCS) or_return
-        framebuffer_shader = load_shader(
+        framebuffer_shader = gl_load_shader(
             vertex_framebuffer_shader_src, fragment_framebuffer_shader_src, &FRAMEBUFFER_SHADER_LOCS) or_return
     }
 

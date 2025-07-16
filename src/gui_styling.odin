@@ -26,9 +26,9 @@ UI_FONTSIZE_48 :: 48.0
 UI_FONTSIZE_60 :: 60.0
 UI_FONTSIZE_72 :: 72.0
 
-UI_COLOR_BACKGROUND :: cl.Color { 0x18, 0x18, 0x18, 0xFF }
-UI_COLOR_SECONDARY_BACKGROUND :: cl.Color { 37, 44, 55, 0xFF }
-UI_COLOR_ACCENT :: cl.Color { 4, 114, 77, 0xFF }
+UI_COLOR_BACKGROUND :: cl.Color { 0x04, 0x0f, 0x4a, 0xff }
+UI_COLOR_SECONDARY_BACKGROUND :: cl.Color { 0x27, 0xab, 0xc7, 0xff }
+UI_COLOR_ACCENT :: cl.Color { 0xa1, 0x3d, 0x77, 0xff }
 
 UI_COLOR_MAIN_TEXT :: cl.Color { 244, 244, 249, 0xFF }
 

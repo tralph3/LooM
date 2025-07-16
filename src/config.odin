@@ -18,15 +18,19 @@ SystemConfig :: struct {
     core: string,
 }
 
-config_init :: proc () -> (err: os2.Error) {
+config_init :: proc () -> (ok: bool) {
     CONFIG.cores_path = strings.clone("./cores")
     CONFIG.roms_path = strings.clone("./roms")
 
-    sys_fd := os2.open("./config/systems") or_return
+    sys_fd, open_err := os2.open("./config/systems")
+    if open_err != nil {
+        return false
+    }
     defer os2.close(sys_fd)
 
     it: os2.Read_Directory_Iterator
     os2.read_directory_iterator_init(&it, sys_fd)
+    defer os2.read_directory_iterator_destroy(&it)
 
     for system in os2.read_directory_iterator(&it) {
         m, err, ok := ini.load_map_from_path(system.fullpath, allocator=context.allocator)
@@ -52,7 +56,7 @@ config_init :: proc () -> (err: os2.Error) {
         }
     }
 
-    return nil
+    return true
 }
 
 config_deinit :: proc () {

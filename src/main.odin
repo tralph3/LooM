@@ -1,3 +1,4 @@
+#+private file
 package main
 
 import cl "clay"
@@ -11,6 +12,23 @@ import "core:mem"
 import lr "libretro"
 import "core:time"
 import "core:c"
+
+// cross function defer
+DEINIT_PROCS: [dynamic]proc ()
+
+last_time: u64
+
+init_subsystem :: proc (name: string, init: proc () -> bool, deinit: proc ()) -> (ok: bool) {
+    if !init() {
+        log.errorf("Failed initializing '{}'", name)
+        return false
+    }
+    if deinit != nil {
+        append(&DEINIT_PROCS, deinit)
+    }
+
+    return true
+}
 
 wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
     fps := emulator_get_fps()
@@ -26,50 +44,33 @@ wait_until_next_frame :: #force_inline proc(last_time_ns: u64) {
     sdl.DelayPrecise(remaining_ns + audio_should_sleep_for())
 }
 
-app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> sdl.AppResult {
+app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> (res: sdl.AppResult) {
     context = state_get_context()
 
-    config_init()
-    rom_entries_load()
-
-    if !video_init() {
-        log.error("Failed initializing video")
-        return .FAILURE
-    }
-
-    if !gui_init() {
-        log.error("Failed initializing GUI")
-        return .FAILURE
-    }
-
-    if !audio_init() {
-        log.error("Failed initializing audio")
-        return .FAILURE
-    }
-
-    if !input_init() {
-        log.error("Failed initializing input")
-        return .FAILURE
-    }
-
-    if !textures_init() {
-        log.error("Failed initializing textures")
-        return .FAILURE
-    }
+    res = .FAILURE
 
     GLOBAL_STATE.event_offset = sdl.RegisterEvents(len(Event))
     if GLOBAL_STATE.event_offset == 0 {
         log.error("Failed registering user events: {}", sdl.GetError())
-        return .FAILURE
+        return
     }
 
-    scene_init()
+    append(&DEINIT_PROCS, emulator_close)
+
+    if !init_subsystem("Thread Pool", thread_pool_init, thread_pool_deinit) { return }
+    if !init_subsystem("Config", config_init, config_deinit) { return }
+    if !init_subsystem("Roms", rom_entries_load, rom_entries_unload) { return }
+    if !init_subsystem("Video", video_init, video_deinit) { return }
+    if !init_subsystem("GUI", gui_init, gui_deinit) { return }
+    if !init_subsystem("Audio", audio_init, audio_deinit) { return }
+    if !init_subsystem("Input", input_init, input_deinit) { return }
+    if !init_subsystem("Scene", scene_init, nil) { return }
+    // we can run without assets we don't exit on failure
+    init_subsystem("Assets", assets_init, assets_deinit)
+    init_subsystem("Covers", covers_init, covers_deinit)
 
     return .CONTINUE
 }
-
-@(private="file")
-last_time: u64
 
 app_iterate :: proc "c" (appstate: rawptr) -> sdl.AppResult {
     context = state_get_context()
@@ -129,18 +130,17 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
 app_quit :: proc "c" (appstate: rawptr, result: sdl.AppResult) {
     context = state_get_context()
 
-    config_deinit()
-    rom_entries_unload()
-    textures_deinit()
-    emulator_close()
-    input_deinit()
-    audio_deinit()
-    gui_deinit()
-    video_deinit()
+    #reverse for func in DEINIT_PROCS {
+        func()
+    }
 
+    sdl.ClearError()
+
+    delete(DEINIT_PROCS)
     free_all(context.temp_allocator)
 }
 
+@(private="package")
 main :: proc () {
     when ODIN_DEBUG {
         context.logger = log.create_console_logger(opt={ .Level, .Terminal_Color })

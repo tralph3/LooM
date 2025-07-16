@@ -16,7 +16,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
     // remove the experimental bit
     command := lr.RetroEnvironment(u32(command) & ~u32(lr.RetroEnvironment.Experimental))
 
-    // log.debugf("Processing env callback: '{}'", command)
+    log.debugf("Processing env callback: '{}'", command)
 
     #partial switch command {
         case .GetCoreOptionsVersion: return env_callback_get_core_options_version(data)
@@ -43,6 +43,8 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetKeyboardCallback: return env_callback_set_keyboard_callback(data)
         case .SetSupportNoGame: return env_callback_set_support_no_game(data)
         case .GetLibretroPath: return env_callback_get_libretro_path(data)
+        case .SetHwRenderContextNegotiationInterface: return env_callback_set_hw_render_context_negotiation_interface(data)
+        case .GetHwRenderInterface: return env_callback_get_hw_render_interface(data)
         case: log.warnf("Callback not supported: '{}'", command)
     }
 
@@ -312,6 +314,9 @@ env_callback_set_hw_render :: proc (data: rawptr) -> bool { // TODO: add other a
     #partial switch render_cb.context_type {
     case .OPENGL_CORE, .OPENGL:
         video_init_emu_opengl_context(render_cb)
+        return true
+    case .VULKAN:
+        video_init_emu_vulkan_context(render_cb)
         return true
     }
 
@@ -1110,6 +1115,16 @@ env_callback_get_current_software_framebuffer :: proc (data: rawptr) -> bool { /
  * a result of \c false is not necessarily an error.
  */
 env_callback_get_hw_render_interface :: proc (data: rawptr) -> bool { // TODO
+    if data == nil { return false }
+
+    interface := cast(^lr.RetroHwRenderInterface)data
+    #partial switch interface.interface_type {
+    case .VULKAN:
+        vk_interface := cast(^lr.RetroHwRenderInterfaceVulkan)data
+        vk_interface.interface_version = lr.RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION
+        return true
+    }
+
     return false
 }
 
@@ -1154,7 +1169,19 @@ env_callback_set_support_achievements :: proc (data: rawptr) -> bool { // TODO
  * @see RETRO_ENVIRONMENT_SET_HW_RENDER
  */
 env_callback_set_hw_render_context_negotiation_interface :: proc (data: rawptr) -> bool { // TODO
-    return false
+    if data == nil { return false }
+
+    interface := (^lr.RetroHwRenderContextNegotiationInterface)(data)
+    switch interface.interface_type {
+    case .VULKAN:
+        vk_interface := (^lr.RetroHwRenderContextNegotiationInterfaceVulkan)(data)
+        assert(vk_interface.interface_type == .VULKAN)
+        assert(vk_interface.interface_version <= lr.RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION)
+        log.info(vk_interface)
+        log.info(vk_interface.get_application_info())
+    }
+
+    return true
 }
 
 /**

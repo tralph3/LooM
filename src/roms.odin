@@ -12,14 +12,18 @@ RomEntry :: struct {
     category: string,
 }
 
-rom_entries_load :: proc () -> (err: os2.Error) {
+rom_entries_load :: proc () -> (ok: bool) {
     roms_dir_path := config_get_roms_dir_path()
 
-    roms_dir_fd := os2.open(roms_dir_path) or_return
+    roms_dir_fd, open_err := os2.open(roms_dir_path)
+    if open_err != nil {
+        return false
+    }
     defer os2.close(roms_dir_fd)
 
     roms_dir_it: os2.Read_Directory_Iterator
     os2.read_directory_iterator_init(&roms_dir_it, roms_dir_fd)
+    defer os2.read_directory_iterator_destroy(&roms_dir_it)
 
     for system in os2.read_directory_iterator(&roms_dir_it) {
         core_conf := config_get_system_config(system.name)
@@ -48,11 +52,16 @@ rom_entries_load :: proc () -> (err: os2.Error) {
         roms_path := fp.join({ roms_dir_path, system.name })
         defer delete(roms_path)
 
-        roms_fd := os2.open(roms_path) or_return
+        roms_fd, open_err := os2.open(roms_path)
+        if open_err != nil {
+            return false
+        }
         defer os2.close(roms_fd)
 
         roms_it: os2.Read_Directory_Iterator
         os2.read_directory_iterator_init(&roms_it, roms_fd)
+        defer os2.read_directory_iterator_destroy(&roms_it)
+
         for rom in os2.read_directory_iterator(&roms_it) {
             append(&GLOBAL_STATE.rom_entries, RomEntry{
                 name = strings.clone(fp.stem(fp.base(rom.fullpath))),
@@ -62,7 +71,7 @@ rom_entries_load :: proc () -> (err: os2.Error) {
         }
     }
 
-    return nil
+    return true
 }
 
 rom_entries_unload :: proc () {

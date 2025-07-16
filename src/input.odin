@@ -18,6 +18,10 @@ INPUT_STATE := struct #no_copy {
 
     ok_pressed: bool,
     back_pressed: bool,
+
+    // determines if ui elements should be selected with the mouse or
+    // directionally with the keyboard or a controller
+    using_mouse: bool,
 } {}
 
 INPUT_MAX_PLAYERS :: 8
@@ -89,6 +93,8 @@ input_open_gamepads :: proc () -> (ok:bool) {
 input_handle_key_pressed :: proc (event: ^sdl.Event) {
     if event.key.repeat { return }
 
+    INPUT_STATE.using_mouse = false
+
     #partial switch event.key.scancode {
     case .LEFT:
         gui_focus_left()
@@ -118,12 +124,15 @@ input_handle_mouse :: proc (event: ^sdl.Event) {
            event.type == .MOUSE_BUTTON_UP ||
            event.type == .MOUSE_MOTION)
 
+    INPUT_STATE.using_mouse = true
+
     #partial switch event.type {
     case .MOUSE_MOTION:
         INPUT_STATE.mouse.position = { event.motion.x, event.motion.y }
     case .MOUSE_BUTTON_DOWN:
         INPUT_STATE.mouse.clicked = true
         INPUT_STATE.mouse.down = true
+        INPUT_STATE.ok_pressed = true
     case .MOUSE_BUTTON_UP:
         INPUT_STATE.mouse.down = false
     case .MOUSE_WHEEL:
@@ -152,6 +161,8 @@ input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
             break
         }
     }
+
+    INPUT_STATE.using_mouse = false
 
     #partial switch sdl.GamepadButton(event.gbutton.button) {
     case .DPAD_LEFT:
@@ -258,4 +269,8 @@ input_is_controller_connected :: proc "contextless" (port: u32) -> bool {
 
 input_is_controller_active_this_frame :: proc "contextless" (port: u32) -> bool {
     return INPUT_STATE.players[port].active_this_frame
+}
+
+input_is_using_mouse :: proc () -> bool {
+    return INPUT_STATE.using_mouse
 }

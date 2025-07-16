@@ -2,6 +2,7 @@ package libretro
 
 import "core:c"
 import sdl "vendor:sdl3"
+import vk "vendor:vulkan"
 
 RETRO_NUM_CORE_OPTION_VALUES_MAX :: 128
 
@@ -509,4 +510,147 @@ KeyboardCallbackFunc :: proc "c" (down: bool, keycode: RetroKey, utf32_char: c.u
 
 RetroKeyboardCallback :: struct {
     callback: KeyboardCallbackFunc,
+}
+
+RetroHwRenderInterfaceType :: enum c.int {
+   VULKAN     = 0,
+   D3D9       = 1,
+   D3D10      = 2,
+   D3D11      = 3,
+   D3D12      = 4,
+   GSKIT_PS2  = 5,
+}
+
+RetroHwRenderContextNegotiationInterfaceType :: enum c.int {
+   VULKAN = 0,
+}
+
+RetroHwRenderInterface :: struct {
+    interface_type: RetroHwRenderInterfaceType,
+    interface_version: c.uint,
+}
+
+RetroHwRenderContextNegotiationInterface :: struct {
+    interface_type: RetroHwRenderContextNegotiationInterfaceType,
+    interface_version: c.uint,
+}
+
+RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION :: 5
+
+RetroVulkanSetImage :: proc "c" (
+    handle: vk.Handle,
+    image: ^RetroVulkanImage,
+    num_semaphores: c.uint32_t,
+    semaphores: [^]vk.Semaphore,
+    src_queue_family: c.uint32_t)
+
+RetroVulkanGetSyncIndex :: proc "c" (handle: vk.Handle) -> c.uint32_t
+
+RetroVulkanGetSyncIndexMask :: proc "c" (handle: vk.Handle) -> c.uint32_t
+
+RetroVulkanSetCommandBuffers :: proc "c" (
+    handle: vk.Handle,
+    num_cmd: c.uint32_t,
+    cmd: [^]vk.CommandBuffer)
+
+RetroVulkanWaitSyncIndex :: proc "c" (handle: vk.Handle)
+
+RetroVulkanLockQueue :: proc "c" (handle: vk.Handle)
+
+RetroVulkanUnlockQueue :: proc "c" (handle: vk.Handle)
+
+RetroVulkanSetSignalSemaphore :: proc "c" (handle: vk.Handle, semaphore: vk.Semaphore)
+
+RetroVulkanGetApplicationInfo :: proc "c" () -> ^vk.ApplicationInfo
+
+RetroVulkanCreateDevice :: proc "c" (
+    ctx: ^RetroVulkanContext,
+    instance: vk.Instance,
+    gpu: vk.PhysicalDevice,
+    surface: vk.SurfaceKHR,
+    get_instance_proc_addr: vk.ProcGetInstanceProcAddr,
+    required_device_extensions: [^]cstring,
+    num_required_device_extensions: c.uint,
+    required_device_layers: [^]cstring,
+    num_required_device_layers: c.uint,
+    required_features: ^vk.PhysicalDeviceFeatures,
+) -> bool
+
+RetroVulkanDestroyDevice :: proc "c" ()
+
+RetroVulkanCreateInstance :: proc "c" (
+    get_instance_proc_addr: vk.ProcGetInstanceProcAddr,
+    app: ^vk.ApplicationInfo,
+    create_instance_wrapper: RetroVulkanCreateInstanceWrapper,
+    opaque: rawptr,
+) -> vk.Instance
+
+RetroVulkanCreateInstanceWrapper :: proc "c" (
+    opaque: rawptr,
+    create_info: ^vk.InstanceCreateInfo,
+) -> vk.Instance
+
+RetroVulkanCreateDevice2 :: proc "c" (
+    ctx: ^RetroVulkanContext,
+    instance: vk.Instance,
+    gpu: vk.PhysicalDevice,
+    surface: vk.SurfaceKHR,
+    get_instance_proc_addr: vk.ProcGetInstanceProcAddr,
+    create_device_wrapper: RetroVulkanCreateDeviceWrapper,
+    opaque: rawptr,
+) -> bool
+
+RetroVulkanCreateDeviceWrapper :: proc "c" (
+    gpu: vk.PhysicalDevice,
+    opaque: rawptr,
+    create_info: ^vk.DeviceCreateInfo,
+) -> vk.Device
+
+RetroVulkanContext :: struct {
+    gpu: vk.PhysicalDevice,
+    device: vk.Device,
+    queue: vk.Queue,
+    queue_family_index: c.uint32_t,
+    presentation_queue: vk.Queue,
+    presentation_queue_family_index: c.uint32_t,
+}
+
+RetroVulkanImage :: struct {
+    image_view: vk.ImageView,
+    image_layout: vk.ImageLayout,
+    create_info: vk.ImageViewCreateInfo,
+}
+
+RetroHwRenderInterfaceVulkan :: struct {
+    interface_type: RetroHwRenderInterfaceType,
+    interface_version: c.uint,
+    handle: vk.Handle,
+    instance: vk.Instance,
+    gpu: vk.PhysicalDevice,
+    device: vk.Device,
+
+    get_device_proc_addr: vk.ProcGetDeviceProcAddr,
+    get_instance_proc_addr: vk.ProcGetInstanceProcAddr,
+
+    queue: vk.Queue,
+    queue_index: c.uint,
+
+    set_image: RetroVulkanSetImage,
+    get_sync_index: RetroVulkanGetSyncIndex,
+    get_sync_index_mask: RetroVulkanGetSyncIndexMask,
+    set_command_buffers: RetroVulkanSetCommandBuffers,
+    wait_sync_index: RetroVulkanWaitSyncIndex,
+    lock_queue: RetroVulkanLockQueue,
+    unlock_queue: RetroVulkanUnlockQueue,
+    set_signal_semaphore: RetroVulkanSetSignalSemaphore,
+}
+
+RetroHwRenderContextNegotiationInterfaceVulkan :: struct {
+    interface_type: RetroHwRenderContextNegotiationInterfaceType,
+    interface_version: c.uint,
+    get_application_info: RetroVulkanGetApplicationInfo,
+    create_device: RetroVulkanCreateDevice,
+    destroy_device: RetroVulkanDestroyDevice,
+    create_instance: RetroVulkanCreateInstance,
+    create_device2: RetroVulkanCreateDevice2,
 }

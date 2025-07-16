@@ -57,7 +57,7 @@ video_init :: proc () -> (ok: bool) {
     }
 
     VIDEO_STATE.window = sdl.CreateWindow(
-        "Libretro Frontend", INITIAL_SCREEN_SIZE.x, INITIAL_SCREEN_SIZE.y, { .RESIZABLE, .OPENGL })
+        "LooM", INITIAL_SCREEN_SIZE.x, INITIAL_SCREEN_SIZE.y, { .RESIZABLE, .OPENGL })
     if VIDEO_STATE.window == nil {
         log.errorf("Failed creating window: {}", sdl.GetError())
         return false
@@ -180,6 +180,11 @@ video_init_emu_opengl_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
         return c.uintptr_t(VIDEO_STATE.fbo.framebuffer)
     }
 
+    emulator_set_hw_render_callback(render_cb^)
+}
+
+video_init_emu_vulkan_context :: proc (render_cb: ^lr.RetroHwRenderCallback) {
+    log.info(render_cb)
     emulator_set_hw_render_callback(render_cb^)
 }
 

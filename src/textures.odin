@@ -1,18 +1,13 @@
 package main
 
 import gl "vendor:OpenGL"
-import "core:image"
-import "core:image/png"
 import fp "core:path/filepath"
 import "core:log"
 import "core:strings"
-import "core:slice"
 import sdl "vendor:sdl3"
-import sdl_image "vendor:sdl3/image"
-import "core:sync/chan"
-import "core:thread"
-import "core:mem"
-import "core:bytes"
+import sdli "vendor:sdl3/image"
+
+BASE_TEXTURE_PATH :: "./assets/images/"
 
 Texture :: struct {
     gl_id: u32,
@@ -20,193 +15,85 @@ Texture :: struct {
     height: f32,
 }
 
-@(private="file")
-TextureRequest :: struct {
-    name: string,
+TextureID :: enum {
+    NoCover,
+    TextureLoading,
+    ControllerConnected,
+    ControllerDisconnected,
 }
 
-@(private="file")
-TextureResult :: struct {
-    name: string,
-    img: ^image.Image,
+TexturePaths :: [TextureID]string {
+        .NoCover = "nocover",
+        .TextureLoading = "nocover",
+        .ControllerConnected = "controller_connected",
+        .ControllerDisconnected = "controller_disconnected",
 }
 
-LOADED_TEXTURES: map[string]Texture
-DEFAULT_COVER_TEXTURE: Texture
+texture_load_stock :: proc (internal_path: string) -> (tex: Texture, ok: bool){
+    filename := strings.concatenate({ internal_path, ".png" })
+    defer delete(filename)
 
-TEXTURE_RESULT_CHAN: chan.Chan(TextureResult, .Both)
-
-TEXTURE_THREAD_POOL: thread.Pool
-
-textures_init :: proc () -> (ok: bool) {
-    image.register(kind = .JPEG, loader = jpeg_image_loader, destroyer = jpeg_image_destroyer)
-
-    err: image.Error
-    DEFAULT_COVER_TEXTURE, err = texture_load_from_path("./assets/img/nocover.png")
-    if err != nil {
-        log.errorf("Failed loading default cover art: {}", err)
-        return false
-    }
-
-    thread.pool_init(&TEXTURE_THREAD_POOL, context.allocator, 5)
-    thread.pool_start(&TEXTURE_THREAD_POOL)
-
-    TEXTURE_RESULT_CHAN, err = chan.create(type_of(TEXTURE_RESULT_CHAN), 30, context.allocator)
-    if err != nil {
-        log.errorf("Failed creating result channel: {}", err)
-        return false
-    }
-
-    return true
-}
-
-textures_deinit :: proc () {
-    chan.close(TEXTURE_RESULT_CHAN)
-    chan.destroy(TEXTURE_RESULT_CHAN)
-
-    thread.pool_shutdown(&TEXTURE_THREAD_POOL)
-    thread.pool_destroy(&TEXTURE_THREAD_POOL)
-
-    for name, &tex in LOADED_TEXTURES {
-        delete(name)
-        gl.DeleteTextures(1, &tex.gl_id)
-    }
-
-    delete(LOADED_TEXTURES)
-}
-
-texture_load_from_path :: proc (path: string) -> (texture: Texture, err: image.Error) {
-    img := image.load(path) or_return
-    defer image.destroy(img)
-
-    return texture_load_from_image(img), nil
-}
-
-texture_load_from_bytes :: proc (bytes: []byte) -> (texture: Texture, err: image.Error) {
-    img := image.load(bytes) or_return
-    defer image.destroy(img)
-
-    return texture_load_from_image(img), nil
-}
-
-texture_load_from_image :: proc (img: ^image.Image) -> (texture: Texture) {
-    format: u32
-
-    switch img.channels {
-    case 4:
-        format = gl.RGBA
-    case 3:
-        format = gl.RGB
-    case 2:
-        format = gl.RG
-    case 1:
-        format = gl.RED
-    }
-
-    gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
-    gl.GenTextures(1, &texture.gl_id)
-    gl.BindTexture(gl.TEXTURE_2D, texture.gl_id)
-    gl.TexImage2D(
-        gl.TEXTURE_2D, 0, gl.RGBA8,
-        i32(img.width), i32(img.height),
-        0, format, gl.UNSIGNED_BYTE, raw_data(img.pixels.buf))
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-    gl.PixelStorei(gl.UNPACK_ALIGNMENT, 4)
-
-    texture.width = max(f32(img.width), 1)
-    texture.height = max(f32(img.height), 1)
-
-    return
-}
-
-texture_get_or_load :: proc (name: string) -> (texture: Texture) {
-    for res in chan.try_recv(TEXTURE_RESULT_CHAN) {
-        defer delete(res.name)
-        defer image.destroy(res.img)
-
-        tex: Texture
-        if res.img == nil {
-            tex = DEFAULT_COVER_TEXTURE
-        } else {
-            tex = texture_load_from_image(res.img)
-        }
-
-        LOADED_TEXTURES[res.name] = tex
-    }
-
-    if name in LOADED_TEXTURES {
-        return LOADED_TEXTURES[name]
-    }
-
-    cloned_name := strings.clone(name)
-    thread.pool_add_task(
-            &TEXTURE_THREAD_POOL, context.allocator, texture_process_load_request, raw_data(cloned_name), len(cloned_name))
-
-    LOADED_TEXTURES[strings.clone(name)] = DEFAULT_COVER_TEXTURE
-
-    return LOADED_TEXTURES[name]
-}
-
-texture_process_load_request :: proc (task: thread.Task) {
-    name := strings.string_from_ptr((^u8)(task.data), task.user_index)
-
-    name_ext := strings.concatenate({ name, ".png" })
-    defer delete(name_ext)
-
-    full_path := fp.join({ "./assets/img", name_ext })
+    full_path := fp.join({ BASE_TEXTURE_PATH, filename })
     defer delete(full_path)
 
-    tex_result := TextureResult{ name = name }
-
-    err: image.Error
-    tex_result.img, err = image.load(full_path)
-    if err != nil {
-        log.errorf("Failed loading image '{}': {}", full_path, err)
-        tex_result.img = nil
-    }
-
-    chan.send(TEXTURE_RESULT_CHAN, tex_result)
+    return texture_load(full_path)
 }
 
-jpeg_image_loader :: proc (data: []byte, options: image.Options, allocator: mem.Allocator) -> (img: ^image.Image, err: image.Error) {
-    img = new(image.Image, allocator) or_return
-    stream := sdl.IOFromMem(raw_data(data), len(data))
-    if stream == nil {
-        return nil, .Unable_To_Read_File
-    }
-    defer sdl.CloseIO(stream)
+texture_load :: proc (path: string) -> (tex: Texture, ok: bool) {
+    path_cstr := strings.clone_to_cstring(path)
+    defer delete(path_cstr)
 
-    surface := sdl_image.LoadJPG_IO(stream)
+    surface := sdli.Load(path_cstr)
     if surface == nil {
-        return nil, .Invalid_Input_Image
+        ok = false
+        return
     }
-    defer sdl.DestroySurface(surface)
 
-    if surface.format != .RGB24 {
+    if surface.format != .RGBA8888 {
         old_surface := surface
         defer sdl.DestroySurface(old_surface)
 
-        surface = sdl.ConvertSurface(surface, .RGB24)
+        surface = sdl.ConvertSurface(surface, .RGBA8888)
         if surface == nil {
-            return nil, .Unable_To_Read_File
+            ok = false
+            return
         }
     }
 
-    img.width = int(surface.w)
-    img.height = int(surface.h)
-    img.channels = 3
-    img.depth = 8
-    img.which = .JPEG
+    defer sdl.DestroySurface(surface)
 
-    buf: bytes.Buffer
-    pixels := slice.from_ptr((^u8)(surface.pixels), int(surface.pitch * surface.h))
-    bytes.buffer_init(&buf, pixels)
-    img.pixels = buf
-    return
+    Data :: struct {
+        surface: ^sdl.Surface,
+        tex: ^Texture,
+    }
+
+    data := Data{
+        surface = surface,
+        tex = &tex,
+    }
+
+    // if texture_load is called on the main thread, this callback
+    // runs immediately. if not, the thread will get blocked until
+    // texture loading is complete. that also ensures that stack
+    // allocated variables like `data` won't get freed by the time the
+    // callback runs... we need this because we can't load a GL
+    // texture on another thread.
+    if !sdl.RunOnMainThread(
+        proc "c" (data: rawptr) {
+            d := cast(^Data)data
+
+            d.tex.gl_id = gl_load_texture_from_surface(d.surface)
+            d.tex.width = f32(d.surface.w)
+            d.tex.height = f32(d.surface.h)
+        }, &data, wait_complete=true)
+    {
+        ok = false
+        return
+    }
+
+    return tex, true
 }
 
-jpeg_image_destroyer :: proc (img: ^image.Image) {
-    bytes.buffer_destroy(&img.pixels)
-    free(img)
+texture_unload :: proc (tex: ^Texture) {
+    gl.DeleteTextures(1, &tex.gl_id)
 }

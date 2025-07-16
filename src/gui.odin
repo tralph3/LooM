@@ -91,7 +91,11 @@ gui_is_clicked :: proc (id: cl.ElementId) -> bool {
 
 
 gui_is_focused :: proc (id: cl.ElementId) -> bool {
-    return GUI_STATE.focused_element.id == id
+    if input_is_using_mouse() {
+        return cl.Hovered()
+    } else {
+        return GUI_STATE.focused_element.id == id
+    }
 }
 
 gui_focus_up :: proc () {
@@ -100,7 +104,7 @@ gui_focus_up :: proc () {
     } else if GUI_STATE.focus_up != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_up
         gui_reset_focus_directions()
-        audio_play_sound_effect(.SelectNegative)
+        audio_play_sound(.SelectNegative)
     }
 }
 
@@ -110,7 +114,7 @@ gui_focus_down :: proc () {
     } else if GUI_STATE.focus_down != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_down
         gui_reset_focus_directions()
-        audio_play_sound_effect(.SelectPositive)
+        audio_play_sound(.SelectPositive)
     }
 }
 
@@ -120,7 +124,7 @@ gui_focus_left :: proc () {
     } else if GUI_STATE.focus_left != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_left
         gui_reset_focus_directions()
-        audio_play_sound_effect(.SelectNegative)
+        audio_play_sound(.SelectNegative)
     }
 }
 
@@ -130,17 +134,20 @@ gui_focus_right :: proc () {
     } else if GUI_STATE.focus_right != {} {
         GUI_STATE.focused_element = GUI_STATE.focus_right
         gui_reset_focus_directions()
-        audio_play_sound_effect(.SelectPositive)
+        audio_play_sound(.SelectPositive)
     }
 }
 
 gui_focus_default_element :: proc () {
+    if GUI_STATE.default_focus == {} {
+        return
+    }
     bb := cl.GetElementData(GUI_STATE.default_focus).boundingBox
     GUI_STATE.focused_element = {
         id = GUI_STATE.default_focus,
         boundingBox = bb,
     }
-    audio_play_sound_effect(.SelectPositive)
+    audio_play_sound(.SelectPositive)
 }
 
 gui_reset_focus :: proc () {
@@ -180,7 +187,10 @@ gui_register_focus_element :: proc (id: cl.ElementId) {
     angle := math.atan2(d.y, d.x)
 
     dist_sq := d.x * d.x + d.y * d.y
-    assert(dist_sq != 0.0)
+    //assert(dist_sq != 0.0)
+    if dist_sq == 0 {
+        return
+    }
 
     new_focus := FocusElement{
         id = id,
@@ -212,6 +222,8 @@ gui_set_default_focus_element :: proc (id: cl.ElementId) {
 }
 
 gui_scroll_container_to_focus :: proc (scroll_container_id: cl.ElementId) {
+    if input_is_using_mouse() { return }
+
     scroll_container := cl.GetScrollContainerData(scroll_container_id)
     element_data := cl.GetElementData(scroll_container_id)
     if !scroll_container.found || !element_data.found {

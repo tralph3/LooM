@@ -25,8 +25,8 @@ widgets_spacer :: proc (direction: SpacerDirection) {
 widgets_controller_status :: proc () {
     for i in 0..<INPUT_MAX_PLAYERS {
         texture := input_is_controller_connected(u32(i)) \
-            ? texture_get_or_load("controller_connected") \
-            : texture_get_or_load("controller_disconnected")
+            ? assets_get_texture(.ControllerConnected) \
+            : assets_get_texture(.ControllerDisconnected)
 
         if cl.UI()({
             layout = {

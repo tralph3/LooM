@@ -84,7 +84,7 @@ parse :: proc {
     parse_from_path,
 }
 
-read_byte :: proc (file: ^os2.File) -> (res: byte, err: Error) {
+read_byte :: proc (file: ^os2.File) -> (res: byte, err: Error) #no_bounds_check {
     os2.read(file, BUFFER[:1]) or_return
     return BUFFER[0], nil
 }
@@ -99,7 +99,7 @@ read_uint8 :: proc (file: ^os2.File) -> (res: u8, err: Error) {
     return read_byte(file)
 }
 
-read_uint16 :: proc (file: ^os2.File) -> (res: u16, err: Error) {
+read_uint16 :: proc (file: ^os2.File) -> (res: u16, err: Error) #no_bounds_check {
     os2.read(file, BUFFER[:2]) or_return
     val, ok := endian.get_u16(BUFFER[:2], .Big)
     if !ok { return 0, .ByteUnpackingError }
@@ -107,7 +107,7 @@ read_uint16 :: proc (file: ^os2.File) -> (res: u16, err: Error) {
     return val, nil
 }
 
-read_uint32 :: proc (file: ^os2.File) -> (res: u32, err: Error) {
+read_uint32 :: proc (file: ^os2.File) -> (res: u32, err: Error) #no_bounds_check {
     os2.read(file, BUFFER[:4]) or_return
     val, ok := endian.get_u32(BUFFER[:4], .Big)
     if !ok { return 0, .ByteUnpackingError }
@@ -115,7 +115,7 @@ read_uint32 :: proc (file: ^os2.File) -> (res: u32, err: Error) {
     return val, nil
 }
 
-read_uint64 :: proc (file: ^os2.File) -> (res: u64, err: Error) {
+read_uint64 :: proc (file: ^os2.File) -> (res: u64, err: Error) #no_bounds_check {
     os2.read(file, BUFFER[:8]) or_return
     val, ok := endian.get_u64(BUFFER[:8], .Big)
     if !ok { return 0, .ByteUnpackingError }
@@ -249,7 +249,7 @@ read_entry :: proc (file: ^os2.File, key_count: u32) -> (entry: Entry, crc: u32,
                 if !assertion_ok {
                     return nil, 0, .UnexpectedType
                 }
-                crc = parse_crc_hash(val_byte_array) or_return
+                crc = parse_crc_hash(val_byte_array)
                 delete(key_str)
                 delete(val_byte_array)
                 continue
@@ -273,13 +273,12 @@ read_entry :: proc (file: ^os2.File, key_count: u32) -> (entry: Entry, crc: u32,
     return
 }
 
-parse_crc_hash :: proc (crc: []byte) -> (hash: u32, err: Error) {
-    val, ok := endian.get_u32(crc, .Big)
-    if !ok {
-        return 0, .ByteUnpackingError
+parse_crc_hash :: proc "contextless" (crc: []byte) -> (hash: u32) {
+    for b, i in crc {
+        shift_count := (uint(len(crc)) - uint(i) - 1) * 8
+        hash |= u32(b) << shift_count
     }
-
-    return val, nil
+    return
 }
 
 validate_header :: proc (file: ^os2.File) -> (err: Error) {
@@ -304,6 +303,7 @@ parse_from_file :: proc (file: ^os2.File) -> (res: Database, err: Error) {
         case .FixMap, .Map16, .Map32:
             entry, crc, error := read_entry(file, size)
             if error == .NoCRCHash { continue }
+            if error != nil { return nil, error }
             if crc in res {
                 delete_entry(entry)
                 continue

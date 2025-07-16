@@ -50,7 +50,7 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
                 padding = cl.PaddingAll(UI_SPACING_4),
             },
         }) {
-            cover_texture := texture_get_or_load(file_name)
+            cover_texture := cover_get(file_name)
             if cl.UI()({
                 layout = {
                     sizing = {
