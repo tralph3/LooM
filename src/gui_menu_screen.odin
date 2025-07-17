@@ -31,6 +31,7 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
     }) {
         gui_register_focus_element(id)
         file_name := fp.base(string(entry.name))
+        system_name := string(entry.category)
 
         if gui_is_focused(id) {
             gui_scroll_container_to_focus(cl.ID("Game Grid"))
@@ -50,7 +51,7 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
                 padding = cl.PaddingAll(UI_SPACING_4),
             },
         }) {
-            cover_texture := cover_get(file_name)
+            cover_texture := cover_get(system_name, file_name)
             if cl.UI()({
                 layout = {
                     sizing = {

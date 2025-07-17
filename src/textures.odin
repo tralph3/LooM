@@ -2,6 +2,7 @@ package main
 
 import gl "vendor:OpenGL"
 import fp "core:path/filepath"
+import "core:os/os2"
 import "core:log"
 import "core:strings"
 import sdl "vendor:sdl3"
@@ -39,11 +40,30 @@ texture_load_stock :: proc (internal_path: string) -> (tex: Texture, ok: bool){
     return texture_load(full_path)
 }
 
-texture_load :: proc (path: string) -> (tex: Texture, ok: bool) {
-    path_cstr := strings.clone_to_cstring(path)
-    defer delete(path_cstr)
+texture_load :: proc {
+    texture_load_from_path,
+    texture_load_from_bytes,
+}
 
-    surface := sdli.Load(path_cstr)
+texture_load_from_path :: proc (path: string) -> (tex: Texture, ok: bool) {
+    bytes, err := os2.read_entire_file(path, context.allocator)
+    if err != nil {
+        ok = false
+        return
+    }
+    defer delete(bytes)
+
+    return texture_load_from_bytes(bytes)
+}
+
+texture_load_from_bytes :: proc (bytes: []byte) -> (tex: Texture, ok: bool) {
+    stream := sdl.IOFromMem(raw_data(bytes), len(bytes))
+    if stream == nil {
+        ok = false
+        return
+    }
+
+    surface := sdli.Load_IO(stream, closeio=true)
     if surface == nil {
         ok = false
         return

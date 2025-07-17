@@ -7,44 +7,73 @@ import "core:os/os2"
 import "core:slice"
 import "core:strings"
 import "core:net"
+import sdli "vendor:sdl3/image"
+import sdl "vendor:sdl3"
 
 @(private="file")
 BASE_URL :: "https://thumbnails.libretro.com/"
 
-thumbnail_download :: proc (system: string, name: string) -> (ok: bool) {
+// [0; 33] is Lowest quality, [34; 66] is Middle quality, [67; 100] is Highest quality.
+THUMBNAIL_JPEG_QUALITY :: 70
+
+thumbnail_download :: proc (system: string, name: string) -> (res: []byte, ok: bool) {
     url := strings.concatenate({
         BASE_URL,
-        net.percent_encode(system),
+        net.percent_encode(system, context.temp_allocator),
         "/Named_Boxarts/",
-        net.percent_encode(name),
+        net.percent_encode(name, context.temp_allocator),
         ".png"
-    })
-    defer delete(url)
+    }, context.temp_allocator)
 
-    res, err := client.get(url)
+    response, err := client.get(url)
     if err != nil {
         log.errorf("Failed requesting thumbnail: {}", err)
-        return false
+        return nil, false
     }
-    defer client.response_destroy(&res)
+    defer client.response_destroy(&response)
 
-    body, was_alloc, body_err := client.response_body(&res)
+    body, was_alloc, body_err := client.response_body(&response)
     if body_err != nil {
         log.errorf("Failed reading response body: {}", body_err)
-        return false
+        return nil, false
     }
     defer client.body_destroy(body, was_alloc)
 
     body_str := body.(string) or_else ""
     if body_str == "" {
         log.error("Unexpected server response")
-        return false
+        return nil, false
     }
 
-    result := slice.from_ptr(raw_data(body.(string)), len(body.(string)))
-    if err := os2.write_entire_file("./image.png", result); err != nil {
+    res = slice.from_ptr(raw_data(body.(string)), len(body.(string)))
+    stream := sdl.IOFromMem(raw_data(res), len(res))
+    if !sdli.isJPG(stream) {
+        // we do not close this IO, because that would free the memory
+        // it points to, which actually belongs to the response body,
+        // and will be freed when its destroyed
+        surface := sdli.Load_IO(stream, closeio=false)
+        if surface == nil {
+            log.error("Failed loading downloaded cover image")
+            return nil, false
+        }
+        defer sdl.DestroySurface(surface)
 
+        jpg_stream := sdl.IOFromDynamicMem()
+        io_start := sdl.TellIO(jpg_stream)
+
+        defer sdl.CloseIO(jpg_stream)
+
+        sdli.SaveJPG_IO(surface, jpg_stream, closeio=false, quality=THUMBNAIL_JPEG_QUALITY)
+        sdl.SeekIO(jpg_stream, io_start, sdl.IO_SEEK_SET)
+
+        size := sdl.GetIOSize(jpg_stream)
+        res = make([]byte, size)
+
+        sdl.ReadIO(jpg_stream, raw_data(res), len(res))
+    } else {
+        res = slice.clone(res)
     }
 
-    return true
+    ok = true
+    return
 }

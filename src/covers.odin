@@ -7,6 +7,7 @@ import "core:thread"
 import "core:log"
 import sdl "vendor:sdl3"
 import "core:mem"
+import fp "core:path/filepath"
 
 CoverResult :: struct {
     texture: Texture,
@@ -14,8 +15,16 @@ CoverResult :: struct {
     success: bool,
 }
 
+CoverRequest :: struct {
+    name: string,
+    system: string,
+}
+
 COVER_CURRENTLY_LOADING: [dynamic]string
 COVER_RESULT_CHAN: chan.Chan(CoverResult, .Both)
+COVER_STORAGE_CACHE := CacheStorage{
+    base_path = "./cache",
+}
 COVER_MEMORY_CACHE := CacheMemory(Texture){
     eviction_time_ms = 1000,
     item_free_proc = proc (tex: Texture) {
@@ -43,7 +52,7 @@ covers_deinit :: proc () {
     delete(COVER_CURRENTLY_LOADING)
 }
 
-cover_get :: proc (name: string) -> (tex: Texture) {
+cover_get :: proc (system: string, name: string) -> (tex: Texture) {
     for res in chan.try_recv(COVER_RESULT_CHAN) {
         defer delete(res.name)
 
@@ -66,8 +75,12 @@ cover_get :: proc (name: string) -> (tex: Texture) {
     }
 
     if !slice.contains(COVER_CURRENTLY_LOADING[:], name) {
+        // TODO: the key should be system + name
         cloned_name := strings.clone(name)
-        thread_pool_add_task(cover_process_load_request, raw_data(cloned_name), len(cloned_name))
+        request := new(CoverRequest)
+        request.name = cloned_name
+        request.system = strings.clone(system)
+        thread_pool_add_task(cover_process_load_request, request, 0)
         append(&COVER_CURRENTLY_LOADING, cloned_name)
     }
 
@@ -76,15 +89,49 @@ cover_get :: proc (name: string) -> (tex: Texture) {
     return cache_get(&COVER_MEMORY_CACHE, name)^
 }
 
+
+import "base:runtime"
 cover_process_load_request :: proc (task: thread.Task) {
+    // TODO: figure out how to use the main context
+    // in a thread safe way
     context = state_get_context()
+    context.temp_allocator = runtime.default_context().temp_allocator
 
-    name := strings.string_from_ptr((^u8)(task.data), task.user_index)
-    cover_result := CoverResult{ name = name }
+    request := cast(^CoverRequest)task.data
+    defer delete(request.system, state_get_context().allocator)
+    defer free(request, state_get_context().allocator)
 
-    tex, ok := texture_load_stock(name)
+    cover_result := CoverResult{ name = request.name }
+
+    cache_key := fp.join({ request.system, request.name })
+    defer delete(cache_key)
+
+    tex: Texture
+    ok: bool
+    if cache_has(&COVER_STORAGE_CACHE, cache_key) {
+        bytes, err := cache_get(&COVER_STORAGE_CACHE, cache_key, context.allocator)
+        if err != nil {
+            cache_delete(&COVER_STORAGE_CACHE, cache_key)
+            ok = false
+        } else {
+            tex, ok = texture_load_from_bytes(bytes)
+            delete(bytes)
+        }
+    }
+
     if !ok {
-        log.errorf("Failed loading texture '{}': {}", name, sdl.GetError())
+        bytes, ok_download := thumbnail_download(request.system, request.name)
+        if !ok_download {
+            ok = false
+        } else {
+            cache_set(&COVER_STORAGE_CACHE, cache_key, bytes)
+            tex, ok = texture_load_from_bytes(bytes)
+            delete(bytes)
+        }
+    }
+
+    if !ok {
+        log.errorf("Failed loading texture '{}': {}", cache_key, sdl.GetError())
         cover_result.success = false
     } else {
         cover_result.success = true
