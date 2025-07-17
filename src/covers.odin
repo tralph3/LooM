@@ -3,7 +3,6 @@ package main
 import "core:strings"
 import "core:slice"
 import "core:sync/chan"
-import "core:thread"
 import "core:log"
 import sdl "vendor:sdl3"
 import "core:mem"
@@ -90,13 +89,7 @@ cover_get :: proc (system: string, name: string) -> (tex: Texture) {
 }
 
 
-import "base:runtime"
-cover_process_load_request :: proc (task: thread.Task) {
-    // TODO: figure out how to use the main context
-    // in a thread safe way
-    context = state_get_context()
-    context.temp_allocator = runtime.default_context().temp_allocator
-
+cover_process_load_request :: proc (task: Task) {
     request := cast(^CoverRequest)task.data
     defer delete(request.system, state_get_context().allocator)
     defer free(request, state_get_context().allocator)

@@ -14,7 +14,10 @@ import sdl "vendor:sdl3"
 BASE_URL :: "https://thumbnails.libretro.com/"
 
 // [0; 33] is Lowest quality, [34; 66] is Middle quality, [67; 100] is Highest quality.
-THUMBNAIL_JPEG_QUALITY :: 70
+// yes, the covers are at the lowest possible quality. they look good
+// enough anyway. bumping to even medium quality results in 3x the
+// file size on average.
+THUMBNAIL_JPEG_QUALITY :: 1
 
 thumbnail_download :: proc (system: string, name: string) -> (res: []byte, ok: bool) {
     url := strings.concatenate({

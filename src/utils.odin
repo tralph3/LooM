@@ -2,6 +2,7 @@ package main
 
 import "core:mem"
 import fp "core:path/filepath"
+import "core:log"
 
 clone_cstring :: proc (cstr: cstring, allocator := context.allocator) -> cstring {
     tmp := string(cstr)
@@ -21,4 +22,17 @@ dir_path_with_trailing_slash_cstr :: proc (dir_path: string) -> (res: cstring, e
     ([^]byte)(cstr_clone)[len(dir_path) + 1] = '\x00'
 
     return cstring(cstr_clone), nil
+}
+
+print_leaked_allocations :: proc (track: ^mem.Tracking_Allocator) {
+    if len(track.allocation_map) > 0 {
+		log.errorf("=== %v allocations not freed ===\n", len(track.allocation_map))
+        total: int
+		for _, entry in track.allocation_map {
+            total += entry.size
+			log.errorf("%v bytes @ %v", entry.size, entry.location)
+		}
+
+        log.errorf("Total memory leaked: {} bytes", total)
+	}
 }

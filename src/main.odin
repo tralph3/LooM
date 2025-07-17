@@ -170,19 +170,6 @@ main :: proc () {
 		context.allocator = mem.compat_allocator(&compat)
         context.temp_allocator = mem.tracking_allocator(&track_temp)
 
-        print_leaked_allocations :: proc (track: ^mem.Tracking_Allocator) {
-            if len(track.allocation_map) > 0 {
-				log.errorf("=== %v allocations not freed ===\n", len(track.allocation_map))
-                total: int
-				for _, entry in track.allocation_map {
-                    total += entry.size
-					log.errorf("%v bytes @ %v", entry.size, entry.location)
-				}
-
-                log.errorf("Total memory leaked: {} bytes", total)
-			}
-        }
-
 		defer {
             print_leaked_allocations(&track)
             print_leaked_allocations(&track_temp)
