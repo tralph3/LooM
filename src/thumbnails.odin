@@ -50,10 +50,11 @@ thumbnail_download :: proc (system: string, name: string) -> (res: []byte, ok: b
 
     res = slice.from_ptr(raw_data(body.(string)), len(body.(string)))
     stream := sdl.IOFromMem(raw_data(res), len(res))
+    defer sdl.CloseIO(stream)
+
     if !sdli.isJPG(stream) {
-        // we do not close this IO, because that would free the memory
-        // it points to, which actually belongs to the response body,
-        // and will be freed when its destroyed
+        // we do not close this IO, because it is already closed in
+        // the outer scope
         surface := sdli.Load_IO(stream, closeio=false)
         if surface == nil {
             log.error("Failed loading downloaded cover image")
@@ -62,9 +63,8 @@ thumbnail_download :: proc (system: string, name: string) -> (res: []byte, ok: b
         defer sdl.DestroySurface(surface)
 
         jpg_stream := sdl.IOFromDynamicMem()
-        io_start := sdl.TellIO(jpg_stream)
-
         defer sdl.CloseIO(jpg_stream)
+        io_start := sdl.TellIO(jpg_stream)
 
         sdli.SaveJPG_IO(surface, jpg_stream, closeio=false, quality=THUMBNAIL_JPEG_QUALITY)
         sdl.SeekIO(jpg_stream, io_start, sdl.IO_SEEK_SET)
