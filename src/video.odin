@@ -231,11 +231,16 @@ video_get_window_dimensions :: proc "contextless" () -> [2]i32 {
     return VIDEO_STATE.window_size
 }
 
+depth: int
 video_run_inside_emu_context :: proc "contextless" (func: proc "c" ()) {
     if emulator_is_hw_rendered() {
+        depth += 1
         sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.emu_context)
         func()
-        sdl.GL_MakeCurrent(VIDEO_STATE.window, VIDEO_STATE.main_context)
+        depth -= 1
+        if depth == 0 {
+            sdl.GL_MakeCurrent(VIDEO_STATE.window,  VIDEO_STATE.main_context)
+        }
     } else {
         func()
     }
