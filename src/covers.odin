@@ -25,9 +25,12 @@ COVER_STORAGE_CACHE := CacheStorage{
     base_path = "./cache",
 }
 COVER_MEMORY_CACHE := CacheMemory(Texture){
-    eviction_time_ms = 1000,
+    eviction_time_ms = 3000,
     item_free_proc = proc (tex: Texture) {
         tex := tex
+        if tex == assets_get_texture(.NoCover) || tex == assets_get_texture(.TextureLoading) {
+            return
+        }
         texture_unload(&tex)
     }
 }

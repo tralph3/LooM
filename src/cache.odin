@@ -120,7 +120,7 @@ cache_memory_evict :: proc (cache: ^CacheMemory($T)) {
 
     for key in keys_to_remove {
         cache.item_free_proc(cache.cache[key].item)
-        delete_key(cache.cache, key)
+        delete_key(&cache.cache, key)
         delete(key)
     }
 }

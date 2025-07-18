@@ -44,7 +44,9 @@ SCENES := [SceneID]Scene{
                 id := gui_menu_get_default_focus_element()
                 gui_set_default_focus_element(id)
             },
-            update = proc () {},
+            update = proc () {
+                cache_evict(&COVER_MEMORY_CACHE)
+            },
             render = proc () {
                 layout := gui_layout_menu_screen()
                 gui_renderer_render_commands(&layout)
