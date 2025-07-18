@@ -1,8 +1,8 @@
 ;;; -*- lisp-data -*-
 ((:name "Run release"
-        :command "odin run src -o:speed"
+        :command "odin run src -o:speed -collection:ext=ext"
         :type "compile")
  (:name "Compile and run"
         :command ("mkdir -p build"
-                  "odin run src -debug -out:build/debug")
+                  "odin run src -debug -out:build/debug -collection:ext=ext")
         :type "compile"))

@@ -1,7 +1,7 @@
 package main
 
-import "http/client"
-import "http"
+import "ext:http/client"
+import "ext:http"
 import "core:log"
 import "core:os/os2"
 import "core:slice"
