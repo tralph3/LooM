@@ -243,3 +243,17 @@ gui_scroll_container_to_focus :: proc (scroll_container_id: cl.ElementId) {
         scroll_container.scrollPosition.y -= focus_top - scroll_top
     }
 }
+
+gui_is_element_near_bounds :: proc (id: cl.ElementId) -> (res: bool) {
+    OFFSET :: 200
+
+    bb := cl.GetElementData(id).boundingBox
+    if bb == {} { return false }
+    window_dim := video_get_window_dimensions()
+    w := [2]f32{ f32(window_dim.x), f32(window_dim.y) }
+
+    return bb.x < w.x + OFFSET && \
+        bb.x + bb.width > -OFFSET && \
+        bb.y < w.y + OFFSET && \
+        bb.y + bb.height > -OFFSET
+}

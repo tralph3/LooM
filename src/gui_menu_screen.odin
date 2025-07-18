@@ -51,17 +51,19 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
                 padding = cl.PaddingAll(UI_SPACING_4),
             },
         }) {
-            cover_texture := cover_get(system_name, file_name)
-            if cl.UI()({
-                layout = {
-                    sizing = {
-                        width = cl.SizingGrow({}),
-                        height = cl.SizingGrow({}),
+            if gui_is_element_near_bounds(cl.ID("Cover", idx)) {
+                cover_texture := cover_get(system_name, file_name)
+                if cl.UI()({
+                    layout = {
+                        sizing = {
+                            width = cl.SizingGrow({}),
+                            height = cl.SizingGrow({}),
+                        },
                     },
-                },
-                aspectRatio = { cover_texture.width / cover_texture.height },
-                image = { rawptr(uintptr(cover_texture.gl_id)) },
-            }) {}
+                    aspectRatio = { cover_texture.width / cover_texture.height },
+                    image = { rawptr(uintptr(cover_texture.gl_id)) },
+                }) {}
+            }
         }
 
         if cl.UI()({
