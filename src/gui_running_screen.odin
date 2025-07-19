@@ -69,5 +69,7 @@ gui_layout_running_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         }) { }
     }
 
+    notifications_evict_and_layout()
+
     return cl.EndLayout()
 }

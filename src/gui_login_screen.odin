@@ -110,5 +110,7 @@ gui_layout_login_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         }
     }
 
+    notifications_evict_and_layout()
+
     return cl.EndLayout()
 }

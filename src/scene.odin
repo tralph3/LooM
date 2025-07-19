@@ -2,6 +2,7 @@ package main
 
 import sdl "vendor:sdl3"
 import "core:log"
+import "core:strings"
 
 SceneOnEnter :: proc ()
 SceneOnExit :: proc ()
@@ -30,6 +31,12 @@ SCENES := [SceneID]Scene{
                 gui_reset_focus()
                 id := gui_login_get_default_focus_element()
                 gui_set_default_focus_element(id)
+            },
+            on_exit = proc () {
+                username := user_get_current()
+                notifications_add(
+                    strings.concatenate({ "Succesfully logged in as ", username }, context.temp_allocator),
+                    3000)
             },
             update = proc () {},
             render = proc () {

@@ -176,5 +176,7 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
         }
     }
 
+    notifications_evict_and_layout()
+
     return cl.EndLayout()
 }
