@@ -4,11 +4,14 @@ import "core:os/os2"
 import "core:encoding/endian"
 import "core:slice"
 import "core:strings"
+import "core:io"
+import "core:bytes"
 
 RDB_HEADER : u64 : 0x52_41_52_43_48_44_42_00
 
 // unless reading strings, we'll at most read 8 bytes at once. for
 // those operations, this buffer will be reused.
+@(thread_local)
 BUFFER: [8]byte
 
 ParseError :: enum {
@@ -18,11 +21,13 @@ ParseError :: enum {
     UnexpectedType,
     UnknownTypeError,
     UnsupportedItemType,
+    MissingEntryCount,
     NoCRCHash,
 }
 
 Error :: union #shared_nil {
     os2.Error,
+    io.Error,
     ParseError,
 }
 
@@ -80,77 +85,79 @@ DataType :: enum u8 {
 }
 
 parse :: proc {
-    parse_from_file,
-    parse_from_path,
+    parse_database_from_file,
+    parse_database_from_path,
 }
 
-read_byte :: proc (file: ^os2.File) -> (res: byte, err: Error) #no_bounds_check {
-    os2.read(file, BUFFER[:1]) or_return
+read_byte :: proc (stream: io.Stream) -> (res: byte, err: Error) #no_bounds_check {
+    io.read(stream, BUFFER[:1]) or_return
     return BUFFER[0], nil
 }
 
-read_binary :: proc (file: ^os2.File, count: u32, allocator:=context.allocator) -> (res: []byte, err: Error) {
+read_binary :: proc (stream: io.Stream, count: u32, allocator:=context.allocator) -> (res: []byte, err: Error) {
     buf := make([]byte, count, allocator)
-    os2.read(file, buf) or_return
+    defer if err != nil { delete(buf) }
+    io.read(stream, buf) or_return
     return buf, nil
 }
 
-read_uint8 :: proc (file: ^os2.File) -> (res: u8, err: Error) {
-    return read_byte(file)
+read_uint8 :: proc (stream: io.Stream) -> (res: u8, err: Error) {
+    return read_byte(stream)
 }
 
-read_uint16 :: proc (file: ^os2.File) -> (res: u16, err: Error) #no_bounds_check {
-    os2.read(file, BUFFER[:2]) or_return
+read_uint16 :: proc (stream: io.Stream) -> (res: u16, err: Error) #no_bounds_check {
+    io.read(stream, BUFFER[:2]) or_return
     val, ok := endian.get_u16(BUFFER[:2], .Big)
     if !ok { return 0, .ByteUnpackingError }
 
     return val, nil
 }
 
-read_uint32 :: proc (file: ^os2.File) -> (res: u32, err: Error) #no_bounds_check {
-    os2.read(file, BUFFER[:4]) or_return
+read_uint32 :: proc (stream: io.Stream) -> (res: u32, err: Error) #no_bounds_check {
+    io.read(stream, BUFFER[:4]) or_return
     val, ok := endian.get_u32(BUFFER[:4], .Big)
     if !ok { return 0, .ByteUnpackingError }
 
     return val, nil
 }
 
-read_uint64 :: proc (file: ^os2.File) -> (res: u64, err: Error) #no_bounds_check {
-    os2.read(file, BUFFER[:8]) or_return
+read_uint64 :: proc (stream: io.Stream) -> (res: u64, err: Error) #no_bounds_check {
+    io.read(stream, BUFFER[:8]) or_return
     val, ok := endian.get_u64(BUFFER[:8], .Big)
     if !ok { return 0, .ByteUnpackingError }
 
     return val, nil
 }
 
-read_int8 :: proc (file: ^os2.File) -> (res: i8, err: Error) {
-    r := read_byte(file) or_return
+read_int8 :: proc (stream: io.Stream) -> (res: i8, err: Error) {
+    r := read_byte(stream) or_return
     return i8(r), nil
 }
 
-read_int16 :: proc (file: ^os2.File) -> (res: i16, err: Error) {
-    r := read_uint16(file) or_return
+read_int16 :: proc (stream: io.Stream) -> (res: i16, err: Error) {
+    r := read_uint16(stream) or_return
     return i16(r), nil
 }
 
-read_int32 :: proc (file: ^os2.File) -> (res: i32, err: Error) {
-    r := read_uint32(file) or_return
+read_int32 :: proc (stream: io.Stream) -> (res: i32, err: Error) {
+    r := read_uint32(stream) or_return
     return i32(r), nil
 }
 
-read_int64 :: proc (file: ^os2.File) -> (res: i64, err: Error) {
-    r := read_uint64(file) or_return
+read_int64 :: proc (stream: io.Stream) -> (res: i64, err: Error) {
+    r := read_uint64(stream) or_return
     return i64(r), nil
 }
 
-read_string :: proc (file: ^os2.File, length: u32, allocator:=context.allocator) -> (res: string, err: Error) {
+read_string :: proc (stream: io.Stream, length: u32, allocator:=context.allocator) -> (res: string, err: Error) {
     buf := make([]byte, length, allocator)
-    os2.read(file, buf) or_return
+    defer if err != nil { delete(buf) }
+    io.read(stream, buf) or_return
     return strings.string_from_ptr(raw_data(buf), int(length)), nil
 }
 
-identify_type :: proc (file: ^os2.File) -> (type: DataType, size: u32, err: Error) {
-    b := read_byte(file) or_return
+identify_type :: proc (stream: io.Stream) -> (type: DataType, size: u32, err: Error) {
+    b := read_byte(stream) or_return
 
     switch DataType(b) {
     // we don't care about the size for any of these types because its implicit
@@ -167,34 +174,34 @@ identify_type :: proc (file: ^os2.File) -> (type: DataType, size: u32, err: Erro
         size = u32(b & 0b1111)
     case .Str8:
         type = .Str8
-        size = u32(read_uint8(file) or_return)
+        size = u32(read_uint8(stream) or_return)
     case .Str16:
         type = .Str16
-        size = u32(read_uint16(file) or_return)
+        size = u32(read_uint16(stream) or_return)
     case .Str32:
         type = .Str32
-        size = u32(read_uint32(file) or_return)
+        size = u32(read_uint32(stream) or_return)
     case .Bin8:
         type = .Bin8
-        size = u32(read_uint8(file) or_return)
+        size = u32(read_uint8(stream) or_return)
     case .Bin16:
         type = .Bin16
-        size = u32(read_uint16(file) or_return)
+        size = u32(read_uint16(stream) or_return)
     case .Bin32:
         type = .Bin32
-        size = u32(read_uint32(file) or_return)
+        size = u32(read_uint32(stream) or_return)
     case .Map16:
         type = .Map16
-        size = u32(read_uint16(file) or_return)
+        size = u32(read_uint16(stream) or_return)
     case .Map32:
         type = .Map32
-        size = u32(read_uint32(file) or_return)
+        size = u32(read_uint32(stream) or_return)
     case .Array16:
         type = .Array16
-        size = u32(read_uint16(file) or_return)
+        size = u32(read_uint16(stream) or_return)
     case .Array32:
         type = .Array32
-        size = u32(read_uint32(file) or_return)
+        size = u32(read_uint32(stream) or_return)
     case:
         return nil, 0, .UnknownTypeError
     }
@@ -202,32 +209,32 @@ identify_type :: proc (file: ^os2.File) -> (type: DataType, size: u32, err: Erro
     return
 }
 
-read_item :: proc (file: ^os2.File) -> (item: Item, err: Error) {
-    type, size := identify_type(file) or_return
+read_item :: proc (stream: io.Stream) -> (item: Item, err: Error) {
+    type, size := identify_type(stream) or_return
 
     switch type {
     case .FixStr:
-        item = read_string(file, size) or_return
+        item = read_string(stream, size) or_return
     case .Bin8, .Bin16, .Bin32:
-        item = read_binary(file, size) or_return
+        item = read_binary(stream, size) or_return
     case .Str8, .Str16, .Str32:
-        item = read_string(file, size) or_return
+        item = read_string(stream, size) or_return
     case .Uint8:
-        item = read_uint8(file) or_return
+        item = read_uint8(stream) or_return
     case .Uint16:
-        item = read_uint16(file) or_return
+        item = read_uint16(stream) or_return
     case .Uint32:
-        item = read_uint32(file) or_return
+        item = read_uint32(stream) or_return
     case .Uint64:
-        item = read_uint64(file) or_return
+        item = read_uint64(stream) or_return
     case .Int8:
-        item = read_int8(file) or_return
+        item = read_int8(stream) or_return
     case .Int16:
-        item = read_int16(file) or_return
+        item = read_int16(stream) or_return
     case .Int32:
-        item = read_int32(file) or_return
+        item = read_int32(stream) or_return
     case .Int64:
-        item = read_int64(file) or_return
+        item = read_int64(stream) or_return
     case .FixMap, .Map16, .Map32, .Nil:
         return nil, .UnexpectedType
     case .FixArray, .Array16, .Array32, .False, .True:
@@ -237,23 +244,42 @@ read_item :: proc (file: ^os2.File) -> (item: Item, err: Error) {
     return
 }
 
-read_entry :: proc (file: ^os2.File, key_count: u32) -> (entry: Entry, crc: u32, err: Error) {
+read_metadata :: proc (stream: io.Stream, offset: u64) -> (entry: Entry, err: Error) {
+    prev := io.seek(stream, 0, .Current) or_return
+    io.seek(stream, i64(offset), .Start) or_return
+
+    type, size := identify_type(stream) or_return
+    if type != .FixMap { return nil, .UnexpectedType }
+    metadata := read_entry(stream, size) or_return
+
+    io.seek(stream, prev, .Start) or_return
+    return metadata, nil
+}
+
+read_entry :: proc (stream: io.Stream, key_count: u32) -> (entry: Entry,  err: Error) {
+    defer if err != nil { delete_entry(entry) }
+
     for _ in 0..<key_count {
-        key := read_item(file) or_return
-        val := read_item(file) or_return
+        key, key_err := read_item(stream)
+        val, val_err := read_item(stream)
+
+        if key_err != nil && val_err != nil {
+            delete_item(val)
+            delete_item(key)
+            err = val_err
+            return
+        } else if key_err != nil {
+            delete_item(val)
+            err = key_err
+            return
+        } else if val_err != nil {
+            delete_item(key)
+            err = val_err
+            return
+        }
 
         #partial switch key_str in key {
         case string:
-            if key_str == "crc" {
-                val_byte_array, assertion_ok := val.([]byte)
-                if !assertion_ok {
-                    return nil, 0, .UnexpectedType
-                }
-                crc = parse_crc_hash(val_byte_array)
-                delete(key_str)
-                delete(val_byte_array)
-                continue
-            }
             if key_str in entry {
                 delete(key_str)
                 delete_item(val)
@@ -261,13 +287,10 @@ read_entry :: proc (file: ^os2.File, key_count: u32) -> (entry: Entry, crc: u32,
             }
             entry[key_str] = val
         case:
-            return nil, 0, .UnexpectedType
+            delete_item(key)
+            delete_item(val)
+            return nil, .UnexpectedType
         }
-    }
-
-    if crc == 0 {
-        delete_entry(entry)
-        return nil, 0, .NoCRCHash
     }
 
     return
@@ -281,8 +304,8 @@ parse_crc_hash :: proc "contextless" (crc: []byte) -> (hash: u32) {
     return
 }
 
-validate_header :: proc (file: ^os2.File) -> (err: Error) {
-    file_header := read_uint64(file) or_return
+validate_header :: proc (stream: io.Stream) -> (err: Error) {
+    file_header := read_uint64(stream) or_return
     if file_header != RDB_HEADER {
         return .InvalidHeader
     }
@@ -290,30 +313,72 @@ validate_header :: proc (file: ^os2.File) -> (err: Error) {
     return nil
 }
 
-parse_from_file :: proc (file: ^os2.File) -> (res: Database, err: Error) {
-    validate_header(file) or_return
+parse_database_from_file :: proc (file: ^os2.File) -> (res: Database, err: Error) {
+    bytes := os2.read_entire_file_from_file(file, context.allocator) or_return
+    return parse_database_from_bytes(bytes)
+}
 
-    // metadata start, we don't care
-    _ = read_uint64(file) or_return
+parse_database_from_path :: proc (file_path: string) -> (res: map[u32]Entry, err: Error) {
+    f := os2.open(file_path) or_return
+	defer os2.close(f)
 
-    loop: for {
-        type, size := identify_type(file) or_return
+    return parse_database_from_file(f)
+}
+
+parse_database_from_bytes :: proc (contents: []byte) -> (res: map[u32]Entry, err: Error) {
+    buf: bytes.Buffer
+    bytes.buffer_init(&buf, contents)
+    stream := bytes.buffer_to_stream(&buf)
+
+    // sanity check: the contents's memory gets copied to the buffer,
+    // and the buffer memory is then mirrored on the stream. this gets
+    // rid of the buffer memory as well, don't worry
+    defer io.destroy(stream)
+
+    return parse_database_from_stream(stream)
+}
+
+parse_database_from_stream :: proc (stream: io.Stream) -> (res: map[u32]Entry, err: Error) {
+    validate_header(stream) or_return
+
+    metadata_offset := read_uint64(stream) or_return
+    metadata := read_metadata(stream, metadata_offset) or_return
+    count_item, has_count := metadata["count"]
+    if !has_count { return nil, .MissingEntryCount }
+
+    count: u64
+    #partial switch c in count_item {
+        case u8:  count = u64(c)
+        case u16: count = u64(c)
+        case u32: count = u64(c)
+        case u64: count = u64(c)
+        case i8:  count = u64(c)
+        case i16: count = u64(c)
+        case i32: count = u64(c)
+        case i64: count = u64(c)
+        case: return nil, .UnexpectedType
+    }
+
+    for _ in 0..<count {
+        type, size := identify_type(stream) or_return
 
         #partial switch type {
         case .FixMap, .Map16, .Map32:
-            entry, crc, error := read_entry(file, size)
-            if error == .NoCRCHash { continue }
-            if error != nil { return nil, error }
+            entry := read_entry(stream, size) or_return
+            crc_arr, has_crc := entry["crc"]
+            if !has_crc {
+                delete_entry(entry)
+                continue
+            }
+            delete_key(&entry, "crc")
+            crc := parse_crc_hash(crc_arr.([]byte))
             if crc in res {
+                // TODO: I would prefer elements to be merged rather
+                // than ignored
                 delete_entry(entry)
                 continue
             }
             res[crc] = entry
-        case .Nil:
-            type, size = identify_type(file) or_return
-            entry, crc, error := read_entry(file, size)
-            if error != .NoCRCHash { return nil, error }
-            break loop
         case:
             return nil, .UnexpectedType
         }
@@ -322,11 +387,11 @@ parse_from_file :: proc (file: ^os2.File) -> (res: Database, err: Error) {
     return
 }
 
-parse_from_path :: proc (file_path: string) -> (res: map[u32]Entry, err: Error) {
-    f := os2.open(file_path) or_return
-	defer os2.close(f)
-
-    return parse_from_file(f)
+parse_database :: proc {
+    parse_database_from_path,
+    parse_database_from_file,
+    parse_database_from_bytes,
+    parse_database_from_stream,
 }
 
 delete_item :: proc (item: Item, allocator:=context.allocator) {
