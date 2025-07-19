@@ -1,6 +1,7 @@
 ;;; -*- lisp-data -*-
 ((:name "Test all"
         :command ("odin test src -collection:ext=ext -define:ODIN_TEST_SHORT_LOGS=true"
+                  "odin test src/circular_buffer -collection:ext=ext -define:ODIN_TEST_SHORT_LOGS=true"
                   "odin test src/rdb -collection:ext=ext -define:ODIN_TEST_SHORT_LOGS=true")
         :type "compile")
  (:name "Run release"
