@@ -331,6 +331,7 @@ validate_header :: proc (stream: io.Stream) -> (err: Error) {
 
 parse_database_from_file :: proc (file: ^os2.File, allocator:=context.allocator) -> (res: Database, err: Error) {
     bytes := os2.read_entire_file_from_file(file, allocator) or_return
+    defer delete(bytes, allocator)
     return parse_database_from_bytes(bytes, allocator)
 }
 
