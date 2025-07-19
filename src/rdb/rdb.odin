@@ -94,8 +94,8 @@ read_byte :: proc (stream: io.Stream) -> (res: byte, err: Error) #no_bounds_chec
     return BUFFER[0], nil
 }
 
-read_binary :: proc (stream: io.Stream, count: u32, allocator:=context.allocator) -> (res: []byte, err: Error) {
-    buf := make([]byte, count, allocator)
+read_binary :: proc (stream: io.Stream, count: u32, allocator:=context.allocator, loc:=#caller_location) -> (res: []byte, err: Error) {
+    buf := make([]byte, count, allocator, loc)
     defer if err != nil { delete(buf) }
     io.read(stream, buf) or_return
     return buf, nil
@@ -149,8 +149,8 @@ read_int64 :: proc (stream: io.Stream) -> (res: i64, err: Error) {
     return i64(r), nil
 }
 
-read_string :: proc (stream: io.Stream, length: u32, allocator:=context.allocator) -> (res: string, err: Error) {
-    buf := make([]byte, length, allocator)
+read_string :: proc (stream: io.Stream, length: u32, allocator:=context.allocator, loc:=#caller_location) -> (res: string, err: Error) {
+    buf := make([]byte, length, allocator, loc)
     defer if err != nil { delete(buf) }
     io.read(stream, buf) or_return
     return strings.string_from_ptr(raw_data(buf), int(length)), nil
@@ -209,16 +209,16 @@ identify_type :: proc (stream: io.Stream) -> (type: DataType, size: u32, err: Er
     return
 }
 
-read_item :: proc (stream: io.Stream) -> (item: Item, err: Error) {
+read_item :: proc (stream: io.Stream, allocator:=context.allocator, loc:=#caller_location) -> (item: Item, err: Error) {
     type, size := identify_type(stream) or_return
 
     switch type {
     case .FixStr:
-        item = read_string(stream, size) or_return
+        item = read_string(stream, size, allocator, loc) or_return
     case .Bin8, .Bin16, .Bin32:
-        item = read_binary(stream, size) or_return
+        item = read_binary(stream, size, allocator, loc) or_return
     case .Str8, .Str16, .Str32:
-        item = read_string(stream, size) or_return
+        item = read_string(stream, size, allocator, loc) or_return
     case .Uint8:
         item = read_uint8(stream) or_return
     case .Uint16:
@@ -256,24 +256,24 @@ read_metadata :: proc (stream: io.Stream, offset: u64) -> (entry: Entry, err: Er
     return metadata, nil
 }
 
-read_entry :: proc (stream: io.Stream, key_count: u32) -> (entry: Entry,  err: Error) {
-    defer if err != nil { delete_entry(entry) }
+read_entry :: proc (stream: io.Stream, key_count: u32, allocator:=context.allocator) -> (entry: Entry,  err: Error) {
+    defer if err != nil { delete_entry(entry, allocator) }
 
     for _ in 0..<key_count {
-        key, key_err := read_item(stream)
-        val, val_err := read_item(stream)
+        key, key_err := read_item(stream, allocator)
+        val, val_err := read_item(stream, allocator)
 
         if key_err != nil && val_err != nil {
-            delete_item(val)
-            delete_item(key)
+            delete_item(val, allocator)
+            delete_item(key, allocator)
             err = val_err
             return
         } else if key_err != nil {
-            delete_item(val)
+            delete_item(val, allocator)
             err = key_err
             return
         } else if val_err != nil {
-            delete_item(key)
+            delete_item(key, allocator)
             err = val_err
             return
         }
@@ -281,14 +281,14 @@ read_entry :: proc (stream: io.Stream, key_count: u32) -> (entry: Entry,  err: E
         #partial switch key_str in key {
         case string:
             if key_str in entry {
-                delete(key_str)
-                delete_item(val)
+                delete(key_str, allocator)
+                delete_item(val, allocator)
                 continue
             }
             entry[key_str] = val
         case:
-            delete_item(key)
-            delete_item(val)
+            delete_item(key, allocator)
+            delete_item(val, allocator)
             return nil, .UnexpectedType
         }
     }
@@ -304,6 +304,22 @@ parse_crc_hash :: proc "contextless" (crc: []byte) -> (hash: u32) {
     return
 }
 
+extract_crc_hash :: proc (entry: ^Entry) -> (crc: u32, err: Error) {
+    if !("crc" in entry) { return 0, .NoCRCHash }
+
+    key, val := delete_key(entry, "crc")
+    defer delete(key)
+    defer delete_item(val)
+
+    if val_arr, ok_val := val.([]byte); ok_val {
+        crc = parse_crc_hash(val_arr)
+    } else {
+        return 0, .UnexpectedType
+    }
+
+    return
+}
+
 validate_header :: proc (stream: io.Stream) -> (err: Error) {
     file_header := read_uint64(stream) or_return
     if file_header != RDB_HEADER {
@@ -313,19 +329,19 @@ validate_header :: proc (stream: io.Stream) -> (err: Error) {
     return nil
 }
 
-parse_database_from_file :: proc (file: ^os2.File) -> (res: Database, err: Error) {
-    bytes := os2.read_entire_file_from_file(file, context.allocator) or_return
-    return parse_database_from_bytes(bytes)
+parse_database_from_file :: proc (file: ^os2.File, allocator:=context.allocator) -> (res: Database, err: Error) {
+    bytes := os2.read_entire_file_from_file(file, allocator) or_return
+    return parse_database_from_bytes(bytes, allocator)
 }
 
-parse_database_from_path :: proc (file_path: string) -> (res: map[u32]Entry, err: Error) {
+parse_database_from_path :: proc (file_path: string, allocator:=context.allocator) -> (res: map[u32]Entry, err: Error) {
     f := os2.open(file_path) or_return
 	defer os2.close(f)
 
-    return parse_database_from_file(f)
+    return parse_database_from_file(f, allocator)
 }
 
-parse_database_from_bytes :: proc (contents: []byte) -> (res: map[u32]Entry, err: Error) {
+parse_database_from_bytes :: proc (contents: []byte, allocator:=context.allocator) -> (res: map[u32]Entry, err: Error) {
     buf: bytes.Buffer
     bytes.buffer_init(&buf, contents)
     stream := bytes.buffer_to_stream(&buf)
@@ -335,14 +351,26 @@ parse_database_from_bytes :: proc (contents: []byte) -> (res: map[u32]Entry, err
     // rid of the buffer memory as well, don't worry
     defer io.destroy(stream)
 
-    return parse_database_from_stream(stream)
+    return parse_database_from_stream(stream, allocator)
 }
 
-parse_database_from_stream :: proc (stream: io.Stream) -> (res: map[u32]Entry, err: Error) {
+merge_entries :: proc (entry1, entry2: ^Entry, allocator:=context.allocator) -> Entry {
+    for k, v in entry2 {
+        if k in entry1 { continue }
+        entry1[k] = v
+        delete_key(entry2, k)
+    }
+    delete_entry(entry2^)
+    return entry1^
+}
+
+parse_database_from_stream :: proc (stream: io.Stream, allocator:=context.allocator) -> (res: map[u32]Entry, err: Error) {
     validate_header(stream) or_return
 
     metadata_offset := read_uint64(stream) or_return
     metadata := read_metadata(stream, metadata_offset) or_return
+    defer delete_entry(metadata, allocator)
+
     count_item, has_count := metadata["count"]
     if !has_count { return nil, .MissingEntryCount }
 
@@ -364,21 +392,19 @@ parse_database_from_stream :: proc (stream: io.Stream) -> (res: map[u32]Entry, e
 
         #partial switch type {
         case .FixMap, .Map16, .Map32:
-            entry := read_entry(stream, size) or_return
-            crc_arr, has_crc := entry["crc"]
-            if !has_crc {
+            entry := read_entry(stream, size, allocator) or_return
+            crc, extract_err := extract_crc_hash(&entry)
+
+            if extract_err == .NoCRCHash {
                 delete_entry(entry)
                 continue
             }
-            delete_key(&entry, "crc")
-            crc := parse_crc_hash(crc_arr.([]byte))
+
             if crc in res {
-                // TODO: I would prefer elements to be merged rather
-                // than ignored
-                delete_entry(entry)
-                continue
+                res[crc] = merge_entries(&res[crc], &entry)
+            } else {
+                res[crc] = entry
             }
-            res[crc] = entry
         case:
             return nil, .UnexpectedType
         }
@@ -406,7 +432,7 @@ delete_item :: proc (item: Item, allocator:=context.allocator) {
 delete_entry :: proc (entry: Entry, allocator:=context.allocator) {
     for k, v in entry {
         delete(k, allocator)
-        delete_item(v)
+        delete_item(v, allocator)
     }
 
     delete(entry)

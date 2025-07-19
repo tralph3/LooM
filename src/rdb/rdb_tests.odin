@@ -865,3 +865,139 @@ rdb_parse_unsupported_nested_structure_test :: proc(t: ^testing.T) {
     testing.expect_value(t, err, ParseError.UnexpectedType)
     testing.expect_value(t, len(db), 0)
 }
+
+@(test)
+rdb_parse_with_garbage_test :: proc(t: ^testing.T) {
+    entries := [][]byte{
+        {
+            u8(DataType.FixMap) + 2,
+            u8(DataType.FixStr) + 3, 'k', 'e', 'y',
+            u8(DataType.FixStr) + 5, 'v', 'a', 'l', 'u', 'e',
+            u8(DataType.FixStr) + 3, 'c', 'r', 'c',
+            u8(DataType.Bin8), 0x04, 0x00, 0x00, 0x00, 0x21,
+            u8(DataType.Nil),
+            0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE, // garbage
+        },
+    }
+
+    base := make_rdb_test_data(entries)
+    with_garbage := slice.concatenate([][]byte{
+        base,
+        { 0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE }, // garbage
+    }, context.temp_allocator)
+
+    db, err := parse_database(with_garbage)
+    defer delete_database(db)
+
+    testing.expect_value(t, err, nil)
+    testing.expect_value(t, len(db), 1)
+
+    entry_map, exists := db[0x21]
+    testing.expect_value(t, exists, true)
+
+    value, has_key := entry_map["key"]
+    testing.expect_value(t, has_key, true)
+
+    str_value, str_ok := value.(string)
+    testing.expect_value(t, str_ok, true)
+    testing.expect_value(t, str_value, "value")
+}
+
+@(test)
+rdb_merge_entries_test :: proc(t: ^testing.T) {
+    entries := [][]byte{
+        {
+            u8(DataType.FixMap) + 3,
+            u8(DataType.FixStr) + 3, 'a', 'b', 'c',
+            u8(DataType.FixStr) + 3, 'o', 'n', 'e',
+            u8(DataType.FixStr) + 3, 'c', 'r', 'c',
+            u8(DataType.Bin8), 0x04, 0x00, 0x00, 0x00, 0x42,
+            u8(DataType.FixStr) + 3, 'x', 'y', 'z',
+            u8(DataType.FixStr) + 3, 'f', 'o', 'o',
+        },
+        {
+            u8(DataType.FixMap) + 3,
+            u8(DataType.FixStr) + 3, 'd', 'e', 'f',
+            u8(DataType.FixStr) + 3, 't', 'w', 'o',
+            u8(DataType.FixStr) + 3, 'c', 'r', 'c',
+            u8(DataType.Bin8), 0x04, 0x00, 0x00, 0x00, 0x42,
+            u8(DataType.FixStr) + 3, 'x', 'y', 'z',
+            u8(DataType.FixStr) + 3, 'b', 'a', 'r',
+        },
+    }
+
+    test_data := make_rdb_test_data(entries)
+
+    db, err := parse_database(test_data)
+    defer delete_database(db)
+
+    testing.expect_value(t, err, nil)
+    testing.expect_value(t, len(db), 1)
+
+    entry, exists := db[0x42]
+    testing.expect_value(t, exists, true)
+
+    testing.expect_value(t, len(entry), 3)
+
+    value_abc, has_abc := entry["abc"]
+    value_def, has_def := entry["def"]
+    value_xyz, has_xyz := entry["xyz"]
+
+    testing.expect_value(t, has_abc, true)
+    testing.expect_value(t, has_def, true)
+    testing.expect_value(t, has_xyz, true)
+
+    str_abc, ok_abc := value_abc.(string)
+    str_def, ok_def := value_def.(string)
+    str_xyz, ok_xyz := value_xyz.(string)
+
+    testing.expect_value(t, ok_abc, true)
+    testing.expect_value(t, ok_def, true)
+    testing.expect_value(t, ok_xyz, true)
+
+    testing.expect_value(t, str_abc, "one")
+    testing.expect_value(t, str_def, "two")
+    // value from the first entry
+    testing.expect_value(t, str_xyz, "foo")
+}
+
+@(test)
+rdb_merge_entries_conflict_test :: proc(t: ^testing.T) {
+    entries := [][]byte{
+        {
+            u8(DataType.FixMap) + 2,
+            u8(DataType.FixStr) + 3, 'k', 'e', 'y',
+            u8(DataType.FixStr) + 3, 'o', 'n', 'e',
+            u8(DataType.FixStr) + 3, 'c', 'r', 'c',
+            u8(DataType.Bin8), 0x04, 0x00, 0x00, 0x00, 0x99,
+        },
+        {
+            u8(DataType.FixMap) + 2,
+            u8(DataType.FixStr) + 3, 'k', 'e', 'y',
+            u8(DataType.FixStr) + 3, 't', 'w', 'o',
+            u8(DataType.FixStr) + 3, 'c', 'r', 'c',
+            u8(DataType.Bin8), 0x04, 0x00, 0x00, 0x00, 0x99,
+        },
+    }
+
+    test_data := make_rdb_test_data(entries)
+
+    db, err := parse_database(test_data)
+    defer delete_database(db)
+
+    testing.expect_value(t, err, nil)
+    testing.expect_value(t, len(db), 1)
+
+    entry, exists := db[0x99]
+    testing.expect_value(t, exists, true)
+
+    testing.expect_value(t, len(entry), 1)
+
+    value, has_key := entry["key"]
+    testing.expect_value(t, has_key, true)
+
+    str_value, str_ok := value.(string)
+    testing.expect_value(t, str_ok, true)
+    // value from first entry
+    testing.expect_value(t, str_value, "one")
+}
