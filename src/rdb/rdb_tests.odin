@@ -8,11 +8,6 @@ import "core:strings"
 import "core:fmt"
 import "core:slice"
 
-HEADER_ARR :: []byte {
-    'R', 'A', 'R', 'C', 'H', 'D', 'B', 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-}
-
 FOOTER_ARR :: []byte {
     u8(DataType.FixMap) + 1,
     u8(DataType.FixStr) + 5, 'c', 'o', 'u', 'n', 't',
@@ -20,18 +15,9 @@ FOOTER_ARR :: []byte {
     0x01,
 }
 
-append_header :: proc (arr: []byte) -> []byte {
-    header := slice.clone(HEADER_ARR, context.temp_allocator)
-    return slice.concatenate([][]byte{ header, arr }, context.temp_allocator)
-}
-
 append_footer :: proc (arr: []byte) -> []byte {
     footer := slice.clone(FOOTER_ARR, context.temp_allocator)
     return slice.concatenate([][]byte{ arr, footer }, context.temp_allocator)
-}
-
-wrap_test_data :: proc (arr: []byte) -> []byte {
-    return append_footer(append_header(arr))
 }
 
 make_rdb_test_data :: proc(entries: [][]byte) -> []byte {
