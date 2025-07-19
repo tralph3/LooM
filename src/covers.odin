@@ -24,9 +24,10 @@ COVER_RESULT_CHAN: chan.Chan(CoverResult, .Both)
 COVER_STORAGE_CACHE := CacheStorage{
     base_path = "./cache",
 }
-COVER_MEMORY_CACHE := CacheMemory(Texture){
+COVER_MEMORY_CACHE := CacheMemory(string, Texture){
     eviction_time_ms = 3000,
-    item_free_proc = proc (tex: Texture) {
+    item_free_proc = proc (key: string, tex: Texture) {
+        delete(key)
         tex := tex
         if tex == assets_get_texture(.NoCover) || tex == assets_get_texture(.TextureLoading) {
             return
@@ -86,7 +87,7 @@ cover_get :: proc (system: string, name: string) -> (tex: Texture) {
         append(&COVER_CURRENTLY_LOADING, cloned_name)
     }
 
-    cache_set(&COVER_MEMORY_CACHE, name, assets_get_texture(.TextureLoading))
+    cache_set(&COVER_MEMORY_CACHE, strings.clone(name), assets_get_texture(.TextureLoading))
 
     return cache_get(&COVER_MEMORY_CACHE, name)^
 }

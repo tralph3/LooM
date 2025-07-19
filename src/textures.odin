@@ -114,6 +114,16 @@ texture_load_from_bytes :: proc (bytes: []byte) -> (tex: Texture, ok: bool) {
     return tex, true
 }
 
-texture_unload :: proc (tex: ^Texture) {
-    gl.DeleteTextures(1, &tex.gl_id)
+texture_unload :: proc {
+    texture_unload_id,
+    texture_unload_tex,
+}
+
+texture_unload_id :: proc (id: u32) {
+    id := id
+    gl.DeleteTextures(1, &id)
+}
+
+texture_unload_tex :: proc (tex: ^Texture) {
+    texture_unload_id(tex.gl_id)
 }
