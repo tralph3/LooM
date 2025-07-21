@@ -46,11 +46,11 @@ widgets_controller_status :: proc () {
 }
 
 widgets_loom_title :: proc () {
-    text_config := new(cl.TextElementConfig, allocator=context.temp_allocator)
-    text_config.fontSize = UI_FONTSIZE_48
-    text_config.textColor = UI_COLOR_MAIN_TEXT
-    text_config.fontId = auto_cast FontID.Title
-    cl.Text("LooM", text_config)
+    cl.Text("LooM", cl.TextConfig({
+        fontSize = UI_FONTSIZE_48,
+        textColor = UI_COLOR_MAIN_TEXT,
+        fontId = auto_cast FontID.Title,
+    }))
 }
 
 
