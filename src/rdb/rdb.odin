@@ -305,7 +305,7 @@ parse_crc_hash :: proc "contextless" (crc: []byte) -> (hash: u32) {
 }
 
 extract_crc_hash :: proc (entry: ^Entry) -> (crc: u32, err: Error) {
-    if !("crc" in entry) { return 0, .NoCRCHash }
+    if "crc" not_in entry { return 0, .NoCRCHash }
 
     key, val := delete_key(entry, "crc")
     defer delete(key)
