@@ -85,6 +85,7 @@ notifications_layout :: proc () {
                 parent = .LeftTop,
             },
             attachTo = .Root,
+            pointerCaptureMode = .Passthrough,
         },
         backgroundColor = {},
     }) {
