@@ -249,9 +249,11 @@ recognize_tag :: proc (tag_str: string) -> bit_set[RomTag] {
 @(private="file")
 // transform e.g. "Legend of Zelda, The" to "The Legend of Zelda"
 reorder_article_suffix :: proc (str: string, allocator:=context.allocator) -> string {
+    split := strings.split(str, " - ", context.temp_allocator)
+
     cut_index: int = -1
     space_encountered := false
-    #reverse for char, i in str {
+    #reverse for char, i in split[0] {
         if strings.is_space(char) {
             if space_encountered {
                 return strings.clone(str, allocator)
@@ -274,12 +276,12 @@ reorder_article_suffix :: proc (str: string, allocator:=context.allocator) -> st
         return strings.clone(str, allocator)
     }
 
-    rest := str[:cut_index]
-    article := str[cut_index + 2:]
+    rest := split[0][:cut_index]
+    article := split[0][cut_index + 2:]
 
     // extra byte for the space between the article and the rest
     res_size := len(rest) + len(article) + 1
-    res := make([]byte, res_size, allocator)
+    res := make([]byte, res_size, context.temp_allocator)
 
     for b, i in res {
         if i < len(article) {
@@ -291,7 +293,9 @@ reorder_article_suffix :: proc (str: string, allocator:=context.allocator) -> st
         }
     }
 
-    return strings.string_from_ptr(raw_data(res), res_size)
+    fixed := strings.string_from_ptr(raw_data(res), res_size)
+    split[0] = fixed
+    return strings.join(split, " - ", allocator)
 }
 
 @(test)
@@ -331,6 +335,7 @@ test_reorder_article_suffix :: proc(t: ^testing.T) {
         {"A, ", " A"},
         {"A,The", "A,The"},
         {"A, The Best", "A, The Best"},
+        {"Compound, A - Title, The", "A Compound - Title, The"},
     }
 
     for c in cases {
