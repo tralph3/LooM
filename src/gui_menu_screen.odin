@@ -31,6 +31,7 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
     }) {
         gui_register_focus_element(id)
         file_name := fp.base(string(entry.name))
+        name := fp.base(string(entry.display_name))
         system_name := string(entry.category)
 
         if gui_is_focused(id) {
@@ -79,7 +80,7 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
                 },
             },
         }) {
-            cl.TextDynamic(file_name, cl.TextConfig({
+            cl.TextDynamic(name, cl.TextConfig({
                 textColor = UI_COLOR_MAIN_TEXT,
                 textAlignment = .Center,
                 fontSize = 12,
