@@ -9,6 +9,8 @@ import "core:testing"
 RomTag :: enum {
     // Regions/Countries
     USA,
+    Europe,
+    Asia,
     Canada,
     Mexico,
     Brazil,
@@ -46,6 +48,8 @@ RomTag :: enum {
     Hindi,
     Dutch,
     Swedish,
+    Finnish,
+    Danish,
     Turkish,
     Polish,
     Afrikaans,
@@ -54,6 +58,7 @@ RomTag :: enum {
     Demo,
     Unlicensed,
     Prototype,
+    Beta,
 }
 
 RomEntry :: struct {
@@ -126,7 +131,6 @@ rom_entries_load :: proc () -> (ok: bool) {
                 tags = tags,
                 category = strings.clone(system.name),
             })
-            log.info(fp.stem(fp.base(rom.fullpath)), tags)
         }
     }
 
@@ -199,12 +203,16 @@ recognize_tag :: proc (tag_str: string) -> bit_set[RomTag] {
     case "hi", "hindi":      return { .Hindi }
     case "nl", "dutch":      return { .Dutch }
     case "sv", "swedish":    return { .Swedish }
+    case "fi", "finnish":    return { .Finnish }
+    case "da", "danish":     return { .Danish }
     case "tr", "turkish":    return { .Turkish }
     case "pl", "polish":     return { .Polish }
     case "af", "afrikaans":  return { .Afrikaans }
 
     // Country/region codes and names
     case "us", "usa", "united states", "america": return { .USA }
+    case "eu", "europe": return { .Europe }
+    case "asia": return { .Asia }
     case "can", "canada": return { .Canada }
     case "mex", "mexico": return { .Mexico }
     case "bra", "brazil": return { .Brazil }
@@ -230,8 +238,9 @@ recognize_tag :: proc (tag_str: string) -> bit_set[RomTag] {
 
     // Meta
     case "unl", "unl.", "unlicensed": return { .Unlicensed }
-    case "demo": return { .Demo }
+    case "demo", "sample": return { .Demo }
     case "proto", "prototype": return { .Prototype }
+    case "beta": return { .Beta }
     }
 
     return {}
