@@ -1,3 +1,6 @@
 [submodule "ext/http"]
 	path = ext/http
 	url = https://github.com/laytan/odin-http
+[submodule "lib/clay"]
+	path = lib/clay
+	url = https://github.com/nicbarker/clay

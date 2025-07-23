@@ -6,6 +6,7 @@ system/
 saves/
 **/*.o
 **/*.h
+**/*.a
 vulkan.odin
 vulkan
 src.bin
