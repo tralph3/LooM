@@ -118,8 +118,8 @@ compile_c :: proc (target: CTarget) -> (ok: bool) {
     }
 
     switch compiler {
-    case .GCC:     return compile_c_gcc(target)
-    case .Clang:   return compile_c_clang(target)
+    case .GCC:     return compile_c_gcc_like(target, "gcc")
+    case .Clang:   return compile_c_gcc_like(target, "clang")
     case .MSVC:    return compile_c_msvc(target)
     case .Default:
         fmt.eprintfln("[ERROR] Tried to compile with 'Default' compiler. Invalid")
@@ -130,40 +130,9 @@ compile_c :: proc (target: CTarget) -> (ok: bool) {
     return false
 }
 
-compile_c_gcc :: proc (target: CTarget) -> (ok: bool) {
+compile_c_gcc_like :: proc (target: CTarget, compiler_name: string) -> (ok: bool) {
     cmd: [dynamic]string
-    append(&cmd, "gcc", "-x", "c")
-    if target.mode == .Archive || target.mode == .Object {
-        append(&cmd, "-c")
-    }
-
-    for define in target.defines {
-        append(&cmd, fmt.tprintf("-D%s", define))
-    }
-
-    for file in target.files {
-        append(&cmd, file)
-    }
-
-    append(&cmd, "-o")
-    if target.mode == .Archive {
-        append(&cmd, change_extension(target.dest, ".o"))
-    } else {
-        append(&cmd, change_extension(target.dest, ".o"))
-    }
-
-    run_cmd(cmd[:], target.env, target.workdir) or_return
-
-    if target.mode != .Archive { return true }
-    clear(&cmd)
-    append(&cmd, "ar", "rcs", change_extension(target.dest, ".a"), change_extension(target.dest, ".o"))
-
-    return run_cmd(cmd[:], target.env, target.workdir)
-}
-
-compile_c_clang :: proc (target: CTarget) -> (ok: bool) {
-    cmd: [dynamic]string
-    append(&cmd, "clang", "-x", "c")
+    append(&cmd, compiler_name, "-x", "c")
     if target.mode == .Archive || target.mode == .Object {
         append(&cmd, "-c")
     }

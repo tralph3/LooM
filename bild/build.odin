@@ -8,14 +8,14 @@ main :: proc () {
     clay := CTarget{
         mode = .Archive,
         files = { "lib/clay/clay.h" },
-        dest = "src/clay/clay.a",
+        dest = "src/clay/clay",
         defines = { "CLAY_IMPLEMENTATION" },
     }
 
     vararg := CTarget{
         mode = .Object,
         files = { "vararg.c" },
-        dest = "vararg.o",
+        dest = "vararg",
         workdir = "src",
     }
 
