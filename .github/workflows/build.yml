@@ -37,6 +37,7 @@ jobs:
           version: 3-latest
           version-sdl-image: 3-latest
           version-sdl-ttf: 3-latest
+          add-to-environment: true
 
       - name: Build debug
         run: |
