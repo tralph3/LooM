@@ -231,10 +231,13 @@ compile_odin :: proc (target: OdinTarget) -> (ok: bool) {
     }
 
     cmd: [dynamic]string
-    append(&cmd, "odin")
-    append(&cmd, "build")
-    append(&cmd, target.pkg_path)
-    append(&cmd, fmt.tprintf("-out:%s", target.dest))
+    append(&cmd, "odin", "build", target.pkg_path)
+    when ODIN_OS == .Windows {
+        append(&cmd, fmt.tprintf("-out:%s.exe", target.dest))
+    } else {
+        append(&cmd, fmt.tprintf("-out:%s", target.dest))
+    }
+
 
     for c in target.collections {
         str := fmt.tprintf("-collection:%s=%s", c.dir, c.name)
