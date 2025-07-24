@@ -1,5 +1,7 @@
 package bild
 
+import "core:fmt"
+
 main :: proc () {
     if !sync_submodules() {
         return
@@ -29,5 +31,9 @@ main :: proc () {
         },
     }
 
-    compile_target(loom)
+    if compile_target(loom) {
+        fmt.println("[FINISH] Compilation succesful")
+    } else {
+        fmt.eprintln("[FINISH] Compilation failed")
+    }
 }
