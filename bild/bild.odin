@@ -59,6 +59,7 @@ run_cmd :: proc (cmd: []string, env: []string, workdir: string) -> (ok: bool) {
 
     handle, start_error := os2.process_start({
         command = cmd,
+        stdout = os2.stdout,
         stderr = os2.stderr,
         working_dir = workdir,
         env = env,
@@ -91,7 +92,11 @@ sync_submodules :: proc () -> (ok: bool) {
 }
 
 change_extension :: proc (str: string, new_ext: string) -> string {
-    return strings.concatenate({ fp.stem(str), new_ext })
+    dir := fp.dir(str)
+    return fp.join({
+        dir,
+        strings.concatenate({ fp.stem(str), new_ext })
+    })
 }
 
 compile_c :: proc (target: CTarget) -> (ok: bool) {
@@ -144,7 +149,7 @@ compile_c_gcc :: proc (target: CTarget) -> (ok: bool) {
     if target.mode == .Archive {
         append(&cmd, change_extension(target.dest, ".o"))
     } else {
-        append(&cmd, target.dest)
+        append(&cmd, change_extension(target.dest, ".o"))
     }
 
     run_cmd(cmd[:], target.env, target.workdir) or_return
@@ -175,7 +180,7 @@ compile_c_clang :: proc (target: CTarget) -> (ok: bool) {
     if target.mode == .Archive {
         append(&cmd, change_extension(target.dest, ".o"))
     } else {
-        append(&cmd, target.dest)
+        append(&cmd, change_extension(target.dest, ".o"))
     }
 
     run_cmd(cmd[:], target.env, target.workdir) or_return
