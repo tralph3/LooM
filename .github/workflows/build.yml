@@ -25,6 +25,14 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           release: dev-2025-07
 
+      - name: Install SDL3
+        uses: libsdl-org/setup-sdl@main
+        with:
+          install-linux-dependencies: true
+          version: 3-latest
+          version-sdl-image: 3-latest
+          version-sdl-ttf: 3-latest
+
       - name: Build debug
         run: |
           odin run bild
@@ -33,7 +41,6 @@ jobs:
         shell: bash
         run: |
           mkdir dist
-          mv assets dist/
           mv build/debug* dist/
 
       - name: Upload build artifact
