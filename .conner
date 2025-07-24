@@ -1,13 +1,13 @@
 ;;; -*- lisp-data -*-
-((:name "Test all"
+((:name "Compile and run"
+        :command ("odin run bild"
+                  "./build/debug")
+        :type "compile")
+ (:name "Test all"
         :command ("odin test src -collection:ext=ext -define:ODIN_TEST_SHORT_LOGS=true"
                   "odin test src/circular_buffer -collection:ext=ext -define:ODIN_TEST_SHORT_LOGS=true"
                   "odin test src/rdb -collection:ext=ext -define:ODIN_TEST_SHORT_LOGS=true")
         :type "compile")
  (:name "Run release"
         :command "odin run src -o:speed -collection:ext=ext"
-        :type "compile")
- (:name "Compile and run"
-        :command ("mkdir -p build"
-                  "odin run src -debug -out:build/debug -collection:ext=ext")
         :type "compile"))
