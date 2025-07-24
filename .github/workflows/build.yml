@@ -25,6 +25,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           release: dev-2025-07
 
+      - name: Install MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install SDL3
         if: runner.os != 'Windows'
         uses: libsdl-org/setup-sdl@main
