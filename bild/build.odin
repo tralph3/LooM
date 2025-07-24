@@ -1,6 +1,7 @@
 package bild
 
 import "core:fmt"
+import "core:os"
 
 main :: proc () {
     if !sync_submodules() {
@@ -35,5 +36,6 @@ main :: proc () {
         fmt.println("[FINISH] Compilation succesful")
     } else {
         fmt.eprintln("[FINISH] Compilation failed")
+        os.exit(1)
     }
 }
