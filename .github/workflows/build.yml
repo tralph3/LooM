@@ -29,21 +29,15 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install SDL3 (MacOS)
-        if: runner.os == 'macOS'
+      - name: Install SDL3
+        if: runner.os != 'Windows'
         uses: libsdl-org/setup-sdl@main
         with:
           install-linux-dependencies: true
-          version: 3-latest
-          version-sdl-image: 3-latest
-          version-sdl-ttf: 3-latest
+          version: 3.2.16
+          version-sdl-image: 3.2.4
+          version-sdl-ttf: 3.2.2
           add-to-environment: true
-
-      - name: Install SDL3 (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install libsdl3-dev libsdl3-image-dev libsdl3-ttf-dev
 
       - name: Build debug
         run: |
