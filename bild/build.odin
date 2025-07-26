@@ -27,8 +27,10 @@ main :: proc () {
         dest = "build/debug",
         flags = { .Debug },
         depends = { clay, vararg },
+        error_style = .Unix,
         collections = {
             { "ext", "ext" },
+            { "loom", "src" },
         },
     }
 
