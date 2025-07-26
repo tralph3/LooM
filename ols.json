@@ -1,5 +1,6 @@
 {
 	"collections": [
-		{ "name": "ext", "path": "ext" }
+		{ "name": "ext", "path": "ext" },
+		{ "name": "loom", "path": "src" }
 	],
 }
