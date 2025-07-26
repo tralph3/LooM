@@ -40,8 +40,9 @@ LibretroCoreAPI :: struct {
     serialize_size: proc "c" () -> c.size_t,
     serialize: proc "c" (data: rawptr, size: c.size_t) -> c.bool,
     unserialize: proc "c" (data: rawptr, size: c.size_t) -> c.bool,
-    get_memory_size: proc "c" (id: c.uint) -> c.size_t,
-    get_memory_data: proc "c" (id: c.uint) -> rawptr,
+    get_memory_size: proc "c" (id: RetroMemory) -> c.size_t,
+    get_memory_data: proc "c" (id: RetroMemory) -> rawptr,
+    get_region: proc "c" () -> RetroRegion,
 
     __handle: dynlib.Library,
 }

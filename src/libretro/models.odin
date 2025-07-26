@@ -512,6 +512,20 @@ RetroKeyboardCallback :: struct {
     callback: KeyboardCallbackFunc,
 }
 
+RETRO_MEMORY_MASK :: 0xFF
+
+RetroMemory :: enum c.uint {
+    SaveRam   = 0,
+    RTC       = 1,
+    SystemRam = 2,
+    VideoRam  = 3,
+}
+
+RetroRegion :: enum c.uint {
+    NTSC = 0,
+    PAL  = 1,
+}
+
 RetroHwRenderInterfaceType :: enum c.int {
    VULKAN     = 0,
    D3D9       = 1,
