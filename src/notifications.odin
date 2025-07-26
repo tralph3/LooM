@@ -66,10 +66,6 @@ notifications_get_earliest_index :: proc () -> u32 {
 notifications_layout :: proc () {
     if cl.UI()({
         layout = {
-            sizing = {
-                width = cl.SizingFit({}),
-                height = cl.SizingGrow({}),
-            },
             childAlignment = {
                 y = .Bottom,
             },
@@ -81,8 +77,8 @@ notifications_layout :: proc () {
         },
         floating = {
 	        attachment = {
-                element = .LeftTop,
-                parent = .LeftTop,
+                element = .LeftBottom,
+                parent = .LeftBottom,
             },
             attachTo = .Root,
             pointerCaptureMode = .Passthrough,
