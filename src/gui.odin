@@ -245,7 +245,7 @@ gui_scroll_container_to_focus :: proc (scroll_container_id: cl.ElementId) {
 }
 
 gui_is_element_near_bounds :: proc (id: cl.ElementId) -> (res: bool) {
-    OFFSET :: 200
+    OFFSET :: 700
 
     bb := cl.GetElementData(id).boundingBox
     if bb == {} { return false }
