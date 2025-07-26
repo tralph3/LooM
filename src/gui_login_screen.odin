@@ -72,22 +72,7 @@ gui_layout_login_add_user :: proc () {
 gui_layout_login_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
     cl.BeginLayout()
 
-    if cl.UI()({
-        id = cl.ID("Root"),
-        backgroundColor = UI_COLOR_BACKGROUND,
-        layout = {
-            sizing = {
-                width = cl.SizingGrow({}),
-                height = cl.SizingGrow({}),
-            },
-            childAlignment = {
-                x = .Center,
-                y = .Center,
-            },
-            childGap = UI_USER_TILE_GAP,
-            layoutDirection = .TopToBottom,
-        },
-    }) {
+    if widgets_container(childAlignment={.Center, .Center}, direction=.TopToBottom) {
         widgets_header_bar()
 
         cl.Text("Welcome!", &{

@@ -88,3 +88,30 @@ widgets_header_bar :: proc (floating := true) {
         widgets_controller_status()
     }
 }
+
+@(deferred_none = cl._CloseElement)
+widgets_container :: proc (
+    id:=cl.ElementId{},
+    childAlignment:=cl.ChildAlignment{},
+    sizing_x:=cl.SizingAxis{type = .Grow},
+    sizing_y:=cl.SizingAxis{type = .Grow},
+    backgroundColor:=UI_COLOR_BACKGROUND,
+    direction:=cl.LayoutDirection.LeftToRight,
+) -> bool {
+    cl._OpenElement()
+
+    cl.ConfigureOpenElement({
+        id=id,
+        layout = {
+            sizing = {
+                width = sizing_x,
+                height = sizing_y,
+            },
+            childAlignment = childAlignment,
+            layoutDirection = direction,
+        },
+        backgroundColor = backgroundColor,
+    })
+
+	return true
+}
