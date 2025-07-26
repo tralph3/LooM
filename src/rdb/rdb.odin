@@ -153,7 +153,7 @@ read_string :: proc (stream: io.Stream, length: u32, allocator:=context.allocato
     buf := make([]byte, length, allocator, loc)
     defer if err != nil { delete(buf) }
     io.read(stream, buf) or_return
-    return strings.string_from_ptr(raw_data(buf), int(length)), nil
+    return string(buf), nil
 }
 
 identify_type :: proc (stream: io.Stream) -> (type: DataType, size: u32, err: Error) {

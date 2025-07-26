@@ -293,7 +293,7 @@ reorder_article_suffix :: proc (str: string, allocator:=context.allocator) -> st
         }
     }
 
-    fixed := strings.string_from_ptr(raw_data(res), res_size)
+    fixed := string(res)
     split[0] = fixed
     return strings.join(split, " - ", allocator)
 }
