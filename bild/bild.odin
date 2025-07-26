@@ -17,8 +17,13 @@ OdinFlags :: enum {
 }
 
 OdinCollection :: struct {
-    dir: string,
     name: string,
+    dir: string,
+}
+
+OdinErrorStyle :: enum {
+    Odin,
+    Unix,
 }
 
 OdinTarget :: struct {
@@ -26,6 +31,7 @@ OdinTarget :: struct {
     pkg_path: string,
     flags: bit_set[OdinFlags],
     collections: []OdinCollection,
+    error_style: OdinErrorStyle,
 }
 
 CBuildMode :: enum {
@@ -163,7 +169,7 @@ compile_c_gcc_like :: proc (target: CTarget, compiler_name: string) -> (ok: bool
 
 compile_c_msvc :: proc (target: CTarget) -> (ok: bool) {
     cmd: [dynamic]string
-    append(&cmd, "cl", "/EHsc")
+    append(&cmd, "cl", "/EHsc", "/EHa-", "/GR-", "/nologo")
     if target.mode == .Archive || target.mode == .Object {
         append(&cmd, "/c")
     }
@@ -214,12 +220,18 @@ compile_odin :: proc (target: OdinTarget) -> (ok: bool) {
 
 
     for c in target.collections {
-        str := fmt.tprintf("-collection:%s=%s", c.dir, c.name)
+        str := fmt.tprintf("-collection:%s=%s", c.name, c.dir)
         append(&cmd, str)
     }
 
     if .Debug in target.flags {
         append(&cmd, "-debug")
+    }
+
+    if target.error_style == .Odin {
+        append(&cmd, "-error-pos-style:odin")
+    } else if target.error_style == .Unix {
+        append(&cmd, "-error-pos-style:unix")
     }
 
     return run_cmd(cmd[:], target.env, target.workdir)
