@@ -22,6 +22,7 @@ OdinCollection :: struct {
 }
 
 OdinErrorStyle :: enum {
+    Default,
     Odin,
     Unix,
 }
