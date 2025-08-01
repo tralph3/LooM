@@ -92,7 +92,7 @@ gui_is_clicked :: proc (id: cl.ElementId) -> bool {
 
 gui_is_focused :: proc (id: cl.ElementId) -> bool {
     if input_is_using_mouse() {
-        return cl.Hovered()
+        return cl.PointerOver(id)
     } else {
         return GUI_STATE.focused_element.id == id
     }
