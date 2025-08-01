@@ -6,7 +6,7 @@ import "core:math/ease"
 import "core:log"
 import fp "core:path/filepath"
 
-GRID_ITEM_WIDTH :: 180
+GRID_ITEM_WIDTH :: 210
 
 gui_menu_get_default_focus_element :: proc () -> cl.ElementId {
     return cl.ID("Rom Entry", 0)
@@ -25,9 +25,6 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
             },
             layoutDirection = .TopToBottom,
         },
-        backgroundColor = gui_is_focused(id) \
-            ? UI_COLOR_ACCENT \
-            : {},
     }) {
         gui_register_focus_element(id)
         file_name := fp.base(string(entry.name))
@@ -63,7 +60,11 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
                     },
                     aspectRatio = { cover_texture.width / cover_texture.height },
                     image = { rawptr(uintptr(cover_texture.gl_id)) },
-                }) {}
+                    border = gui_is_focused(id) ? {
+                        color = UI_COLOR_MAIN_TEXT,
+                        width = cl.BorderAll(12),
+                    } : {}
+                }) { }
             }
         }
 
@@ -118,7 +119,7 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             id = grid_id,
             layout = {
                 sizing = {
-                    width = cl.SizingGrow({ max = f32(video_get_window_dimensions().x) }),
+                    width = cl.SizingGrow({ max = f32(video_get_window_dimensions().x) - UI_SPACING_64 }),
                     height = cl.SizingGrow({}),
                 },
                 childAlignment = {
@@ -126,10 +127,6 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     y = .Center,
                 },
                 childGap = UI_SPACING_16,
-                padding = {
-                    left = 128,
-                    right = 128,
-                },
                 layoutDirection = .TopToBottom,
             },
             clip = {
@@ -142,6 +139,11 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             item_w := GRID_ITEM_WIDTH
             available_w := int(grid_bb.width)
 
+            row_height: f32 = 56 + GRID_ITEM_WIDTH / 0.75
+            start_row: int = int(abs(cl.GetScrollOffset().y) / row_height)
+            visible_rows: int = int(grid_bb.height / row_height) + 2
+            end_row := start_row + visible_rows
+
             n := int(clamp((available_w + gap) / (item_w + gap), 1, 32))
             entries := GLOBAL_STATE.rom_entries
             total := len(entries)
@@ -150,7 +152,25 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             }
             rows := (total + n - 1) / n
 
-            for i in 0..<rows {
+            if grid_bb.height == 0 {
+                start_row = 0
+                end_row = rows
+            }
+
+            if cl.UI()({
+                layout = {
+                    sizing = {
+                        width = cl.SizingFixed(f32(n * item_w + gap * (n - 1))),
+                        height = cl.SizingFixed(row_height * f32(start_row)),
+                    }
+                },
+            }) {}
+
+            end_row_capped := min(rows, end_row)
+            // we want to layout one more row so that directional
+            // movement upwards works
+            start_row_capped := max(0, start_row - 1)
+            for i in start_row_capped..<end_row_capped {
                 if cl.UI()({
                     layout = {
                         childGap = 12,
@@ -174,7 +194,63 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                     }
                 }
             }
+
+            if cl.UI()({
+                layout = {
+                    sizing = {
+                        width = cl.SizingFixed(f32(n * item_w + gap * (n - 1))),
+                        height = cl.SizingFixed(row_height * f32(rows - end_row_capped)),
+                    }
+                },
+            }) {}
         }
+
+
+
+        if cl.UI()({
+            id = cl.ID("Bottom Bar"),
+            layout = {
+                sizing = {
+                    width = cl.SizingGrow({}),
+                    height = cl.SizingFixed(UI_SPACING_64),
+                },
+                childAlignment = {
+                    y = .Center,
+                },
+                padding = {
+                    left = UI_SPACING_12,
+                    right = UI_SPACING_12,
+                },
+            },
+            backgroundColor = UI_COLOR_BACKGROUND,
+            border = {
+                color = UI_COLOR_SECONDARY_BACKGROUND,
+                width = { top = 2 },
+            },
+        }) {
+            icon := assets_get_texture(.ControllerConnected)
+            if cl.UI()({
+                layout = {
+                    sizing = {
+                        width = cl.SizingFixed(UI_SPACING_32),
+                        height = cl.SizingFixed(UI_SPACING_32),
+                    },
+                },
+                aspectRatio = { icon.width / icon.height },
+                image = { rawptr(uintptr(icon.gl_id)) },
+            }) { }
+
+            cl.TextDynamic("Sony - PlayStation", cl.TextConfig({
+                fontSize = UI_FONTSIZE_30,
+                fontId = auto_cast FontID.Default,
+                textColor = UI_COLOR_MAIN_TEXT,
+            }))
+
+            widgets_spacer(.Horizontal)
+
+
+        }
+
     }
 
     notifications_evict_and_layout()
