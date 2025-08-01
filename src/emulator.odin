@@ -34,6 +34,7 @@ EMULATOR_STATE := struct {
     fast_forwarding: bool,
 
     support_no_game: bool,
+    support_achievements: bool,
 
     current_game: ^RomEntry,
 
@@ -291,4 +292,8 @@ emulator_disable_fast_forward :: proc () {
 
 emulator_get_audio_sample_rate :: proc "contextless" () -> i32 {
     return EMULATOR_STATE.sample_rate
+}
+
+emulator_set_supports_achievements :: proc "contextless" (value: bool) {
+    EMULATOR_STATE.support_achievements = value
 }

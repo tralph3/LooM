@@ -46,6 +46,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .GetLibretroPath: return env_callback_get_libretro_path(data)
         case .SetHwRenderContextNegotiationInterface: return env_callback_set_hw_render_context_negotiation_interface(data)
         case .GetHwRenderInterface: return env_callback_get_hw_render_interface(data)
+        case .SetSupportAchievements: return env_callback_set_support_achievements(data)
         case: log.warnf("Callback not supported: '{}'", command)
     }
 
@@ -1160,8 +1161,11 @@ env_callback_get_hw_render_interface :: proc (data: rawptr) -> bool { // TODO
  * @see RETRO_ENVIRONMENT_SET_MEMORY_MAPS
  * @see retro_get_memory_data
  */
-env_callback_set_support_achievements :: proc (data: rawptr) -> bool { // TODO
-    return false
+env_callback_set_support_achievements :: proc (data: rawptr) -> bool { // DONE
+    value := cast(^bool)data
+    emulator_set_supports_achievements(value^)
+
+    return true
 }
 
 /**
