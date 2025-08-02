@@ -7,27 +7,28 @@ import "core:log"
 import sdl "vendor:sdl3"
 import "core:mem"
 import fp "core:path/filepath"
+import cl "clay"
 
 CoverResult :: struct {
     texture: Texture,
-    name: string,
+    id: cl.ElementId,
     success: bool,
 }
 
 CoverRequest :: struct {
     name: string,
+    id: cl.ElementId,
     system: string,
 }
 
-COVER_CURRENTLY_LOADING: [dynamic]string
+COVER_CURRENTLY_LOADING: [dynamic]cl.ElementId
 COVER_RESULT_CHAN: chan.Chan(CoverResult, .Both)
 COVER_STORAGE_CACHE := CacheStorage{
     base_path = "./cache",
 }
-COVER_MEMORY_CACHE := CacheMemory(string, Texture){
+COVER_MEMORY_CACHE := CacheMemory(cl.ElementId, Texture){
     eviction_time_ms = 3000,
-    item_free_proc = proc (key: string, tex: Texture) {
-        delete(key)
+    item_free_proc = proc (key: cl.ElementId, tex: Texture) {
         tex := tex
         if tex == assets_get_texture(.NoCover) || tex == assets_get_texture(.TextureLoading) {
             return
@@ -56,11 +57,11 @@ covers_deinit :: proc () {
 }
 
 cover_get :: proc (system: string, name: string) -> (tex: Texture) {
-    for res in chan.try_recv(COVER_RESULT_CHAN) {
-        defer delete(res.name)
+    id := cl.ID(name)
 
-        idx, found := slice.linear_search(COVER_CURRENTLY_LOADING[:], res.name)
-        log.assertf(found, "{} was not in the currently loading array", res.name)
+    for res in chan.try_recv(COVER_RESULT_CHAN) {
+        idx, found := slice.linear_search(COVER_CURRENTLY_LOADING[:], res.id)
+        log.assertf(found, "{} was not in the currently loading array", res.id)
         unordered_remove(&COVER_CURRENTLY_LOADING, idx)
 
         tex: Texture
@@ -70,35 +71,38 @@ cover_get :: proc (system: string, name: string) -> (tex: Texture) {
             tex = assets_get_texture(.NoCover)
         }
 
-        cache_set(&COVER_MEMORY_CACHE, res.name, tex)
+        cache_set(&COVER_MEMORY_CACHE, res.id, tex)
     }
 
-    if cache_has(&COVER_MEMORY_CACHE, name) {
-        return cache_get(&COVER_MEMORY_CACHE, name)^
+    if cache_has(&COVER_MEMORY_CACHE, id) {
+        return cache_get(&COVER_MEMORY_CACHE, id)^
     }
 
-    if !slice.contains(COVER_CURRENTLY_LOADING[:], name) {
+    if !slice.contains(COVER_CURRENTLY_LOADING[:], id) {
         // TODO: the key should be system + name
-        cloned_name := strings.clone(name)
         request := new(CoverRequest)
-        request.name = cloned_name
+        request.name = strings.clone(name)
+        request.id = id
         request.system = strings.clone(system)
         thread_pool_add_task(cover_process_load_request, request, 0)
-        append(&COVER_CURRENTLY_LOADING, cloned_name)
+        append(&COVER_CURRENTLY_LOADING, id)
     }
 
-    cache_set(&COVER_MEMORY_CACHE, strings.clone(name), assets_get_texture(.TextureLoading))
+    cache_set(&COVER_MEMORY_CACHE, id, assets_get_texture(.TextureLoading))
 
-    return cache_get(&COVER_MEMORY_CACHE, name)^
+    return cache_get(&COVER_MEMORY_CACHE, id)^
 }
 
 
 cover_process_load_request :: proc (task: Task) {
     request := cast(^CoverRequest)task.data
     defer delete(request.system, state_get_context().allocator)
+    defer delete(request.name, state_get_context().allocator)
     defer free(request, state_get_context().allocator)
 
-    cover_result := CoverResult{ name = request.name }
+    cover_result := CoverResult{
+        id = request.id,
+    }
 
     cache_key := fp.join({ request.system, request.name })
     defer delete(cache_key)
