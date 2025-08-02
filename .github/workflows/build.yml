@@ -29,15 +29,15 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install SDL3
-        if: runner.os != 'Windows'
-        uses: libsdl-org/setup-sdl@main
-        with:
-          install-linux-dependencies: true
-          version: 3.2.16
-          version-sdl-image: 3.2.4
-          version-sdl-ttf: 3.2.2
-          add-to-environment: true
+      - name: Install SDL3 from source
+        run: |
+          git clone --depth 1 --branch release-3.2.18 https://github.com/libsdl-org/SDL.git
+          mkdir SDL/build
+          cd SDL/build
+          cmake .. -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/sdl-install -DSDL_STATIC=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release --parallel
+          cmake --install . --config Release
+        shell: bash
 
       - name: Build debug
         run: |
