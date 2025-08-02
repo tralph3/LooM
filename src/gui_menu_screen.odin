@@ -5,6 +5,7 @@ import sdl "vendor:sdl3"
 import "core:math/ease"
 import "core:log"
 import fp "core:path/filepath"
+import g "gui"
 
 GRID_ITEM_WIDTH :: 210
 
@@ -13,19 +14,10 @@ gui_menu_get_default_focus_element :: proc () -> cl.ElementId {
 }
 
 @(private="file")
-game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
+game_entry_button :: proc (entry: RomEntry, idx: u32) {
     id := cl.ID("Rom Entry", idx)
 
-    if cl.UI()({
-        id = id,
-        layout = {
-            sizing = {
-                width = cl.SizingFixed(GRID_ITEM_WIDTH),
-                height = cl.SizingFit({}),
-            },
-            layoutDirection = .TopToBottom,
-        },
-    }) {
+    if g.container(.TopToBottom, { .GrowX, .GrowY }, id) {
         gui_register_focus_element(id)
         file_name := fp.base(string(entry.name))
         name := fp.base(string(entry.display_name))
@@ -39,8 +31,8 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
             id = cl.ID("Cover", idx),
             layout = {
                 sizing = {
-                    width = cl.SizingFixed(GRID_ITEM_WIDTH),
-                    height = cl.SizingFixed(GRID_ITEM_WIDTH / 0.75),
+                    width = cl.SizingGrow({}),
+                    height = cl.SizingGrow({}),
                 },
                 childAlignment = {
                     x = .Center,
@@ -88,124 +80,23 @@ game_entry_button :: proc (entry: ^RomEntry, idx: u32) -> (clicked: bool) {
             }))
         }
 
-        clicked = gui_is_clicked(id)
+        if gui_is_clicked(id) {
+            entry := entry
+            if emulator_init(&entry) {
+                scene_change(.RUNNING)
+            }
+        }
     }
-
-    return
 }
 
 gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
     cl.BeginLayout()
 
-    if cl.UI()({
-        id = cl.ID("Root"),
-        layout = {
-            sizing = {
-                width = cl.SizingGrow({}),
-                height = cl.SizingGrow({}),
-            },
-            childAlignment = {
-                x = .Center,
-                y = .Center,
-            },
-            layoutDirection = .TopToBottom,
-        },
-        backgroundColor = UI_COLOR_BACKGROUND,
-    }) {
+    if g.container(.TopToBottom, { .GrowX }) {
         widgets_header_bar(floating=false)
 
         grid_id := cl.ID("Game Grid")
-        if cl.UI()({
-            id = grid_id,
-            layout = {
-                sizing = {
-                    width = cl.SizingGrow({ max = f32(video_get_window_dimensions().x) - UI_SPACING_64 }),
-                    height = cl.SizingGrow({}),
-                },
-                childAlignment = {
-                    x = .Center,
-                    y = .Center,
-                },
-                childGap = UI_SPACING_16,
-                layoutDirection = .TopToBottom,
-            },
-            clip = {
-                vertical = true,
-                childOffset = cl.GetScrollOffset(),
-            },
-        }) {
-            grid_bb := cl.GetElementData(grid_id).boundingBox
-            gap: int = UI_SPACING_12
-            item_w := GRID_ITEM_WIDTH
-            available_w := int(grid_bb.width)
-
-            row_height: f32 = 56 + GRID_ITEM_WIDTH / 0.75
-            start_row: int = int(abs(cl.GetScrollOffset().y) / row_height)
-            visible_rows: int = int(grid_bb.height / row_height) + 2
-            end_row := start_row + visible_rows
-
-            n := int(clamp((available_w + gap) / (item_w + gap), 1, 32))
-            entries := GLOBAL_STATE.rom_entries
-            total := len(entries)
-            if n > total {
-                n = total
-            }
-            rows := (total + n - 1) / n
-
-            if grid_bb.height == 0 {
-                start_row = 0
-                end_row = rows
-            }
-
-            if cl.UI()({
-                layout = {
-                    sizing = {
-                        width = cl.SizingFixed(f32(n * item_w + gap * (n - 1))),
-                        height = cl.SizingFixed(row_height * f32(start_row)),
-                    }
-                },
-            }) {}
-
-            end_row_capped := min(rows, end_row)
-            // we want to layout one more row so that directional
-            // movement upwards works
-            start_row_capped := max(0, start_row - 1)
-            for i in start_row_capped..<end_row_capped {
-                if cl.UI()({
-                    layout = {
-                        childGap = 12,
-                        sizing = {
-                            width = cl.SizingFixed(f32(n * item_w + gap * (n - 1))),
-                        },
-                    },
-                }) {
-                    for j in 0..<n {
-                        index := i * n + j
-                        if index >= total {
-                            break
-                        }
-
-                        entry := &entries[index]
-                        if game_entry_button(entry, u32(index)) {
-                            if emulator_init(entry) {
-                                scene_change(.RUNNING)
-                            }
-                        }
-                    }
-                }
-            }
-
-            if cl.UI()({
-                layout = {
-                    sizing = {
-                        width = cl.SizingFixed(f32(n * item_w + gap * (n - 1))),
-                        height = cl.SizingFixed(row_height * f32(rows - end_row_capped)),
-                    }
-                },
-            }) {}
-        }
-
-
+        g.grid(GLOBAL_STATE.rom_entries[:], { GRID_ITEM_WIDTH, GRID_ITEM_WIDTH / 0.75 }, game_entry_button, grid_id)
 
         if cl.UI()({
             id = cl.ID("Bottom Bar"),
@@ -242,15 +133,12 @@ gui_layout_menu_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
 
             cl.TextDynamic("Sony - PlayStation", cl.TextConfig({
                 fontSize = UI_FONTSIZE_30,
-                fontId = auto_cast FontID.Default,
+                fontId = auto_cast g.FontID.Default,
                 textColor = UI_COLOR_MAIN_TEXT,
             }))
 
-            widgets_spacer(.Horizontal)
-
-
+            g.spacer(.LeftToRight)
         }
-
     }
 
     notifications_evict_and_layout()

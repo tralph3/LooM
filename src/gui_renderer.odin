@@ -8,6 +8,7 @@ import "core:math"
 import "core:log"
 import "core:c"
 import "core:strings"
+import "gui"
 
 @(private="file")
 GUI_RENDERER_STATE := struct #no_copy {
@@ -17,7 +18,7 @@ GUI_RENDERER_STATE := struct #no_copy {
     text_shader: u32,
     framebuffer_shader: u32,
 
-    fonts: [FontID]^ttf.Font,
+    fonts: [gui.FontID]^ttf.Font,
 } {}
 
 @(private="file")
@@ -39,14 +40,9 @@ SoundEffectPaths :: [SoundID]cstring {
         .SelectNegative = "./assets/sounds/select_negative.wav",
 }
 
-FontPaths :: [FontID]struct { path: cstring, size: f32 } {
+FontPaths :: [gui.FontID]struct { path: cstring, size: f32 } {
         .Default = { "./assets/fonts/Ubuntu.ttf", 32 },
         .Title = { "./assets/fonts/Gaegu.ttf", 32 },
-}
-
-FontID :: enum u16 {
-    Default,
-    Title,
 }
 
 vertex_rectangle_shader_src: cstring = #load("./shaders/rectangle.vert")
@@ -176,7 +172,7 @@ gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextEle
     context = GLOBAL_STATE.ctx
     assert(text.length > 0)
 
-    font := GUI_RENDERER_STATE.fonts[FontID(config.fontId)]
+    font := GUI_RENDERER_STATE.fonts[gui.FontID(config.fontId)]
 
     if !ttf.SetFontSize(font, f32(config.fontSize)) {
         log.errorf("CLAY: Measure text error: Failed setting font size: {}", sdl.GetError())
@@ -198,7 +194,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
     window_wf := f32(window_size.x)
     window_hf := f32(window_size.y)
 
-    // gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+    gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
     gl.Viewport(0, 0, window_size.x, window_size.y)
     gl.ClearColor(0, 0, 0, 1)
     gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -279,7 +275,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             font_texture := cache_get(&TEXT_TEXTURE_CACHE, key)
 
             if font_texture == nil {
-                font: ^ttf.Font = GUI_RENDERER_STATE.fonts[FontID(config.fontId)]
+                font: ^ttf.Font = GUI_RENDERER_STATE.fonts[gui.FontID(config.fontId)]
                 if !ttf.SetFontSize(font, f32(config.fontSize)) {
                     log.errorf("Failed setting font size: {}", sdl.GetError())
                     continue

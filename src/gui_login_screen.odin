@@ -3,6 +3,7 @@ package main
 import cl "clay"
 import "core:log"
 import sdl "vendor:sdl3"
+import g "gui"
 
 gui_login_get_default_focus_element :: proc () -> cl.ElementId {
     return cl.ID("Login Tile", 0)
@@ -72,24 +73,27 @@ gui_layout_login_add_user :: proc () {
 gui_layout_login_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
     cl.BeginLayout()
 
-    if widgets_container(childAlignment={.Center, .Center}, direction=.TopToBottom) {
+    if g.container(.TopToBottom, { .GrowX, .GrowY }) {
         widgets_header_bar()
 
-        cl.Text("Welcome!", &{
-            fontId = auto_cast FontID.Title,
-            textColor = UI_COLOR_MAIN_TEXT,
-            fontSize = UI_FONTSIZE_72,
-        })
+        if g.container(.TopToBottom, {.GrowX, .GrowY, .CenterX, .CenterY }) {
+            g.label("Welcome!", .Title)
+            // cl.Text("Welcome!", &{
+            //     fontId = auto_cast g.FontID.Title,
+            //     textColor = UI_COLOR_MAIN_TEXT,
+            //     fontSize = UI_FONTSIZE_72,
+            // })
 
-        if cl.UI()({
-            layout = {
-                childGap = UI_USER_TILE_GAP,
-            },
-        }) {
-            usernames := []string{"tralph3", "Shadow", "Celes"}
-            for username, i in usernames {
-                if gui_layout_login_user_tile(username, i) {
-                    user_login(username)
+            if cl.UI()({
+                layout = {
+                    childGap = UI_USER_TILE_GAP,
+                },
+            }) {
+                usernames := []string{"tralph3", "Shadow", "Celes"}
+                for username, i in usernames {
+                    if gui_layout_login_user_tile(username, i) {
+                        user_login(username)
+                    }
                 }
             }
         }

@@ -4,3 +4,6 @@
 [submodule "lib/clay"]
 	path = lib/clay
 	url = https://github.com/nicbarker/clay
+[submodule "assets"]
+	path = assets
+	url = https://github.com/tralph3/loom-assets

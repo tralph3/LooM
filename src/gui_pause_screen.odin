@@ -4,6 +4,7 @@ import cl "clay"
 import sdl "vendor:sdl3"
 import "core:math/ease"
 import "core:log"
+import g "gui"
 
 @(private="file")
 Submenu :: enum {
@@ -168,7 +169,7 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             backgroundColor = PAUSE_MENU_STATE.submenu == .Shaders ? {} : { 0, 0, 0, 170 },
         }) {
             widgets_header_bar()
-
+            g.spacer(.TopToBottom)
             if cl.UI()({
                 id = cl.ID("Pause Options Container"),
                 layout = {

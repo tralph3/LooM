@@ -1,0 +1,43 @@
+package gui
+
+import cl "loom:clay"
+
+SPACING_4   :: 4.0
+SPACING_8   :: 8.0
+SPACING_12  :: 12.0
+SPACING_16  :: 16.0
+SPACING_24  :: 24.0
+SPACING_32  :: 32.0
+SPACING_48  :: 48.0
+SPACING_64  :: 64.0
+SPACING_96  :: 96.0
+SPACING_192 :: 192.0
+SPACING_256 :: 256.0
+
+FONTSIZE_12 :: 12.0
+FONTSIZE_14 :: 14.0
+FONTSIZE_16 :: 16.0
+FONTSIZE_18 :: 18.0
+FONTSIZE_20 :: 20.0
+FONTSIZE_24 :: 24.0
+FONTSIZE_30 :: 30.0
+FONTSIZE_36 :: 36.0
+FONTSIZE_48 :: 48.0
+FONTSIZE_60 :: 60.0
+FONTSIZE_72 :: 72.0
+
+COLOR_BACKGROUND :: cl.Color { 0x04, 0x0f, 0x4a, 0xff }
+COLOR_SECONDARY_BACKGROUND :: cl.Color { 0x27, 0xab, 0xc7, 0xff }
+COLOR_ACCENT :: cl.Color { 0xa1, 0x3d, 0x77, 0xff }
+
+COLOR_MAIN_TEXT :: cl.Color { 244, 244, 249, 0xFF }
+
+USER_TILE_SIZE :: 180
+USER_TILE_GAP :: SPACING_16
+
+@(rodata)
+PAUSE_BUTTON_TEXT_CONFIG := cl.TextElementConfig {
+    textColor = COLOR_MAIN_TEXT,
+    fontSize = 24,
+    textAlignment = .Center,
+}

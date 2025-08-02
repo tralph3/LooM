@@ -1,25 +1,11 @@
+// Widgets that need to access global state
 package main
 
 import cl "clay"
+import g "gui"
 
-SpacerDirection :: enum {
-    Vertical,
-    Horizontal,
-    Both,
-}
-
-widgets_spacer :: proc (direction: SpacerDirection) {
-    is_vertical := direction == .Vertical || direction == .Both
-    is_horizontal := direction == .Horizontal || direction == .Both
-
-    if cl.UI()({
-        layout = {
-            sizing = {
-                width = is_horizontal ? cl.SizingGrow({}) : {},
-                height = is_vertical ? cl.SizingGrow({}) : {},
-            },
-        },
-    }) {}
+widgets_loom_title :: proc () {
+    g.label("LooM", .Title)
 }
 
 widgets_controller_status :: proc () {
@@ -45,73 +31,10 @@ widgets_controller_status :: proc () {
     }
 }
 
-widgets_loom_title :: proc () {
-    cl.Text("LooM", cl.TextConfig({
-        fontSize = UI_FONTSIZE_48,
-        textColor = UI_COLOR_MAIN_TEXT,
-        fontId = auto_cast FontID.Title,
-    }))
-}
-
-
 widgets_header_bar :: proc (floating := true) {
-    if cl.UI()({
-        id = cl.ID("Header Bar"),
-        layout = {
-            sizing = {
-                width = cl.SizingGrow({}),
-                height = cl.SizingFixed(UI_SPACING_64),
-            },
-            childAlignment = {
-                y = .Center,
-            },
-            padding = {
-                left = UI_SPACING_12,
-                right = UI_SPACING_12,
-            },
-        },
-        floating = floating ? {
-	        attachment = {
-                element = .LeftTop,
-                parent = .LeftTop,
-            },
-            attachTo = .Root,
-        } : {},
-        backgroundColor = UI_COLOR_BACKGROUND,
-        border = {
-            color = UI_COLOR_SECONDARY_BACKGROUND,
-            width = { bottom = 2 },
-        },
-    }) {
+    if g.container(.LeftToRight, { .GrowX }) {
         widgets_loom_title()
-        widgets_spacer(.Horizontal)
+        g.spacer(.LeftToRight)
         widgets_controller_status()
     }
-}
-
-@(deferred_none = cl._CloseElement)
-widgets_container :: proc (
-    id:=cl.ElementId{},
-    childAlignment:=cl.ChildAlignment{},
-    sizing_x:=cl.SizingAxis{type = .Grow},
-    sizing_y:=cl.SizingAxis{type = .Grow},
-    backgroundColor:=UI_COLOR_BACKGROUND,
-    direction:=cl.LayoutDirection.LeftToRight,
-) -> bool {
-    cl._OpenElement()
-
-    cl.ConfigureOpenElement({
-        id=id,
-        layout = {
-            sizing = {
-                width = sizing_x,
-                height = sizing_y,
-            },
-            childAlignment = childAlignment,
-            layoutDirection = direction,
-        },
-        backgroundColor = backgroundColor,
-    })
-
-	return true
 }
