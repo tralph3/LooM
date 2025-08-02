@@ -32,7 +32,26 @@ widgets_controller_status :: proc () {
 }
 
 widgets_header_bar :: proc (floating := true) {
-    if g.container(.LeftToRight, { .GrowX }) {
+    if cl.UI()({
+        layout = {
+            sizing = {
+                width = cl.SizingGrow({}),
+                height = cl.SizingFixed(UI_SPACING_64),
+            },
+            childAlignment = {
+                y = .Center,
+            },
+            padding = {
+                left = UI_SPACING_12,
+                right = UI_SPACING_12,
+            },
+        },
+        backgroundColor = UI_COLOR_BACKGROUND,
+        border = {
+            color = UI_COLOR_SECONDARY_BACKGROUND,
+            width = { bottom = 2 },
+        },
+    }) {
         widgets_loom_title()
         g.spacer(.LeftToRight)
         widgets_controller_status()

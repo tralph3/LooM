@@ -155,7 +155,6 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
                 },
                 childAlignment = {
                     x = PAUSE_MENU_STATE.submenu == .Shaders ? .Left : .Center,
-                    y = .Center,
                 },
                 layoutDirection = .TopToBottom,
             },
@@ -169,24 +168,36 @@ gui_layout_pause_screen :: proc () -> cl.ClayArray(cl.RenderCommand) {
             backgroundColor = PAUSE_MENU_STATE.submenu == .Shaders ? {} : { 0, 0, 0, 170 },
         }) {
             widgets_header_bar()
-            g.spacer(.TopToBottom)
             if cl.UI()({
-                id = cl.ID("Pause Options Container"),
                 layout = {
                     sizing = {
-                        width = cl.SizingFixed(UI_SPACING_256),
+                        width = cl.SizingGrow({}),
+                        height = cl.SizingGrow({}),
                     },
-                    padding = cl.PaddingAll(UI_SPACING_12),
-                    layoutDirection = .TopToBottom,
-                    childGap = UI_SPACING_12,
-                },
-                cornerRadius = cl.CornerRadiusAll(5),
-                backgroundColor = UI_COLOR_BACKGROUND,
+                    childAlignment = {
+                        x = PAUSE_MENU_STATE.submenu == .Shaders ? .Left : .Center,
+                        y = .Center,
+                    }
+                }
             }) {
-                if PAUSE_MENU_STATE.submenu == .Shaders {
-                    gui_layout_shader_menu()
-                } else {
-                    gui_layout_main_pause_options()
+                if cl.UI()({
+                    id = cl.ID("Pause Options Container"),
+                    layout = {
+                        sizing = {
+                            width = cl.SizingFixed(UI_SPACING_256),
+                        },
+                        padding = cl.PaddingAll(UI_SPACING_12),
+                        layoutDirection = .TopToBottom,
+                        childGap = UI_SPACING_12,
+                    },
+                    cornerRadius = cl.CornerRadiusAll(5),
+                    backgroundColor = UI_COLOR_BACKGROUND,
+                }) {
+                    if PAUSE_MENU_STATE.submenu == .Shaders {
+                        gui_layout_shader_menu()
+                    } else {
+                        gui_layout_main_pause_options()
+                    }
                 }
             }
         }
