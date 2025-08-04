@@ -25,14 +25,8 @@ GUI_RENDERER_STATE := struct #no_copy {
 TEXT_TEXTURE_CACHE := CacheMemory(TextTextureCacheKey, u32){
     eviction_time_ms = 3000,
     item_free_proc = proc (key: TextTextureCacheKey, tex: u32) {
-        delete(key.str)
         texture_unload(tex)
     }
-}
-
-ShaderID :: enum {
-    SelectPositive,
-    SelectNegative,
 }
 
 SoundEffectPaths :: [SoundID]cstring {
@@ -94,7 +88,7 @@ FRAMEBUFFER_SHADER_LOCS: struct {
 TextTextureCacheKey :: struct {
     fontId: u16,
     fontSize: u16,
-    str: string,
+    strId: cl.ElementId,
     color: cl.Color,
 }
 
@@ -271,7 +265,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             config: ^cl.TextRenderData = &rcmd.renderData.text
             str := strings.string_from_ptr(config.stringContents.chars, int(config.stringContents.length))
 
-            key := TextTextureCacheKey{ config.fontId, config.fontSize, str, config.textColor }
+            key := TextTextureCacheKey{ config.fontId, config.fontSize, cl.ID(str), config.textColor }
             font_texture := cache_get(&TEXT_TEXTURE_CACHE, key)
 
             if font_texture == nil {
@@ -304,7 +298,6 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
 
                 gl.PixelStorei(gl.UNPACK_ROW_LENGTH, 0)
 
-                key.str = strings.clone(key.str)
                 cache_set(&TEXT_TEXTURE_CACHE, key, cached_texture)
                 font_texture = cache_get(&TEXT_TEXTURE_CACHE, key)
             }
