@@ -6,6 +6,7 @@ import fp "core:path/filepath"
 import "core:strings"
 import "core:log"
 import "core:hash"
+import t "loom:types"
 
 @(private="file")
 DATABASES: map[string]rdb.Database
@@ -47,7 +48,7 @@ database_unload_all :: proc () {
     delete(DATABASES)
 }
 
-database_fill_metadata :: proc (game_entry: ^RomEntry, system: string, crc: u32) -> bool {
+database_fill_metadata :: proc (game_entry: ^t.RomEntry, system: string, crc: u32) -> bool {
     db := DATABASES[system] or_return
     data := db[crc] or_return
 

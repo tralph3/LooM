@@ -1,4 +1,4 @@
-package main
+package utils
 
 import "core:mem"
 import fp "core:path/filepath"
@@ -35,4 +35,12 @@ print_leaked_allocations :: proc (track: ^mem.Tracking_Allocator) {
 
         log.errorf("Total memory leaked: {} bytes", total)
 	}
+}
+
+string_hash :: proc (str: string) -> (hash: u64) {
+    hash = 14695981039346656037  // offset basis
+    for b in transmute([]u8)str {
+        hash = (hash ~ u64(b)) * 1099511628211  // prime
+    }
+    return hash
 }

@@ -57,7 +57,7 @@ video_init :: proc () -> (ok: bool) {
     }
 
     VIDEO_STATE.window = sdl.CreateWindow(
-        "LooM", INITIAL_SCREEN_SIZE.x, INITIAL_SCREEN_SIZE.y, { .RESIZABLE, .OPENGL })
+        "LooM", INITIAL_SCREEN_SIZE.x, INITIAL_SCREEN_SIZE.y, { .RESIZABLE, .OPENGL, .FULLSCREEN })
     if VIDEO_STATE.window == nil {
         log.errorf("Failed creating window: {}", sdl.GetError())
         return false

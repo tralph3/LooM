@@ -4,6 +4,7 @@ import lr "libretro"
 import sdl "vendor:sdl3"
 import "core:os/os2"
 import "core:log"
+import t "loom:types"
 
 @(private="file")
 EMULATOR_STATE := struct {
@@ -36,12 +37,12 @@ EMULATOR_STATE := struct {
     support_no_game: bool,
     support_achievements: bool,
 
-    current_game: ^RomEntry,
+    current_game: ^t.RomEntry,
 
     loaded: bool,
 } {}
 
-emulator_init :: proc (game_entry: ^RomEntry) -> (ok: bool) {
+emulator_init :: proc (game_entry: ^t.RomEntry) -> (ok: bool) {
     defer if !ok {
         EMULATOR_STATE = {}
     }
@@ -276,7 +277,7 @@ emulator_framebuffer_is_bottom_left_origin :: proc "contextless" () -> bool {
     return EMULATOR_STATE.hw_render_cb.bottom_left_origin
 }
 
-emulator_get_current_game_entry :: proc "contextless" () -> ^RomEntry {
+emulator_get_current_game_entry :: proc "contextless" () -> ^t.RomEntry {
     return EMULATOR_STATE.current_game
 }
 

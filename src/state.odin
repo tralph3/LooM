@@ -3,11 +3,13 @@ package main
 import lr "libretro"
 import cl "clay"
 import "base:runtime"
+import t "loom:types"
 
 GLOBAL_STATE := struct #no_copy {
     current_user: string,
 
-    rom_entries: [dynamic]RomEntry,
+    plists: []t.Playlist,
+    roms: t.RomList,
 
     current_scene_id: SceneID,
 

@@ -27,9 +27,11 @@ GUI_STATE := struct #no_copy {
 } {}
 
 gui_init :: proc () -> (ok: bool) {
-    // TODO: Temp fix. Clay runs out of elements with the debug view
-    // on. Ideally it should't draw out of view elements.
-    cl.SetMaxElementCount(10000)
+    // TODO: Temp fix. Clay runs out of elements when drawing big
+    // grids. Even tho elements outside of view are not rendered, they
+    // are for the very first frame, as we don't know the size of the
+    // grid yet.
+    cl.SetMaxElementCount(100000)
 
     min_arena_size := cl.MinMemorySize()
     memory, err := make([]byte, min_arena_size)
@@ -86,7 +88,7 @@ gui_error_handler :: proc "c" (error_data: cl.ErrorData) {
 }
 
 gui_is_clicked :: proc (id: cl.ElementId) -> bool {
-    return gui_is_focused(id) && input_is_ok_pressed()
+    return gui_is_focused(id) && .Ok in input_get_ui_input_state()
 }
 
 
@@ -242,18 +244,4 @@ gui_scroll_container_to_focus :: proc (scroll_container_id: cl.ElementId) {
     } else if focus_top < scroll_top {
         scroll_container.scrollPosition.y -= focus_top - scroll_top
     }
-}
-
-gui_is_element_near_bounds :: proc (id: cl.ElementId) -> (res: bool) {
-    OFFSET :: 700
-
-    bb := cl.GetElementData(id).boundingBox
-    if bb == {} { return false }
-    window_dim := video_get_window_dimensions()
-    w := [2]f32{ f32(window_dim.x), f32(window_dim.y) }
-
-    return bb.x < w.x + OFFSET && \
-        bb.x + bb.width > -OFFSET && \
-        bb.y < w.y + OFFSET && \
-        bb.y + bb.height > -OFFSET
 }

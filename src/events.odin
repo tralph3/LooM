@@ -6,6 +6,7 @@ import "core:log"
 Event :: enum u32 {
     SaveState,
     LoadState,
+    StartRom,
 }
 
 event_to_sdl_event :: proc (event: Event) -> sdl.EventType {

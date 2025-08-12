@@ -21,7 +21,7 @@ AUDIO_BUFFER_SIZE_BYTES :: 1024 * 64
 AUDIO_BUFFER_UNDERRUN_LIMIT :: 1024 * 12
 AUDIO_BUFFER_OVERFLOW_LIMIT :: 1024 * 54
 
-audio_buffer_push_batch :: proc "c" (src: ^i16, frames: i32) -> i32 {
+audio_buffer_push_batch :: proc "c" (src: [^]i16, frames: i32) -> i32 {
     context = state_get_context()
     bytes_pushed := cb.push(&AUDIO_STATE.buffer, src, u64(frames * BYTES_PER_FRAME))
 

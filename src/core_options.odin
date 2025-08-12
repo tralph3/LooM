@@ -4,6 +4,7 @@ import lr "libretro"
 import "core:strings"
 import "core:log"
 import "core:fmt"
+import "utils"
 
 CoreOptions :: struct {
     options: map[cstring]CoreOption,
@@ -39,10 +40,10 @@ core_options_parse_v2 :: proc (options: ^lr.RetroCoreOptionsV2, allocator:=conte
         }
 
         option := CoreOption{
-            display = clone_cstring(definition.display),
-            info = clone_cstring(definition.info),
-            current_value = clone_cstring(definition.default_value),
-            default_value = clone_cstring(definition.default_value),
+            display = utils.clone_cstring(definition.display),
+            info = utils.clone_cstring(definition.info),
+            current_value = utils.clone_cstring(definition.default_value),
+            default_value = utils.clone_cstring(definition.default_value),
             visible = true,
         }
 
@@ -52,12 +53,12 @@ core_options_parse_v2 :: proc (options: ^lr.RetroCoreOptionsV2, allocator:=conte
             }
 
             append(&option.values, CoreOptionValue{
-                value = clone_cstring(value.value),
-                label = clone_cstring(value.label),
+                value = utils.clone_cstring(value.value),
+                label = utils.clone_cstring(value.label),
             })
         }
 
-        key := clone_cstring(definition.key)
+        key := utils.clone_cstring(definition.key)
         result.options[key] = option
     }
 
@@ -110,7 +111,7 @@ core_options_parse_set_variables :: proc (options: [^]lr.RetroVariable, allocato
             })
         }
 
-        key := clone_cstring(option.key)
+        key := utils.clone_cstring(option.key)
         result.options[key] = core_option
     }
 
@@ -150,7 +151,7 @@ core_option_set :: proc (options: ^CoreOptions, key: cstring, val: cstring) -> (
     option := (&options.options[key]) or_return
     delete(option.current_value)
 
-    option.current_value = clone_cstring(val)
+    option.current_value = utils.clone_cstring(val)
 
     core_options_set_dirty(options, true)
 

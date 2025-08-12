@@ -668,3 +668,10 @@ RetroHwRenderContextNegotiationInterfaceVulkan :: struct {
     create_instance: RetroVulkanCreateInstance,
     create_device2: RetroVulkanCreateDevice2,
 }
+
+RetroAvEnableFlags :: bit_field c.int {
+    EnableVideo: bool | 1,
+    EnableAudio: bool | 1,
+    EnableFastSavestates: bool | 1,
+    EnableHardDisableAudio: bool | 1,
+}

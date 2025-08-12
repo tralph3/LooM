@@ -6,6 +6,7 @@ import cl "clay"
 import "core:log"
 import "core:slice"
 import "core:c"
+import t "loom:types"
 
 @(private="file")
 INPUT_STATE := struct #no_copy {
@@ -16,15 +17,16 @@ INPUT_STATE := struct #no_copy {
     keyboard: #sparse [lr.RetroKey]i16,
     mouse: InputMouseState,
 
-    ok_pressed: bool,
-    back_pressed: bool,
-
     // determines if ui elements should be selected with the mouse or
     // directionally with the keyboard or a controller
     using_mouse: bool,
+
+    gui_input_state: t.GUIInputState,
 } {}
 
 INPUT_MAX_PLAYERS :: 8
+
+key_repeat_timer: u64
 
 InputPlayerState :: struct #no_copy {
     joypad: [lr.RetroDeviceIdJoypad]i16,
@@ -91,24 +93,31 @@ input_open_gamepads :: proc () -> (ok:bool) {
 }
 
 input_handle_key_pressed :: proc (event: ^sdl.Event) {
-    if event.key.repeat { return }
-
     INPUT_STATE.using_mouse = false
 
     #partial switch event.key.scancode {
     case .LEFT:
+        INPUT_STATE.gui_input_state += { .Left }
         gui_focus_left()
     case .RIGHT:
+        INPUT_STATE.gui_input_state += { .Right }
         gui_focus_right()
     case .UP:
+        INPUT_STATE.gui_input_state += { .Up }
         gui_focus_up()
     case .DOWN:
+        INPUT_STATE.gui_input_state += { .Down }
         gui_focus_down()
-    case .RETURN:
-        INPUT_STATE.ok_pressed = true
     case .ESCAPE:
-        INPUT_STATE.back_pressed = true
-        scene_change(.PAUSE)
+        INPUT_STATE.gui_input_state += { .Back }
+    case .BACKSPACE:
+        INPUT_STATE.gui_input_state += { .Cancel }
+    case .RETURN:
+        INPUT_STATE.gui_input_state += { .Ok }
+    case .Q:
+        INPUT_STATE.gui_input_state += { .Previous }
+    case .E:
+        INPUT_STATE.gui_input_state += { .Next }
     }
 
     when ODIN_DEBUG {
@@ -130,9 +139,13 @@ input_handle_mouse :: proc (event: ^sdl.Event) {
     case .MOUSE_MOTION:
         INPUT_STATE.mouse.position = { event.motion.x, event.motion.y }
     case .MOUSE_BUTTON_DOWN:
-        INPUT_STATE.mouse.clicked = true
-        INPUT_STATE.mouse.down = true
-        INPUT_STATE.ok_pressed = true
+        if event.button.button == 1 { // left click
+            INPUT_STATE.mouse.clicked = true
+            INPUT_STATE.mouse.down = true
+            INPUT_STATE.gui_input_state += { .Ok }
+        } else if event.button.button == 3 { // right click
+            INPUT_STATE.gui_input_state += { .Back }
+        }
     case .MOUSE_BUTTON_UP:
         INPUT_STATE.mouse.down = false
     case .MOUSE_WHEEL:
@@ -144,8 +157,7 @@ input_handle_mouse :: proc (event: ^sdl.Event) {
 input_reset :: proc () {
     INPUT_STATE.mouse.wheel = {}
     INPUT_STATE.mouse.clicked = false
-    INPUT_STATE.ok_pressed = false
-    INPUT_STATE.back_pressed = false
+    INPUT_STATE.gui_input_state = {}
 
     for &player in INPUT_STATE.players {
         player.active_this_frame = false
@@ -153,6 +165,7 @@ input_reset :: proc () {
 }
 
 input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
+
     if event.type != .GAMEPAD_BUTTON_DOWN { return }
 
     for &player in INPUT_STATE.players {
@@ -166,17 +179,25 @@ input_handle_gamepad_pressed :: proc (event: ^sdl.Event) {
 
     #partial switch sdl.GamepadButton(event.gbutton.button) {
     case .DPAD_LEFT:
+        INPUT_STATE.gui_input_state += { .Left }
         gui_focus_left()
     case .DPAD_RIGHT:
+        INPUT_STATE.gui_input_state += { .Right }
         gui_focus_right()
     case .DPAD_UP:
+        INPUT_STATE.gui_input_state += { .Up }
         gui_focus_up()
     case .DPAD_DOWN:
+        INPUT_STATE.gui_input_state += { .Down }
         gui_focus_down()
+    case .LEFT_SHOULDER:
+        INPUT_STATE.gui_input_state += { .Previous }
+    case .RIGHT_SHOULDER:
+        INPUT_STATE.gui_input_state += { .Next }
     case .SOUTH:
-        INPUT_STATE.ok_pressed = true
+        INPUT_STATE.gui_input_state += { .Ok }
     case .EAST:
-        INPUT_STATE.back_pressed = true
+        INPUT_STATE.gui_input_state += { .Back }
     case .GUIDE, .TOUCHPAD:
         scene_change(.PAUSE)
     }
@@ -255,14 +276,6 @@ input_get_mouse_state :: proc "contextless" () -> InputMouseState {
     return INPUT_STATE.mouse
 }
 
-input_is_ok_pressed :: proc "contextless" () -> bool {
-    return INPUT_STATE.ok_pressed
-}
-
-input_is_back_pressed :: proc "contextless" () -> bool {
-    return INPUT_STATE.back_pressed
-}
-
 input_is_controller_connected :: proc "contextless" (port: u32) -> bool {
     return INPUT_STATE.players[port].gamepad != nil
 }
@@ -273,4 +286,8 @@ input_is_controller_active_this_frame :: proc "contextless" (port: u32) -> bool 
 
 input_is_using_mouse :: proc () -> bool {
     return INPUT_STATE.using_mouse
+}
+
+input_get_ui_input_state :: proc () -> t.GUIInputState {
+    return INPUT_STATE.gui_input_state
 }

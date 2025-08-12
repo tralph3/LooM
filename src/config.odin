@@ -5,6 +5,7 @@ import "core:log"
 import fp "core:path/filepath"
 import "core:os/os2"
 import "core:strings"
+import t "loom:types"
 
 CONFIG_HEADER :: "; All paths, unless absolute, are relative to the LooM executable\n\n"
 
@@ -18,22 +19,12 @@ CONFIG := struct #no_copy {
     //TEMP DELETETETETETETE
     system_path: string,
 
-    users: map[string]UserConfig,
+    users: map[string]t.UserConfig,
 
-    systems: map[string]SystemConfig,
+    systems: map[string]t.SystemConfig,
 } {
     //TEMP DELETETETETETETE
     system_path = "./system",
-}
-
-UserConfig :: struct #no_copy {
-    saves_path: string,
-    system_path: string,
-}
-
-SystemConfig :: struct {
-    name: string,
-    core: string,
 }
 
 config_init :: proc () -> (ok: bool) {
@@ -195,6 +186,6 @@ config_get_system_dir_path :: proc () -> string {
     // return CONFIG.users[user].system_path
 }
 
-config_get_system_config :: proc (system: string) -> ^SystemConfig {
+config_get_system_config :: proc (system: string) -> ^t.SystemConfig {
     return &CONFIG.systems[system] or_else nil
 }

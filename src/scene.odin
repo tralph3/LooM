@@ -3,6 +3,7 @@ package main
 import sdl "vendor:sdl3"
 import "core:log"
 import "core:strings"
+import t "loom:types"
 
 SceneOnEnter :: proc ()
 SceneOnExit :: proc ()
@@ -55,7 +56,7 @@ SCENES := [SceneID]Scene{
                 cache_evict(&COVER_MEMORY_CACHE)
             },
             render = proc () {
-                layout := gui_layout_menu_screen()
+                layout := gui_layout_menu_screen(input_get_ui_input_state(), GLOBAL_STATE.plists, GLOBAL_STATE.roms)
                 gui_renderer_render_commands(&layout)
             },
             allowed_transitons = { .RUNNING, .LOGIN },

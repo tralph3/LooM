@@ -20,8 +20,13 @@ Flag :: enum {
     GrowY,
     CenterX,
     CenterY,
+    CenterChildX,
+    CenterChildY,
 }
 
+CenterChild :: bit_set[Flag]{ .CenterChildX, .CenterChildY }
+Center :: bit_set[Flag]{ .CenterX, .CenterY }
+Grow :: bit_set[Flag]{ .GrowX, .GrowY }
 Flags :: bit_set[Flag]
 
 @(deferred_none = cl._CloseElement)
@@ -100,7 +105,7 @@ spacer :: proc (direction: cl.LayoutDirection, id:=cl.ElementId{}) {
     }) {}
 }
 
-grid :: proc (elements: []$T, tile_size: cl.Dimensions, tile_layout: proc (element: T, index: u32), id: cl.ElementId, gap:=[2]f32{}) {
+grid :: proc (elements: []$T, tile_size: cl.Dimensions, tile_layout: proc (element: ^T, index: u32), id: cl.ElementId, gap:=[2]f32{}) {
     if cl.UI()({
         id = id,
         layout = {
@@ -121,14 +126,14 @@ grid :: proc (elements: []$T, tile_size: cl.Dimensions, tile_layout: proc (eleme
         },
     }) {
         grid_bb := cl.GetElementData(id).boundingBox
-        available_w := int(grid_bb.width)
+        available_w := int(grid_bb.width) - 1
 
         row_height: f32 = gap.y + tile_size.height
         start_row: int = int(abs(cl.GetScrollOffset().y) / row_height)
         visible_rows: int = int(grid_bb.height / row_height) + 2
         end_row := start_row + visible_rows
 
-        n := int(clamp(f32(available_w + int(gap.x)) / (tile_size.width + gap.x), 1, 32))
+        n := int(max(f32(available_w + int(gap.x)) / (tile_size.width + gap.x), 1))
         total := len(elements)
         if n > total {
             n = total
@@ -141,11 +146,10 @@ grid :: proc (elements: []$T, tile_size: cl.Dimensions, tile_layout: proc (eleme
         }
 
 
-
-        end_row_capped := min(rows, end_row)
-        // we want to layout one more row so that directional
-        // movement upwards works
-        start_row_capped := max(0, start_row - 1)
+        // 3 extra rows are added on each side to give time for covers
+        // to load and stuff like that
+        end_row_capped := min(rows, end_row + 3)
+        start_row_capped := max(0, start_row - 3)
 
         if cl.UI()({
             layout = {
@@ -155,6 +159,7 @@ grid :: proc (elements: []$T, tile_size: cl.Dimensions, tile_layout: proc (eleme
                 }
             },
         }) {}
+
         for i in start_row_capped..<end_row_capped {
             if cl.UI()({
                 layout = {
@@ -178,7 +183,7 @@ grid :: proc (elements: []$T, tile_size: cl.Dimensions, tile_layout: proc (eleme
                             }
                         },
                     }) {
-                        tile_layout(elements[index], u32(index))
+                        tile_layout(&elements[index], u32(index))
                     }
                 }
             }
@@ -194,10 +199,3 @@ grid :: proc (elements: []$T, tile_size: cl.Dimensions, tile_layout: proc (eleme
         }) {}
     }
 }
-
-// entry := &entries[index]
-// if game_entry_button(entry, u32(index)) {
-//     if emulator_init(entry) {
-//         scene_change(.RUNNING)
-//     }
-// }

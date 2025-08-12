@@ -10,6 +10,7 @@ import "base:runtime"
 import "core:log"
 import "core:strings"
 import "core:path/filepath"
+import "utils"
 
 process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) -> bool {
     context = GLOBAL_STATE.ctx
@@ -47,6 +48,7 @@ process_env_callback :: proc "c" (command: lr.RetroEnvironment, data: rawptr) ->
         case .SetHwRenderContextNegotiationInterface: return env_callback_set_hw_render_context_negotiation_interface(data)
         case .GetHwRenderInterface: return env_callback_get_hw_render_interface(data)
         case .SetSupportAchievements: return env_callback_set_support_achievements(data)
+        case .GetAudioVideoEnable: return env_callback_get_audio_video_enable(data)
         case: log.warnf("Callback not supported: '{}'", command)
     }
 
@@ -193,7 +195,7 @@ env_callback_set_performance_level :: proc (data: rawptr) -> bool { // TODO: Get
 env_callback_get_system_directory :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    system_dir, err := dir_path_with_trailing_slash_cstr(config_get_system_dir_path())
+    system_dir, err := utils.dir_path_with_trailing_slash_cstr(config_get_system_dir_path())
     if err != nil {
         return false
     }
@@ -483,7 +485,7 @@ env_callback_get_libretro_path :: proc (data: rawptr) -> bool { // TODO: check w
     if data == nil { return false }
 
     core_dir := fp.dir(emulator_get_current_game_entry().core, context.temp_allocator)
-    path, _ := dir_path_with_trailing_slash_cstr(core_dir)
+    path, _ := utils.dir_path_with_trailing_slash_cstr(core_dir)
     defer delete(path)
     (^cstring)(data)^ = path
 
@@ -779,7 +781,7 @@ env_callback_get_core_assets_directory :: proc (data: rawptr) -> bool { // TODO
 env_callback_get_save_directory :: proc (data: rawptr) -> bool { // DONE
     if data == nil { return false }
 
-    saves_dir, err := dir_path_with_trailing_slash_cstr(config_get_saves_dir_path())
+    saves_dir, err := utils.dir_path_with_trailing_slash_cstr(config_get_saves_dir_path())
     if err != nil {
         return false
     }
@@ -1296,7 +1298,14 @@ env_callback_get_led_interface :: proc (data: rawptr) -> bool { // TODO
  * @see retro_av_enable_flags
  */
 env_callback_get_audio_video_enable :: proc (data: rawptr) -> bool { // TODO
-    return false
+    if data == nil { return true }
+
+    mask := cast(^lr.RetroAvEnableFlags)data
+    mask.EnableVideo = true
+    mask.EnableAudio = true
+    mask.EnableHardDisableAudio = false
+
+    return true
 }
 
 /**

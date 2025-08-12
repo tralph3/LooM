@@ -9,6 +9,7 @@ import "core:log"
 import "core:c"
 import "core:strings"
 import "gui"
+import "utils"
 
 @(private="file")
 GUI_RENDERER_STATE := struct #no_copy {
@@ -88,7 +89,7 @@ FRAMEBUFFER_SHADER_LOCS: struct {
 TextTextureCacheKey :: struct {
     fontId: u16,
     fontSize: u16,
-    strId: cl.ElementId,
+    strId: u64,
     color: cl.Color,
 }
 
@@ -163,7 +164,7 @@ gui_renderer_deinit :: proc () {
 }
 
 gui_renderer_measure_text :: proc "c" (text: cl.StringSlice, config: ^cl.TextElementConfig, user_data: rawptr) -> cl.Dimensions {
-    context = GLOBAL_STATE.ctx
+    context = state_get_context()
     assert(text.length > 0)
 
     font := GUI_RENDERER_STATE.fonts[gui.FontID(config.fontId)]
@@ -265,7 +266,7 @@ gui_renderer_render_commands :: proc (rcommands: ^cl.ClayArray(cl.RenderCommand)
             config: ^cl.TextRenderData = &rcmd.renderData.text
             str := strings.string_from_ptr(config.stringContents.chars, int(config.stringContents.length))
 
-            key := TextTextureCacheKey{ config.fontId, config.fontSize, cl.ID(str), config.textColor }
+            key := TextTextureCacheKey{ config.fontId, config.fontSize, utils.string_hash(str), config.textColor }
             font_texture := cache_get(&TEXT_TEXTURE_CACHE, key)
 
             if font_texture == nil {

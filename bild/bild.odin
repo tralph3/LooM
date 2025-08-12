@@ -14,6 +14,7 @@ BaseTarget :: struct {
 
 OdinFlags :: enum {
     Debug,
+    DefaultToPanicAllocator,
 }
 
 OdinCollection :: struct {
@@ -227,6 +228,10 @@ compile_odin :: proc (target: OdinTarget) -> (ok: bool) {
 
     if .Debug in target.flags {
         append(&cmd, "-debug")
+    }
+
+    if .DefaultToPanicAllocator in target.flags {
+        append(&cmd, "-default-to-panic-allocator")
     }
 
     if target.error_style == .Odin {

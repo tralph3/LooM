@@ -14,6 +14,9 @@ import "core:time"
 import "core:c"
 import "core:os/os2"
 import fp "core:path/filepath"
+import "roms"
+import "utils"
+import t "types"
 
 // cross function defer
 DEINIT_PROCS: [dynamic]proc ()
@@ -69,7 +72,14 @@ app_init :: proc "c" (appstate: ^rawptr, argc: c.int, argv: [^]cstring) -> (res:
 
     if !init_subsystem("Thread Pool", thread_pool_init, thread_pool_deinit) { return }
     if !init_subsystem("Config", config_init, config_deinit) { return }
-    if !init_subsystem("Roms", rom_entries_load, rom_entries_unload) { return }
+    //if !init_subsystem("Roms", rom_entries_load, rom_entries_unload) { return }
+
+    plists, roms, _ := roms.roms_load("./roms")
+    GLOBAL_STATE.plists = plists
+    GLOBAL_STATE.roms = roms
+    append(&DEINIT_PROCS, proc () {
+        roms.roms_unload(GLOBAL_STATE.plists, GLOBAL_STATE.roms)
+    })
     if !init_subsystem("Video", video_init, video_deinit) { return }
     if !init_subsystem("GUI", gui_init, gui_deinit) { return }
     if !init_subsystem("Audio", audio_init, audio_deinit) { return }
@@ -131,6 +141,10 @@ app_event :: proc "c" (appstate: rawptr, event: ^sdl.Event) -> sdl.AppResult {
     case event_to_sdl_event(.LoadState):
         emulator_load_state()
         scene_change(.RUNNING)
+    case event_to_sdl_event(.StartRom):
+        entry := (^t.RomEntry)(event.user.data1)
+        emulator_init(entry)
+        scene_change(.RUNNING)
     }
 
     return .CONTINUE
@@ -171,8 +185,8 @@ main :: proc () {
         context.temp_allocator = mem.tracking_allocator(&track_temp)
 
 		defer {
-            print_leaked_allocations(&track)
-            print_leaked_allocations(&track_temp)
+            utils.print_leaked_allocations(&track)
+            utils.print_leaked_allocations(&track_temp)
 		}
 
         sdl.SetMemoryFunctions(
