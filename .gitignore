@@ -1,6 +1,7 @@
 build/
 cores/
 roms/
+!src/roms
 system/
 saves/
 **/*.o
