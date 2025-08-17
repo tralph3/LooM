@@ -1,5 +1,21 @@
 package types
 
+import "core:mem"
+import "loom:rdb"
+
+RomList :: struct {
+    roms: []RomEntry,
+    generation: u32,
+}
+
+PlaylistEntry :: struct {
+    id: u32,
+    index: u32,
+    generation: u32,
+}
+
+RomID :: distinct u64
+
 RomTag :: enum {
     // Regions/Countries
     USA,
@@ -56,27 +72,26 @@ RomTag :: enum {
 }
 
 RomEntry :: struct {
-    id: u64,
-    core: string,
-    name: string,
-    display_name: string,
+    id: RomID,
     path: string,
-    category: string,
+    database_name: string,
+    display_name: string,
+    platform_id: u32,
     tags: bit_set[RomTag],
 }
 
-RomList :: struct {
+Roms :: struct {
     roms: []RomEntry,
-    generation: u32,
-}
-
-PlaylistEntry :: struct {
-    id: u64,
-    index: u32,
-    generation: u32,
+    playlists: []Playlist,
+    __allocator: mem.Allocator,
 }
 
 Playlist :: struct {
     name: string,
-    entries: [dynamic]PlaylistEntry,
+    roms: [dynamic]RomID,
+}
+
+Platform :: struct {
+    name: string,
+    db: rdb.Database,
 }

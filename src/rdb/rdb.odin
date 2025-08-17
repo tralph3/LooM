@@ -244,13 +244,14 @@ read_item :: proc (stream: io.Stream, allocator:=context.allocator, loc:=#caller
     return
 }
 
-read_metadata :: proc (stream: io.Stream, offset: u64) -> (entry: Entry, err: Error) {
+read_metadata :: proc (stream: io.Stream, offset: u64, allocator:=context.allocator) -> (entry: Entry, err: Error) {
+    entry.allocator = allocator
     prev := io.seek(stream, 0, .Current) or_return
     io.seek(stream, i64(offset), .Start) or_return
 
     type, size := identify_type(stream) or_return
     if type != .FixMap { return nil, .UnexpectedType }
-    metadata := read_entry(stream, size) or_return
+    metadata := read_entry(stream, size, allocator) or_return
 
     io.seek(stream, prev, .Start) or_return
     return metadata, nil
@@ -258,6 +259,7 @@ read_metadata :: proc (stream: io.Stream, offset: u64) -> (entry: Entry, err: Er
 
 read_entry :: proc (stream: io.Stream, key_count: u32, allocator:=context.allocator) -> (entry: Entry,  err: Error) {
     defer if err != nil { delete_entry(entry, allocator) }
+    entry.allocator = allocator
 
     for _ in 0..<key_count {
         key, key_err := read_item(stream, allocator)
@@ -335,14 +337,14 @@ parse_database_from_file :: proc (file: ^os2.File, allocator:=context.allocator)
     return parse_database_from_bytes(bytes, allocator)
 }
 
-parse_database_from_path :: proc (file_path: string, allocator:=context.allocator) -> (res: map[u32]Entry, err: Error) {
+parse_database_from_path :: proc (file_path: string, allocator:=context.allocator) -> (res: Database, err: Error) {
     f := os2.open(file_path) or_return
 	defer os2.close(f)
 
     return parse_database_from_file(f, allocator)
 }
 
-parse_database_from_bytes :: proc (contents: []byte, allocator:=context.allocator) -> (res: map[u32]Entry, err: Error) {
+parse_database_from_bytes :: proc (contents: []byte, allocator:=context.allocator) -> (res: Database, err: Error) {
     buf: bytes.Buffer
     bytes.buffer_init(&buf, contents)
     stream := bytes.buffer_to_stream(&buf)
@@ -365,8 +367,10 @@ merge_entries :: proc (entry1, entry2: ^Entry, allocator:=context.allocator) -> 
     return entry1^
 }
 
-parse_database_from_stream :: proc (stream: io.Stream, allocator:=context.allocator) -> (res: map[u32]Entry, err: Error) {
+parse_database_from_stream :: proc (stream: io.Stream, allocator:=context.allocator) -> (res: Database, err: Error) {
     validate_header(stream) or_return
+
+    res.allocator = allocator
 
     metadata_offset := read_uint64(stream) or_return
     metadata := read_metadata(stream, metadata_offset) or_return
